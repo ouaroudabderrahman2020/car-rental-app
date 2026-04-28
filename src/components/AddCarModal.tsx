@@ -45,7 +45,7 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const validatePlate = (p: string) => /^[a-zA-Z0-9-\s]{2,15}$/.test(p);
 
-  // Dynamic Lists State
+  // Dynamic Lists States
   const [isAddingEssential, setIsAddingEssential] = useState(false);
   const [newEssentialText, setNewEssentialText] = useState('');
   const [essentials, setEssentials] = useState<EssentialItem[]>([
