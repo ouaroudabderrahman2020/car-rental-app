@@ -1,0 +1,52 @@
+export type CarStatus = 'Available' | 'Rented' | 'In Maintenance' | 'Workshop' | 'Decommissioned';
+export type ReservationStatus = 'Pending' | 'Confirmed' | 'In Progress' | 'Completed' | 'Cancelled' | 'Overdue';
+export type FuelType = 'Petrol' | 'Diesel' | 'Electric' | 'Hybrid';
+
+export interface Car {
+  id: string;
+  brand: string;
+  model: string;
+  plate: string;
+  color?: string;
+  fuel_type?: FuelType;
+  transmission?: 'Automatic' | 'Manual';
+  odometer: number;
+  daily_rate: number;
+  status: CarStatus;
+  starting_fuel_level: number;
+  gps_sim?: string;
+  seats?: number;
+  damage_notes?: string;
+  image_url?: string;
+  documentation_url?: string;
+  created_at: string;
+  updated_at: string;
+  essentials?: any[];
+  intervals?: any[];
+}
+
+export interface Reservation {
+  id: string;
+  car_id: string;
+  customer_name: string;
+  customer_phone: string;
+  start_date: string;
+  end_date: string;
+  status: ReservationStatus;
+  total_price: number;
+  prepayment: number;
+  odometer_out?: number;
+  odometer_in?: number;
+  fuel_level_out?: number;
+  fuel_level_in?: number;
+  notes?: string;
+  created_at: string;
+  car?: Car;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  license_number?: string;
+}

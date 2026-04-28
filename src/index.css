@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Public Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body-md: "Public Sans", sans-serif;
+  --font-label-caps: "Public Sans", sans-serif;
+  --font-body-lg: "Public Sans", sans-serif;
+  --font-h1: "Public Sans", sans-serif;
+  --font-h2: "Public Sans", sans-serif;
+  --font-h3: "Public Sans", sans-serif;
+  --font-button: "Public Sans", sans-serif;
+
+  --color-primary: #31A984;
+  --color-secondary: #475569;
+  --color-tertiary: #765b00;
+  --color-background: #F9F5EB;
+  --color-on-background: #131B2E;
+  --color-midnight: #131B2E;
+  --color-ink: #131B2E;
+  --color-muted-mint: #E8F3F1;
+  --color-muted-cream: #F9F5EB;
+  --color-border-tint: #D1E2E0;
+  --color-slate-blue: #475569;
+  --color-nav-bg: #ECEEF0;
+  --color-accent-blue: #0C87BB;
+  --color-overdue-red: #DA453B;
+  --color-ice-blue: #F7F9FB;
+  --color-workshop-amber: #f59e0b;
+  --color-midnight-ink: #131B2E;
+  --color-slate-header: #475569;
+  --color-warm-accent: #FEF3C7;
+  --color-form-border: #CBD5E1;
+
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-default: 0px;
+
+  --spacing-unit: 4px;
+  --spacing-gutter: 1.5rem;
+  --spacing-margin: 2rem;
+}
+
+@layer base {
+  body {
+    @apply bg-muted-mint text-midnight font-sans antialiased;
+    font-size: 16px;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+  }
+
+  input, select, textarea {
+    @apply text-lg text-midnight border-[1.5px] border-form-border focus:outline-none focus:border-primary focus:ring-0 transition-colors;
+  }
+}
+
+@layer utilities {
+  .industrial-shadow {
+    box-shadow: 4px 4px 0px rgba(15, 23, 42, 0.1);
+  }
+
+  .standard-row-text {
+    @apply font-sans text-base font-semibold text-midnight;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .combobox-list {
+    @apply absolute top-full left-0 right-0 z-50 bg-white border-[1.5px] border-form-border border-t-0;
+    box-shadow: 4px 4px 0px rgba(15, 23, 42, 0.1);
+  }
+
+  .combobox-item {
+    @apply px-4 py-3 cursor-pointer text-sm font-semibold uppercase hover:bg-muted-mint transition-colors;
+  }
+
+  .section-header-rule {
+    @apply relative flex items-center w-full after:flex-1 after:h-[1px] after:bg-slate-200 before:flex-1 before:h-[1px] before:bg-slate-200;
+  }
+
+  .section-header-content {
+    @apply bg-warm-accent px-6 py-2.5 flex items-center gap-3 z-10;
+    box-shadow: 2px 2px 0px rgba(15, 23, 42, 0.05);
+  }
+
+  .filter-input {
+    background-color: transparent;
+    border-bottom: 2px solid #131B2E;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    padding: 0.5rem 0;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .filter-input:focus {
+    border-bottom-color: #31A984;
+    outline: none;
+  }
+  
+  .car-card {
+    @apply cursor-pointer transition-all duration-200 ease-in-out;
+  }
+  .car-card:hover {
+    @apply -translate-y-1 shadow-[8px_8px_0px_rgba(19,27,46,0.15)];
+  }
+}
+
+/* Responsive Table Mobile Styles */
+@media (max-width: 1023px) {
+  .responsive-table thead {
+    display: none;
+  }
+  .responsive-table, .responsive-table tbody, .responsive-table tr, .responsive-table td {
+    display: block;
+    width: 100%;
+  }
+  .responsive-table tr {
+    background: white !important;
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0 !important;
+    border-bottom: 1px solid #D1E2E0;
+    text-align: right !important;
+  }
+  .responsive-table td:last-child {
+    border-bottom: 0;
+  }
+  .responsive-table td:before {
+    content: attr(data-label);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    @apply text-slate-blue bg-nav-bg;
+    text-align: left;
+    padding: 2px 8px;
+    border: 1px solid #D1E2E0;
+    margin-right: 1rem;
+    flex-shrink: 0;
+  }
+}
