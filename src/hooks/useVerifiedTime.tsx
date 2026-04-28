@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
 
 export type SyncStatus = 'syncing' | 'success' | 'error';
 
@@ -18,60 +17,90 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('syncing');
   const [now, setNow] = useState(new Date());
   
-  const lastSyncRef = useRef<number>(0);
   const driftWatchdogRef = useRef<number>(Date.now());
-  const failCountRef = useRef(0);
+  const isSyncingRef = useRef(false);
+  const hourlyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchWithTimeout = async (url: string, timeout = 5000) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(id);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
+    } catch (err) {
+      clearTimeout(id);
+      throw err;
+    }
+  };
 
   const syncWithServer = useCallback(async () => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
     setSyncStatus('syncing');
-    try {
-      const t1 = Date.now();
-      
-      const { data, error } = await supabase.rpc('get_server_time');
-      
-      if (error) throw error;
 
-      const t2 = Date.now();
-      const serverTime = new Date(data).getTime();
-      const rtt = t2 - t1;
-      
-      const newOffset = (serverTime + rtt / 2) - t2;
-      
-      setOffset(newOffset);
-      setIsSynced(true);
-      setSyncStatus('success');
-      failCountRef.current = 0;
-      lastSyncRef.current = Date.now();
-      console.log(`[ClockService] Synced. Latency: ${rtt}ms, Offset: ${newOffset}ms`);
-    } catch (err) {
-      failCountRef.current += 1;
-      console.error(`[ClockService] Sync failed (${failCountRef.current}/5):`, err);
-      
-      if (failCountRef.current >= 5) {
-        setSyncStatus('error');
-      } else {
-        // Retry logic after failure
-        setTimeout(syncWithServer, 5000);
+    const tryLayer1 = async () => {
+      const data = await fetchWithTimeout('https://worldtimeapi.org/api/timezone/Africa/Casablanca');
+      return new Date(data.datetime).getTime();
+    };
+
+    const tryLayer2 = async () => {
+      const data = await fetchWithTimeout('https://www.timeapi.io/api/Time/current/zone?timeZone=Africa/Casablanca');
+      return new Date(data.dateTime).getTime();
+    };
+
+    const tryLayer3 = async () => {
+      const data = await fetchWithTimeout('https://worldclockapi.com/api/json/utc/now');
+      return new Date(data.currentDateTime).getTime();
+    };
+
+    const layers = [tryLayer1, tryLayer2, tryLayer3];
+    let serverTimestamp: number | null = null;
+    let success = false;
+
+    for (let i = 0; i < layers.length; i++) {
+       try {
+        console.log(`[ClockService] Attempting Layer ${i + 1}...`);
+        const t1 = Date.now();
+        serverTimestamp = await layers[i]();
+        const t2 = Date.now();
+        const rtt = t2 - t1;
+        
+        const newOffset = (serverTimestamp + rtt / 2) - t2;
+        setOffset(newOffset);
+        setIsSynced(true);
+        setSyncStatus('success');
+        success = true;
+        console.log(`[ClockService] Layer ${i + 1} Success. Offset: ${newOffset}ms`);
+        break;
+      } catch (err) {
+        console.warn(`[ClockService] Layer ${i + 1} Failed:`, err);
       }
     }
+
+    if (!success) {
+      setSyncStatus('error');
+      console.error('[ClockService] All layers failed. Retrying in 30s...');
+      setTimeout(syncWithServer, 30000);
+    } else {
+      if (hourlyTimeoutRef.current) clearTimeout(hourlyTimeoutRef.current);
+      hourlyTimeoutRef.current = setTimeout(syncWithServer, 3600000);
+    }
+
+    isSyncingRef.current = false;
   }, []);
 
-  // Initial Sync
   useEffect(() => {
     syncWithServer();
 
-    // Hourly Calibration
-    const calibrationInterval = setInterval(syncWithServer, 3600000);
-
-    // Minute Ticker for UI
     const tickerInterval = setInterval(() => {
       setNow(new Date(Date.now() + offset));
-    }, 60000);
+    }, 1000);
 
-    // Watchdog: Check for 10s drift or system time change
     const watchdogInterval = setInterval(() => {
       const currentLocal = Date.now();
-      const diff = Math.abs(currentLocal - driftWatchdogRef.current - 2000); // 2000 is the check interval
+      const diff = Math.abs(currentLocal - driftWatchdogRef.current - 2000);
       
       if (diff > 10000) {
         console.warn(`[ClockService] Time drift detected (${diff}ms). Emergency re-sync...`);
@@ -81,7 +110,7 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
     }, 2000);
 
     return () => {
-      clearInterval(calibrationInterval);
+      if (hourlyTimeoutRef.current) clearTimeout(hourlyTimeoutRef.current);
       clearInterval(tickerInterval);
       clearInterval(watchdogInterval);
     };

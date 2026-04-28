@@ -13,7 +13,12 @@ interface LayoutProps {
 const SyncIcon = ({ status }: { status: SyncStatus }) => {
   switch (status) {
     case 'syncing':
-      return <Loader2 className="w-3 h-3 text-primary animate-spin" />;
+      return (
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+        </span>
+      );
     case 'success':
       return <CheckCircle2 className="w-3 h-3 text-[#31A984]" />;
     case 'error':
