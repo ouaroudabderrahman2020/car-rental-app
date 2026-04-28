@@ -77,7 +77,15 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-4 md:gap-6 text-white overflow-hidden">
             <div className="flex items-center gap-2 text-[10px] md:text-sm font-medium opacity-90 whitespace-nowrap">
               <SyncIcon status={syncStatus} />
-              <span>{formatHeaderClock(verifiedTime)}</span>
+              <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+                <span>{formatHeaderClock(verifiedTime)}</span>
+                {syncStatus === 'syncing' && (
+                  <span className="text-[8px] md:text-[10px] text-yellow-400 font-bold uppercase tracking-tighter">Syncing...</span>
+                )}
+                {syncStatus === 'error' && (
+                  <span className="text-[8px] md:text-[10px] text-red-400 font-bold uppercase tracking-tighter">Unverified (Retrying)</span>
+                )}
+              </div>
             </div>
             <div className="relative">
               <button 

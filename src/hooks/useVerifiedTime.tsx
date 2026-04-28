@@ -13,6 +13,7 @@ const VerifiedTimeContext = createContext<VerifiedTimeContextType | undefined>(u
 
 export function VerifiedTimeProvider({ children }: { children: React.ReactNode }) {
   const [offset, setOffset] = useState<number>(0);
+  const offsetRef = useRef<number>(0);
   const [isSynced, setIsSynced] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('syncing');
   const [now, setNow] = useState(new Date());
@@ -52,6 +53,7 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
 
     const tryLayer3 = async () => {
       const data = await fetchWithTimeout('https://worldclockapi.com/api/json/utc/now');
+      // worldclockapi often returns a simple structure, adjust if needed
       return new Date(data.currentDateTime).getTime();
     };
 
@@ -69,6 +71,7 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
         
         const newOffset = (serverTimestamp + rtt / 2) - t2;
         setOffset(newOffset);
+        offsetRef.current = newOffset;
         setIsSynced(true);
         setSyncStatus('success');
         success = true;
@@ -82,20 +85,28 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
     if (!success) {
       setSyncStatus('error');
       console.error('[ClockService] All layers failed. Retrying in 30s...');
-      setTimeout(syncWithServer, 30000);
+      // Ensure we don't start multiple parallel retries
+      if (hourlyTimeoutRef.current) clearTimeout(hourlyTimeoutRef.current);
+      hourlyTimeoutRef.current = setTimeout(() => {
+        isSyncingRef.current = false;
+        syncWithServer();
+      }, 30000);
     } else {
       if (hourlyTimeoutRef.current) clearTimeout(hourlyTimeoutRef.current);
-      hourlyTimeoutRef.current = setTimeout(syncWithServer, 3600000);
+      hourlyTimeoutRef.current = setTimeout(() => {
+        isSyncingRef.current = false;
+        syncWithServer();
+      }, 3600000);
     }
 
-    isSyncingRef.current = false;
+    if (success) isSyncingRef.current = false;
   }, []);
 
   useEffect(() => {
     syncWithServer();
 
     const tickerInterval = setInterval(() => {
-      setNow(new Date(Date.now() + offset));
+      setNow(new Date(Date.now() + offsetRef.current));
     }, 1000);
 
     const watchdogInterval = setInterval(() => {
@@ -114,7 +125,7 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
       clearInterval(tickerInterval);
       clearInterval(watchdogInterval);
     };
-  }, [syncWithServer, offset]);
+  }, [syncWithServer]);
 
   // Update immediately when offset changes
   useEffect(() => {
