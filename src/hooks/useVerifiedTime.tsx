@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
+export type SyncStatus = 'syncing' | 'success' | 'error';
+
 interface VerifiedTimeContextType {
   verifiedTime: Date;
   isSynced: boolean;
+  syncStatus: SyncStatus;
   syncNow: () => Promise<void>;
 }
 
@@ -12,41 +15,44 @@ const VerifiedTimeContext = createContext<VerifiedTimeContextType | undefined>(u
 export function VerifiedTimeProvider({ children }: { children: React.ReactNode }) {
   const [offset, setOffset] = useState<number>(0);
   const [isSynced, setIsSynced] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('syncing');
   const [now, setNow] = useState(new Date());
   
   const lastSyncRef = useRef<number>(0);
   const driftWatchdogRef = useRef<number>(Date.now());
+  const failCountRef = useRef(0);
 
   const syncWithServer = useCallback(async () => {
+    setSyncStatus('syncing');
     try {
       const t1 = Date.now();
       
-      // We assume get_server_time exists in Supabase.
-      // SQL: CREATE OR REPLACE FUNCTION get_server_time() RETURNS timestamptz AS $$ BEGIN RETURN now(); END; $$ LANGUAGE plpgsql;
       const { data, error } = await supabase.rpc('get_server_time');
       
-      if (error) {
-        // Fallback: If RPC fails, try a simple select to get server time
-        // This is less efficient but works as a recovery
-        const { data: selectData, error: selectError } = await supabase.from('cars').select('created_at').limit(1).single();
-        // This won't work well if no cars exist or for real-time.
-        // Better to just throw if RPC is missing and let the user know.
-        if (selectError) throw error;
-      }
+      if (error) throw error;
 
       const t2 = Date.now();
       const serverTime = new Date(data).getTime();
       const rtt = t2 - t1;
       
-      // Offset calculation: ServerTime - ClientTime (adjusted for half latency)
       const newOffset = (serverTime + rtt / 2) - t2;
       
       setOffset(newOffset);
       setIsSynced(true);
+      setSyncStatus('success');
+      failCountRef.current = 0;
       lastSyncRef.current = Date.now();
       console.log(`[ClockService] Synced. Latency: ${rtt}ms, Offset: ${newOffset}ms`);
     } catch (err) {
-      console.error('[ClockService] Sync failed:', err);
+      failCountRef.current += 1;
+      console.error(`[ClockService] Sync failed (${failCountRef.current}/5):`, err);
+      
+      if (failCountRef.current >= 5) {
+        setSyncStatus('error');
+      } else {
+        // Retry logic after failure
+        setTimeout(syncWithServer, 5000);
+      }
     }
   }, []);
 
@@ -89,6 +95,7 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
   const value = {
     verifiedTime: now,
     isSynced,
+    syncStatus,
     syncNow: syncWithServer
   };
 

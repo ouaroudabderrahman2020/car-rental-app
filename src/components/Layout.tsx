@@ -1,17 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Languages, Circle } from 'lucide-react';
+import { Languages, Circle, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { supabase } from '../lib/supabase';
-import { useVerifiedTime } from '../hooks/useVerifiedTime';
+import { useVerifiedTime, SyncStatus } from '../hooks/useVerifiedTime';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
+const SyncIcon = ({ status }: { status: SyncStatus }) => {
+  switch (status) {
+    case 'syncing':
+      return <Loader2 className="w-3 h-3 text-primary animate-spin" />;
+    case 'success':
+      return <CheckCircle2 className="w-3 h-3 text-[#31A984]" />;
+    case 'error':
+      return <AlertCircle className="w-3 h-3 text-red-500" />;
+    default:
+      return null;
+  }
+};
+
 export default function Layout({ children }: LayoutProps) {
-  const { verifiedTime } = useVerifiedTime();
+  const { verifiedTime, syncStatus } = useVerifiedTime();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [connectivity, setConnectivity] = useState({ text: 'Active', color: '#31A984' });
 
@@ -57,8 +70,9 @@ export default function Layout({ children }: LayoutProps) {
             RentalCore
           </div>
           <div className="flex items-center gap-4 md:gap-6 text-white overflow-hidden">
-            <div className="text-[10px] md:text-sm font-medium opacity-90 whitespace-nowrap">
-              {formatHeaderClock(verifiedTime)}
+            <div className="flex items-center gap-2 text-[10px] md:text-sm font-medium opacity-90 whitespace-nowrap">
+              <SyncIcon status={syncStatus} />
+              <span>{formatHeaderClock(verifiedTime)}</span>
             </div>
             <div className="relative">
               <button 
