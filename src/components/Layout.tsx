@@ -4,20 +4,16 @@ import { Languages, Circle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { supabase } from '../lib/supabase';
+import { useVerifiedTime } from '../hooks/useVerifiedTime';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const { verifiedTime } = useVerifiedTime();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [connectivity, setConnectivity] = useState({ text: 'Active', color: '#31A984' });
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -62,7 +58,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
           <div className="flex items-center gap-4 md:gap-6 text-white overflow-hidden">
             <div className="text-[10px] md:text-sm font-medium opacity-90 whitespace-nowrap">
-              {formatHeaderClock(currentTime)}
+              {formatHeaderClock(verifiedTime)}
             </div>
             <div className="relative">
               <button 

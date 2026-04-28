@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
 import { useReservations } from '../hooks/useReservations';
+import { useVerifiedTime } from '../hooks/useVerifiedTime';
 
 interface AddReservationModalProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
 
   // UI State
   const { createReservation, loading: isSubmitting } = useReservations();
+  const { verifiedTime } = useVerifiedTime();
   const [availableCars, setAvailableCars] = useState<any[]>([]);
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -57,10 +59,23 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
   // Validation State
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  // Initial pickup date
+  useEffect(() => {
+    if (isOpen && !pickupDate) {
+      // Localize to Morocco/Browser local-offset display but based on verified UTC
+      const localVerified = new Date(verifiedTime);
+      localVerified.setMinutes(localVerified.getMinutes() - localVerified.getTimezoneOffset());
+      setPickupDate(localVerified.toISOString().slice(0, 16));
+    }
+  }, [isOpen, verifiedTime, pickupDate]);
+
   const validateDates = () => {
     if (pickupDate && returnDate) {
       if (new Date(returnDate) <= new Date(pickupDate)) {
         return "Return date must be after pickup date";
+      }
+      if (new Date(pickupDate) < new Date(verifiedTime.getTime() - 300000)) { // 5 min buffer
+        return "Pickup date cannot be in the past (Server Validated)";
       }
     }
     return null;
@@ -83,7 +98,7 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
 
   useEffect(() => {
     const calculate = () => {
-      const now = new Date();
+      const now = verifiedTime;
       const start = new Date(pickupDate);
       const standardEnd = new Date(returnDate);
       const extEnd = extendedReturnDate ? new Date(extendedReturnDate) : null;

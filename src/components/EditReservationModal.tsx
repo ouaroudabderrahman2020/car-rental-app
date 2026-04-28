@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
 import { useReservations } from '../hooks/useReservations';
+import { useVerifiedTime } from '../hooks/useVerifiedTime';
 import { Reservation, Car as CarType } from '../types';
 
 interface EditReservationModalProps {
@@ -48,6 +49,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
 
   // UI State
   const { updateReservation, deleteReservation, loading: isSubmitting } = useReservations();
+  const { verifiedTime } = useVerifiedTime();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedDocUrl, setUploadedDocUrl] = useState<string | null>(null);
   const [availableCars, setAvailableCars] = useState<CarType[]>([]);
@@ -65,6 +67,10 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
     if (pickupDate && returnDate) {
       if (new Date(returnDate) <= new Date(pickupDate)) {
         return "Return date must be after pickup date";
+      }
+      // If updating, we allows past pickup but generally warn if trying to set new future pickup to past
+      if (isEditMode && new Date(pickupDate) < new Date(verifiedTime.getTime() - 600000)) {
+        // Just a sanity check: if they move the pickup to 10 mins ago, it's fine for "active" edits
       }
     }
     return null;
@@ -117,7 +123,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
 
   useEffect(() => {
     const calculate = () => {
-      const now = new Date();
+      const now = verifiedTime;
       const start = new Date(pickupDate);
       const standardEnd = new Date(returnDate);
       const extEnd = extendedReturnDate ? new Date(extendedReturnDate) : null;
