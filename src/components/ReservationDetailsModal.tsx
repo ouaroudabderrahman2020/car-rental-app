@@ -5,6 +5,7 @@ import {
   Upload, Star, Plus, Check, Edit, Lock, Trash2, RotateCcw, ArrowRight, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Reservation } from '../types';
 
@@ -15,6 +16,7 @@ interface ReservationDetailsModalProps {
 }
 
 export default function ReservationDetailsModal({ isOpen, onClose, reservationData }: ReservationDetailsModalProps) {
+  const { t } = useTranslation();
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Form State
@@ -106,7 +108,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
 
   const handleDelete = async () => {
     if (!reservationData?.id) return;
-    if (confirm('Are you sure you want to delete this reservation?')) {
+    if (confirm(t('reservationDetails.deleteConfirm'))) {
       setIsDeleting(true);
       try {
         const { error } = await supabase
@@ -115,11 +117,11 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
           .eq('id', reservationData.id);
         
         if (error) throw error;
-        alert('Reservation Deleted Successfully.');
+        alert(t('editReservation.updateSuccess'));
         onClose();
       } catch (error: any) {
         console.error('Delete error:', error);
-        alert('Failed to delete reservation.');
+        alert(t('common.error'));
       } finally {
         setIsDeleting(false);
       }
@@ -135,10 +137,10 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
         .eq('id', reservationData.id);
       
       if (error) throw error;
-      alert('Reservation Reactivated.');
+      alert(t('reservationDetails.reactivateSuccess'));
       onClose();
     } catch (error: any) {
-      alert('Failed to reactivate.');
+      alert(t('reservationDetails.reactivateError'));
     }
   };
 
@@ -163,11 +165,11 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
         .eq('id', reservationData.id);
 
       if (error) throw error;
-      alert('Changes Saved Successfully.');
+      alert(t('editReservation.updateSuccess'));
       setIsEditMode(false);
       onClose();
     } catch (error: any) {
-      alert('Update failed.');
+      alert(t('common.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -185,8 +187,8 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
         {/* Header */}
         <div className="px-6 py-6 sm:px-10 sm:py-8 bg-midnight-ink flex justify-between items-center shrink-0">
           <div className="space-y-3">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">Reservation Details</h2>
-            <div className="inline-block px-3 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] industrial-shadow">COMPLETED</div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">{t('reservationDetails.title')}</h2>
+            <div className="inline-block px-3 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] industrial-shadow">{reservationData?.status?.toUpperCase()}</div>
           </div>
           <div className="flex items-center gap-4">
             <button 
@@ -194,7 +196,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
               className={`flex items-center gap-2 px-6 py-3 text-white font-bold text-xs uppercase tracking-widest industrial-shadow transition-all ${isEditMode ? 'bg-slate-700' : 'bg-primary'}`}
             >
               {isEditMode ? <Lock className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-              {isEditMode ? 'Lock' : 'Edit'}
+              {isEditMode ? t('editReservation.lock') : t('editReservation.edit')}
             </button>
             <button onClick={onClose} className="p-2 text-white hover:bg-white/10 transition-colors">
               <X className="w-6 h-6" />
@@ -209,13 +211,13 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
             <div className="section-header-rule">
               <div className="section-header-content">
                 <CarIcon className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Car & Schedule</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.carSchedule')}</h3>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div className="space-y-2 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Car Brand Selection</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.brandSelection')}</label>
                 <div className="relative">
                   <input 
                     className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase font-bold disabled:bg-slate-50 disabled:cursor-default"
@@ -224,7 +226,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                     onFocus={() => isEditMode && setCarListActive(true)}
                     onBlur={() => setTimeout(() => setCarListActive(false), 200)}
                     disabled={!isEditMode}
-                    placeholder="Search Brand - Model (Plate)..."
+                    placeholder={t('reservations.form.brandPlaceholder')}
                   />
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40 w-5 h-5" />
                   {carListActive && isEditMode && (
@@ -245,7 +247,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Car Model (Read-Only)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.modelReadOnly')}</label>
                 <input 
                   className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60 disabled:cursor-default"
                   value={carModel}
@@ -255,7 +257,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">License Plate (Read-Only)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.plateReadOnly')}</label>
                 <input 
                   className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60 disabled:cursor-default"
                   value={licensePlate}
@@ -265,7 +267,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Pick-up Date & Time</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.pickupDate')}</label>
                 <input 
                   type="datetime-local" 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
@@ -276,7 +278,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Return Date & Time</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.returnDate')}</label>
                 <input 
                   type="datetime-local" 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
@@ -287,7 +289,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Extended Return Date (Optional)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.extendedReturn')}</label>
                 <input 
                   type="datetime-local" 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
@@ -298,14 +300,14 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Duration</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.duration')}</label>
                 <div className="w-full bg-muted-cream border-l-4 border-midnight-ink p-4 min-h-[60px] flex items-center font-bold text-ink/70">
                   {duration}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Daily Rate ($)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.dailyRate')}</label>
                 <input 
                   type="number" 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow font-bold disabled:bg-slate-50"
@@ -316,7 +318,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
               </div>
 
               <div className="space-y-2 col-span-1 sm:col-span-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Total Price Calculation ($)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.totalPriceCalc')}</label>
                 <div className="w-full bg-muted-mint p-4 min-h-[60px] flex items-center justify-center font-black text-2xl text-ink industrial-shadow border-[1.5px] border-form-border">
                   {totalPrice.toFixed(2)}
                 </div>
@@ -329,12 +331,12 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
             <div className="section-header-rule">
               <div className="section-header-content">
                 <User className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Client Profile</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.clientProfile')}</h3>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div className="sm:col-span-2 space-y-1 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Full Name</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.fullName')}</label>
                 <div className="relative">
                   <input 
                     className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase disabled:bg-slate-50"
@@ -343,6 +345,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                     onFocus={() => isEditMode && setClientListActive(true)}
                     onBlur={() => setTimeout(() => setClientListActive(false), 200)}
                     disabled={!isEditMode}
+                    placeholder={t('reservations.form.clientPlaceholder')}
                   />
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40 w-5 h-5" />
                   {clientListActive && isEditMode && (
@@ -355,7 +358,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Phone Number</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.phoneNumber')}</label>
                 <input 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
                   value={clientPhone}
@@ -364,7 +367,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">ID Card Number</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.idCardNumber')}</label>
                 <input 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
                   value={clientId}
@@ -373,7 +376,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 />
               </div>
               <div className="sm:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Driving Licence Number</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.licenseNumber')}</label>
                 <input 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
                   value={clientLicense}
@@ -389,12 +392,12 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
             <div className="section-header-rule">
               <div className="section-header-content">
                 <CreditCard className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Financial Alignment</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.financialAlignment')}</h3>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Prepayment</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.prepayment')}</label>
                 <input 
                   type="number" 
                   className="w-full p-4 text-xl font-bold bg-white disabled:bg-slate-50"
@@ -404,13 +407,13 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Balance Due</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.balanceDue')}</label>
                 <div className="py-4 text-2xl font-black text-primary px-4 border-[1.5px] border-transparent">
                   ${balanceDue.toFixed(2)}
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Deposit Type</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.depositType')}</label>
                 <select 
                   className="w-full p-4 bg-white text-lg disabled:bg-slate-50"
                   value={depositType}
@@ -423,13 +426,13 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                   }}
                   disabled={!isEditMode}
                 >
-                  <option>Cash</option>
-                  <option>Cheque</option>
-                  <option>None</option>
+                  <option value="Cash">{t('reservations.form.cash')}</option>
+                  <option value="Cheque">{t('reservations.form.cheque')}</option>
+                  <option value="None">{t('reservations.form.none')}</option>
                 </select>
               </div>
               <div className={`space-y-2 transition-opacity ${depositType === 'None' || !isEditMode ? 'opacity-50' : 'opacity-100'}`}>
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Deposit Amt</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.depositAmt')}</label>
                 <input 
                   type="number" 
                   className="w-full p-4 bg-white text-lg disabled:bg-slate-50"
@@ -447,15 +450,15 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
             <div className="section-header-rule">
               <div className="section-header-content">
                 <Monitor className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Logistics Tracking</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.logisticsTracking')}</h3>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
-                { label: 'Odometer Out', val: odometerOut, setter: setOdometerOut },
-                { label: 'Odometer In', val: odometerIn, setter: setOdometerIn },
-                { label: 'Fuel Level Out (%)', val: fuelOut, setter: setFuelOut },
-                { label: 'Fuel Level In (%)', val: fuelIn, setter: setFuelIn },
+                { label: t('reservations.form.odometerOut'), val: odometerOut, setter: setOdometerOut },
+                { label: t('reservations.form.odometerIn'), val: odometerIn, setter: setOdometerIn },
+                { label: t('reservations.form.fuelOut'), val: fuelOut, setter: setFuelOut },
+                { label: t('reservations.form.fuelIn'), val: fuelIn, setter: setFuelIn },
               ].map((field) => (
                 <div key={field.label} className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{field.label}</label>
@@ -475,31 +478,31 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
             <div className="section-header-rule">
               <div className="section-header-content">
                 <ClipboardList className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Details & Condition</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.detailsCondition')}</h3>
               </div>
             </div>
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Cleaned Before</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.cleanedBefore')}</label>
                 <select 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow text-lg disabled:bg-slate-50"
                   value={cleanedBefore}
                   onChange={(e) => setCleanedBefore(e.target.value)}
                   disabled={!isEditMode}
                 >
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
+                  <option value="yes">{t('reservations.form.yes')}</option>
+                  <option value="no">{t('reservations.form.no')}</option>
                 </select>
               </div>
 
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Included Items</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.includedItems')}</label>
                 {isEditMode && (
                   <button 
                     onClick={() => setIsAddingItem(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-midnight-ink text-white font-bold text-xs uppercase tracking-widest industrial-shadow hover:bg-ink transition-all"
                   >
-                    <Plus className="w-4 h-4" /> Add Item
+                    <Plus className="w-4 h-4" /> {t('reservations.form.addItem')}
                   </button>
                 )}
               </div>
@@ -516,7 +519,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                       className="flex-1 p-3 text-sm uppercase industrial-shadow"
                       value={newItemName}
                       onChange={(e) => setNewItemName(e.target.value)}
-                      placeholder="New item name..."
+                      placeholder={t('reservations.form.newItemPlaceholder')}
                       autoFocus
                     />
                     <button 
@@ -529,7 +532,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                       onClick={() => setIsAddingItem(false)}
                       className="px-4 py-3 bg-slate-200 text-ink font-bold text-xs uppercase tracking-widest flex items-center justify-center"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                   </motion.div>
                 )}
@@ -551,7 +554,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Condition Feedback</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.conditionFeedback')}</label>
                 <div className={`flex gap-2 text-midnight-ink transition-opacity ${!isEditMode ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
                   {[1, 2, 3, 4, 5].map((val) => (
                     <button key={val} onClick={() => isEditMode && setRating(val)} className={`transition-all`}>
@@ -564,7 +567,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 </div>
               </div>
               <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Notes</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.notes')}</label>
                 <textarea 
                   className="w-full bg-white p-4 min-h-[100px] industrial-shadow resize-none disabled:bg-slate-50"
                   value={notes}
@@ -587,7 +590,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
             <div className="section-header-rule">
               <div className="section-header-content">
                 <Upload className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Documentation</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.documentation')}</h3>
               </div>
             </div>
             <div className="flex flex-wrap gap-6">
@@ -595,13 +598,13 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 disabled={!isEditMode}
                 className={`flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-sm uppercase tracking-[0.2em] industrial-shadow transition-all ${!isEditMode ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted-mint'}`}
               >
-                <Upload className="w-6 h-6" /> Upload Contract PDF
+                <Upload className="w-6 h-6" /> {t('reservations.form.uploadContract')}
               </button>
               <button 
                 disabled={!isEditMode}
                 className={`flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-sm uppercase tracking-[0.2em] industrial-shadow transition-all ${!isEditMode ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted-mint'}`}
               >
-                <Monitor className="w-6 h-6" /> Gallery
+                <Monitor className="w-6 h-6" /> {t('reservations.form.gallery')}
               </button>
             </div>
           </div>
@@ -610,11 +613,11 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
           <div className="px-6 py-8 sm:px-10 bg-midnight-ink flex flex-col gap-8 shrink-0">
             <div className="flex flex-wrap gap-x-12 gap-y-6 items-center text-white border-l-4 border-primary pl-8 py-2">
               <div>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">Total Price</p>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">{t('reservations.totalAmount')}</p>
                 <p className="text-2xl sm:text-3xl font-black">${totalPrice.toFixed(2)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">Balance Due</p>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">{t('reservations.form.balanceDue')}</p>
                 <p className="text-2xl sm:text-3xl font-black text-primary">${balanceDue.toFixed(2)}</p>
               </div>
             </div>
@@ -626,25 +629,25 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 className="px-4 py-5 text-red-500 font-bold uppercase tracking-[0.2em] border border-red-500/30 hover:bg-red-500/10 transition-colors min-h-[60px] flex items-center justify-center gap-2"
               >
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                DELETE
+                {t('editReservation.delete')}
               </button>
               <button 
                 onClick={onClose}
                 className="px-4 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
               >
-                CLOSE
+                {t('reservationDetails.close')}
               </button>
               <button 
                 onClick={handleReactivate}
                 className="px-4 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
               >
-                <RotateCcw className="w-4 h-4 inline mr-2" /> REACTIVATE
+                <RotateCcw className="w-4 h-4 inline mr-2" /> {t('reservationDetails.reactivate')}
               </button>
               <button 
-                onClick={() => { alert('Rebook initiated'); onClose(); }}
+                onClick={() => { alert(t('reservationDetails.rebookSuccess')); onClose(); }}
                 className="px-4 py-5 bg-slate-700 text-white font-bold uppercase tracking-[0.2em] hover:bg-slate-600 transition-colors min-h-[60px]"
               >
-                <ArrowRight className="w-4 h-4 inline mr-2" /> REBOOK
+                <ArrowRight className="w-4 h-4 inline mr-2" /> {t('reservationDetails.rebook')}
               </button>
               <button 
                 disabled={!isFormValid || !isEditMode || isSubmitting}
@@ -652,7 +655,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 className={`px-4 py-5 bg-white text-midnight-ink font-black uppercase tracking-[0.2em] industrial-shadow transition-all min-h-[60px] flex items-center justify-center gap-2 ${(!isFormValid || !isEditMode || isSubmitting) ? 'opacity-50 pointer-events-none' : 'active:scale-[0.98]'}`}
               >
                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                <Check className="w-4 h-4 inline mr-2" /> {isSubmitting ? 'SAVING...' : 'CONFIRM'}
+                <Check className="w-4 h-4 inline mr-2" /> {isSubmitting ? t('common.saving') : t('reservationDetails.confirm')}
               </button>
             </div>
           </div>

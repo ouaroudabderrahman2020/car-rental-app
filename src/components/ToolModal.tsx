@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import CalculatorTool from './tools/CalculatorTool';
 import CalendarTool from './tools/CalendarTool';
 import ImageToPdf from './tools/ImageToPdf';
@@ -12,6 +13,7 @@ interface ToolModalProps {
 }
 
 export default function ToolModal({ isOpen, onClose, toolName }: ToolModalProps) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   const renderTool = () => {
@@ -28,10 +30,17 @@ export default function ToolModal({ isOpen, onClose, toolName }: ToolModalProps)
             <div className="w-24 h-24 border-4 border-dashed border-midnight-ink rounded-full mx-auto animate-spin-slow flex items-center justify-center">
               <div className="w-12 h-12 bg-midnight-ink rounded-full"></div>
             </div>
-            <p className="font-bold uppercase tracking-[0.3em] text-midnight-ink">Tool Interface Placeholder</p>
+            <p className="font-bold uppercase tracking-[0.3em] text-midnight-ink">{t('common.noData')}</p>
           </div>
         );
     }
+  };
+
+  const getTranslatedToolName = (name: string) => {
+    if (name === 'Calculator') return t('tools.calculator');
+    if (name === 'Calendar') return t('tools.calendar');
+    if (name === 'Image to PDF') return t('tools.imageToPdf');
+    return name;
   };
 
   return (
@@ -44,7 +53,7 @@ export default function ToolModal({ isOpen, onClose, toolName }: ToolModalProps)
         {/* Header */}
         <div className="px-6 py-6 sm:px-8 sm:py-6 bg-midnight-ink flex justify-between items-center shrink-0">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">{toolName}</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">{getTranslatedToolName(toolName)}</h2>
             <div className="h-1 w-12 bg-primary mt-1"></div>
           </div>
           <button 
@@ -66,7 +75,7 @@ export default function ToolModal({ isOpen, onClose, toolName }: ToolModalProps)
             onClick={onClose}
             className="px-10 py-4 bg-midnight-ink text-white font-black uppercase tracking-[0.2em] industrial-shadow hover:bg-primary transition-all active:scale-[0.98]"
           >
-            CLOSE
+            {t('reservationDetails.close')}
           </button>
         </div>
       </motion.div>

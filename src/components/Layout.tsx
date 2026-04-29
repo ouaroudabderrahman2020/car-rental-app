@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Languages, Circle, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../lib/supabase';
 import { useVerifiedTime, SyncStatus } from '../hooks/useVerifiedTime';
@@ -30,8 +31,31 @@ const SyncIcon = ({ status }: { status: SyncStatus }) => {
 
 export default function Layout({ children }: LayoutProps) {
   const { verifiedTime, syncStatus } = useVerifiedTime();
+  const { t, i18n } = useTranslation();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [connectivity, setConnectivity] = useState({ text: 'Active', color: '#31A984' });
+
+  // Handle RTL/LTR direction
+  useEffect(() => {
+    const dir = i18n.language.startsWith('ar') ? 'rtl' : 'ltr';
+    document.documentElement.dir = dir;
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    if (!langDropdownOpen) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.lang-switcher-container')) {
+        setLangDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [langDropdownOpen]);
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -51,7 +75,15 @@ export default function Layout({ children }: LayoutProps) {
   }, []);
 
   const formatHeaderClock = (date: Date) => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const days = [
+      t('common.days.sun', 'Sun'),
+      t('common.days.mon', 'Mon'),
+      t('common.days.tue', 'Tue'),
+      t('common.days.wed', 'Wed'),
+      t('common.days.thu', 'Thu'),
+      t('common.days.fri', 'Fri'),
+      t('common.days.sat', 'Sat')
+    ];
     const dayName = days[date.getDay()];
     const dateStr = date.toLocaleDateString('en-GB');
     const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -59,11 +91,11 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const navItems = [
-    { name: 'Reservations', path: '/' },
-    { name: 'Archive', path: '/archive' },
-    { name: 'Fleet', path: '/fleet' },
-    { name: 'Financials', path: '/financials' },
-    { name: 'Tools', path: '/tools' },
+    { name: t('nav.reservations'), path: '/' },
+    { name: t('nav.archive'), path: '/archive' },
+    { name: t('nav.fleet'), path: '/fleet' },
+    { name: t('nav.financials'), path: '/financials' },
+    { name: t('nav.tools'), path: '/tools' },
   ];
 
   return (
@@ -74,26 +106,28 @@ export default function Layout({ children }: LayoutProps) {
           <div className="text-xl font-black tracking-tighter text-white shrink-0">
             RentalCore
           </div>
-          <div className="flex items-center gap-4 md:gap-6 text-white overflow-hidden">
+          <div className="flex items-center gap-4 md:gap-6 text-white">
             <div className="flex items-center gap-2 text-[10px] md:text-sm font-medium opacity-90 whitespace-nowrap">
               <SyncIcon status={syncStatus} />
               <div className="flex flex-col md:flex-row md:items-center md:gap-2">
                 <span>{formatHeaderClock(verifiedTime)}</span>
                 {syncStatus === 'syncing' && (
-                  <span className="text-[8px] md:text-[10px] text-yellow-400 font-bold uppercase tracking-tighter">Syncing...</span>
+                  <span className="text-[8px] md:text-[10px] text-yellow-400 font-bold uppercase tracking-tighter">{t('common.loading', 'Syncing...')}</span>
                 )}
                 {syncStatus === 'error' && (
-                  <span className="text-[8px] md:text-[10px] text-red-400 font-bold uppercase tracking-tighter">Unverified (Retrying)</span>
+                  <span className="text-[8px] md:text-[10px] text-red-400 font-bold uppercase tracking-tighter">{t('common.unverified', 'Unverified (Retrying)')}</span>
                 )}
               </div>
             </div>
-            <div className="relative">
+            <div className="relative lang-switcher-container">
               <button 
                 onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                className="flex items-center gap-1 p-1.5 hover:bg-white/10 rounded-none transition-all"
+                className="flex items-center gap-1 p-1.5 hover:bg-white/10 rounded-none transition-all border border-transparent hover:border-white/20"
               >
                 <Languages className="w-4 h-4 md:w-5 md:h-5 text-white" />
-                <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">EN</span>
+                <span className="text-[10px] md:text-sm font-bold uppercase tracking-widest leading-none">
+                  {i18n.language.split('-')[0]}
+                </span>
               </button>
               <AnimatePresence>
                 {langDropdownOpen && (
@@ -101,11 +135,27 @@ export default function Layout({ children }: LayoutProps) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 top-full pt-2"
+                    className="absolute end-0 top-full pt-2 z-[70]"
                   >
-                    <div className="bg-white text-midnight shadow-xl border border-border-tint min-w-[120px] py-1">
-                      <button className="w-full text-left block px-4 py-2 text-xs font-bold hover:bg-muted-mint transition-colors">ENGLISH</button>
-                      <button className="w-full text-left block px-4 py-2 text-xs font-bold hover:bg-muted-mint transition-colors">ARABIC</button>
+                    <div className="bg-white text-midnight shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] border-2 border-midnight min-w-[140px] py-1">
+                      <button 
+                        onClick={() => { i18n.changeLanguage('en'); setLangDropdownOpen(false); }}
+                        className={`w-full text-start block px-5 py-3 text-[10px] font-black tracking-widest transition-colors hover:bg-primary hover:text-white ${i18n.language.startsWith('en') ? 'bg-muted-mint text-midnight' : ''}`}
+                      >
+                        ENGLISH
+                      </button>
+                      <button 
+                        onClick={() => { i18n.changeLanguage('fr'); setLangDropdownOpen(false); }}
+                        className={`w-full text-start block px-5 py-3 text-[10px] font-black tracking-widest transition-colors hover:bg-primary hover:text-white ${i18n.language.startsWith('fr') ? 'bg-muted-mint text-midnight' : ''}`}
+                      >
+                        FRANÇAIS
+                      </button>
+                      <button 
+                        onClick={() => { i18n.changeLanguage('ar'); setLangDropdownOpen(false); }}
+                        className={`w-full text-start block px-5 py-3 text-[10px] font-black tracking-widest transition-colors hover:bg-primary hover:text-white ${i18n.language.startsWith('ar') ? 'bg-muted-mint text-midnight' : ''}`}
+                      >
+                        العربية
+                      </button>
                     </div>
                   </motion.div>
                 )}
@@ -144,16 +194,16 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="sticky bottom-0 w-full bg-slate-blue text-white py-2 z-[100] border-t border-white/5 pb-2 px-2">
         <div className="max-w-[1440px] mx-auto px-4 md:px-margin flex flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest shrink-0">
-            <span className="opacity-70 hidden xs:inline">Server Connection</span>
+            <span className="opacity-70 hidden xs:inline">{t('common.serverConnection', 'Server Connection')}</span>
             <div className="flex items-center gap-1.5 bg-black/20 px-2 py-0.5">
               <Circle 
                 className="w-2 h-2 fill-current" 
                 style={{ color: connectivity.color, filter: `drop-shadow(0 0 4px ${connectivity.color})` }} 
               />
-              <span id="conn-status">{connectivity.text}</span>
+              <span id="conn-status">{connectivity.text === 'Active' ? t('common.active') : t('common.offline', 'Offline')}</span>
             </div>
           </div>
-          <div className="text-[9px] md:text-[10px] opacity-40 text-right">
+          <div className="text-[9px] md:text-[10px] opacity-40 text-end">
             © 2026 RentalCore Enterprise
           </div>
         </div>

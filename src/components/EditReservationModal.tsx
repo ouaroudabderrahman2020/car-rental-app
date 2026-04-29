@@ -5,6 +5,7 @@ import {
   Upload, Star, Plus, Check, Edit, Lock, Trash2, CheckCircle, Loader2, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
 import { useReservations } from '../hooks/useReservations';
@@ -18,6 +19,7 @@ interface EditReservationModalProps {
 }
 
 export default function EditReservationModal({ isOpen, onClose, reservationData }: EditReservationModalProps) {
+  const { t } = useTranslation();
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Form State (initialized from reservationData if provided)
@@ -66,7 +68,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
   const validateDates = () => {
     if (pickupDate && returnDate) {
       if (new Date(returnDate) <= new Date(pickupDate)) {
-        return "Return date must be after pickup date";
+        return t('addReservation.errors.dateRange');
       }
       // If updating, we allows past pickup but generally warn if trying to set new future pickup to past
       if (isEditMode && new Date(pickupDate) < new Date(verifiedTime.getTime() - 600000)) {
@@ -133,19 +135,19 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
       if (start.getTime() && end.getTime()) {
         if (start > now) {
           setReservationState({ 
-            label: 'RESERVED', 
+            label: t('common.reserved'), 
             color: 'text-amber-600', 
             borderColor: 'border-amber-400' 
           });
         } else if (now > end) {
           setReservationState({ 
-            label: 'OVERDUE', 
+            label: t('common.overdue'), 
             color: 'text-red-600', 
             borderColor: 'border-red-500' 
           });
         } else {
           setReservationState({ 
-            label: 'ACTIVE', 
+            label: t('common.active'), 
             color: 'text-primary', 
             borderColor: 'border-primary' 
           });
@@ -158,7 +160,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
         const totalHours = diffMs / (1000 * 60 * 60);
         const d = Math.floor(totalHours / 24);
         const h = Math.floor(totalHours % 24);
-        setDuration(`${d} Days, ${h} Hours`);
+        setDuration(`${d} ${t('addReservation.days')}, ${h} ${t('addReservation.hours')}`);
 
         const billableDays = Math.ceil(totalHours / 24);
         const total = billableDays * dailyRate;
@@ -191,9 +193,9 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
     const result = await gasService.uploadFile(file);
     if (result.success) {
       setUploadedDocUrl(result.fileUrl || 'File Uploaded');
-      alert('Updated document uploaded successfully.');
+      alert(t('editReservation.updateDocSuccess'));
     } else {
-      alert(`Upload failed: ${result.error}`);
+      alert(`${t('common.error')}: ${result.error}`);
     }
     setIsUploading(false);
   };
@@ -205,13 +207,13 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
     const newErrors: { [key: string]: string } = {};
     const dateError = validateDates();
     if (dateError) newErrors.dates = dateError;
-    if (clientPhone && !validatePhone(clientPhone)) newErrors.phone = 'Invalid phone format';
-    if (clientId && !validateId(clientId)) newErrors.id = 'Invalid ID format';
-    if (clientLicense && !validateId(clientLicense)) newErrors.license = 'Invalid license format';
+    if (clientPhone && !validatePhone(clientPhone)) newErrors.phone = t('addReservation.errors.invalidPhone');
+    if (clientId && !validateId(clientId)) newErrors.id = t('addReservation.errors.invalidId');
+    if (clientLicense && !validateId(clientLicense)) newErrors.license = t('addReservation.errors.invalidLicense');
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      alert(newErrors.dates || 'Please fix validation errors before proceeding.');
+      alert(newErrors.dates || t('common.forms.fillRequired'));
       return;
     }
 
@@ -235,7 +237,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
 
       if (error) throw new Error(error);
 
-      alert('Changes Saved Successfully.');
+      alert(t('editReservation.updateSuccess'));
       setIsEditMode(false);
       onClose();
     } catch (error: any) {
@@ -245,10 +247,10 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
   };
 
   const handleDelete = async () => {
-    if(confirm('Are you sure you want to delete this reservation? This action cannot be undone.')) {
+    if(confirm(t('editReservation.deleteConfirm'))) {
       const { error } = await deleteReservation(reservationData.id, reservationData.car_id);
       if (error) {
-        alert(`Delete failed: ${error}`);
+        alert(`${t('common.error')}: ${error}`);
       } else {
         onClose();
       }
@@ -280,11 +282,11 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
           .eq('id', selectedCarId);
       }
 
-      alert('Reservation marked as completed and vehicle returned to fleet.');
+      alert(t('editReservation.completeConfirm'));
       onClose();
     } catch (error) {
       console.error('Completion error:', error);
-      alert('Status update failed');
+      alert(t('common.error'));
     }
   };
 
@@ -299,14 +301,14 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
       >
         {/* Header */}
         <div className="px-6 py-6 sm:px-10 sm:py-8 bg-midnight-ink flex justify-between items-center shrink-0">
-          <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">Edit Reservation</h2>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">{t('editReservation.title')}</h2>
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsEditMode(!isEditMode)}
               className={`flex items-center gap-2 px-6 py-3 text-white font-bold text-xs uppercase tracking-widest industrial-shadow hover:bg-opacity-90 transition-all ${isEditMode ? 'bg-slate-700' : 'bg-primary'}`}
             >
               {isEditMode ? <Lock className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-              {isEditMode ? 'Lock' : 'Edit'}
+              {isEditMode ? t('editReservation.lock') : t('editReservation.edit')}
             </button>
             <button onClick={onClose} className="p-2 text-white hover:bg-white/10 transition-colors">
               <X className="w-6 h-6" />
@@ -321,13 +323,13 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
             <div className="section-header-rule">
               <div className="section-header-content">
                 <CarIcon className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Car & Schedule</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.carSchedule')}</h3>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div className="space-y-2 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Car Brand Selection</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.brandSelect')}</label>
                 <div className="relative">
                   <input 
                     className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase font-bold disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -335,7 +337,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                     onChange={(e) => setCarBrand(e.target.value)}
                     onFocus={() => isEditMode && setCarListActive(true)}
                     onBlur={() => setTimeout(() => setCarListActive(false), 200)}
-                    placeholder="Search Brand - Model (Plate)..."
+                    placeholder={t('addReservation.searchPlaceholder')}
                     disabled={!isEditMode}
                   />
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40" />
@@ -357,7 +359,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                           <span className={`text-[10px] px-2 py-0.5 font-bold uppercase ${
                             car.status === 'Available' ? 'bg-primary/20 text-primary' : 'bg-indigo-100 text-indigo-600'
                           }`}>
-                            {car.status}
+                            {car.status === 'Available' ? t('common.available') : car.status}
                           </span>
                         </div>
                       ))}
@@ -367,7 +369,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Car Model (Read-Only)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.modelReadOnly')}</label>
                 <input 
                   className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60 disabled:cursor-not-allowed"
                   value={carModel}
@@ -377,7 +379,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">License Plate (Read-Only)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.plateReadOnly')}</label>
                 <input 
                   className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60 disabled:cursor-not-allowed"
                   value={licensePlate}
@@ -387,7 +389,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Pick-up Date & Time</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.pickupDate')}</label>
                 <input 
                   type="datetime-local" 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -398,7 +400,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Return Date & Time</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.returnDate')}</label>
                 <input 
                   type="datetime-local" 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -409,7 +411,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Extended Return Date (Optional)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.extendedDate')}</label>
                 <input 
                   type="datetime-local" 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -420,21 +422,21 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">State</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.status')}</label>
                 <div className={`w-full bg-muted-cream border-l-4 ${reservationState.borderColor} p-4 min-h-[60px] flex items-center font-black uppercase tracking-widest ${reservationState.color}`}>
                   {reservationState.label}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Duration</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.duration')}</label>
                 <div className="w-full bg-muted-cream border-l-4 border-midnight-ink p-4 min-h-[60px] flex items-center font-bold text-ink/70">
                   {duration}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Daily Rate ($)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.dailyRate')}</label>
                 <input 
                   type="number" 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow font-bold disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -445,7 +447,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2 col-span-1 sm:col-span-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Total Price Calculation ($)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.totalPrice')}</label>
                 <div className="w-full bg-muted-mint p-4 min-h-[60px] flex items-center justify-center font-black text-2xl text-ink industrial-shadow border-[1.5px] border-form-border">
                   {totalPrice.toFixed(2)}
                 </div>
@@ -458,13 +460,13 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
             <div className="section-header-rule">
               <div className="section-header-content">
                 <User className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Client Profile</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.clientProfile')}</h3>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div className="sm:col-span-2 space-y-2 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Full Name</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.client')}</label>
                 <div className="relative">
                   <input 
                     className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -472,7 +474,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                     onChange={(e) => setClientName(e.target.value)}
                     onFocus={() => isEditMode && setClientListActive(true)}
                     onBlur={() => setTimeout(() => setClientListActive(false), 200)}
-                    placeholder="Search client name..."
+                    placeholder={t('addReservation.clientSearchPlaceholder')}
                     disabled={!isEditMode}
                   />
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40" />
@@ -487,7 +489,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Phone Number</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.phone')}</label>
                 <input 
                   type="tel" 
                   className={`w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.phone ? 'border-2 border-red-500' : ''}`}
@@ -499,7 +501,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">ID Card Number</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.idCard')}</label>
                 <input 
                   className={`w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.id ? 'border-2 border-red-500' : ''}`}
                   value={clientId}
@@ -510,7 +512,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="sm:col-span-2 space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Driving Licence Number</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.drivingLicense')}</label>
                 <input 
                   className={`w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.license ? 'border-2 border-red-500' : ''}`}
                   value={clientLicense}
@@ -527,13 +529,13 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
             <div className="section-header-rule">
               <div className="section-header-content">
                 <CreditCard className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Financial Alignment</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.financialAlignment')}</h3>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Prepayment</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.prepayment')}</label>
                 <input 
                   type="number" 
                   className="w-full p-4 text-xl font-bold bg-white disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -545,14 +547,14 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Balance Due</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.balanceDue')}</label>
                 <div className="py-4 text-2xl font-black text-primary px-4 border-[1.5px] border-transparent">
                   ${balanceDue.toFixed(2)}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Deposit Type</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.depositType')}</label>
                 <select 
                   className="w-full p-4 bg-white text-lg disabled:bg-slate-100 disabled:cursor-not-allowed"
                   value={depositType}
@@ -565,14 +567,14 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                   }}
                   disabled={!isEditMode}
                 >
-                  <option>None</option>
-                  <option>Cash</option>
-                  <option>Cheque</option>
+                  <option value="None">{t('addReservation.depositNone', 'None')}</option>
+                  <option value="Cash">{t('addReservation.depositCash', 'Cash')}</option>
+                  <option value="Cheque">{t('addReservation.depositCheque', 'Cheque')}</option>
                 </select>
               </div>
 
               <div className={`space-y-2 transition-opacity ${depositType === 'None' || !isEditMode ? 'opacity-50' : 'opacity-100'}`}>
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Deposit Amt</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.depositAmt')}</label>
                 <input 
                   type="number" 
                   className="w-full p-4 bg-white text-lg disabled:bg-slate-100 disabled:cursor-not-allowed"
@@ -590,16 +592,16 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
             <div className="section-header-rule">
               <div className="section-header-content">
                 <Monitor className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Logistics Tracking</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.logisticsTracking')}</h3>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
-                { label: 'Odometer Out', val: odometerOut, setter: setOdometerOut, placeholder: 'KM' },
-                { label: 'Odometer In', val: odometerIn, setter: setOdometerIn, placeholder: 'KM' },
-                { label: 'Fuel Level Out (%)', val: fuelOut, setter: setFuelOut, placeholder: '%' },
-                { label: 'Fuel Level In (%)', val: fuelIn, setter: setFuelIn, placeholder: '%' },
+                { label: t('addReservation.odometerOut'), val: odometerOut, setter: setOdometerOut, placeholder: 'KM' },
+                { label: t('addReservation.odometerIn'), val: odometerIn, setter: setOdometerIn, placeholder: 'KM' },
+                { label: t('addReservation.fuelLevelOut'), val: fuelOut, setter: setFuelOut, placeholder: '%' },
+                { label: t('addReservation.fuelLevelIn'), val: fuelIn, setter: setFuelIn, placeholder: '%' },
               ].map((field) => (
                 <div key={field.label} className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{field.label}</label>
@@ -620,32 +622,32 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
             <div className="section-header-rule">
               <div className="section-header-content">
                 <ClipboardList className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Details & Condition</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.detailsCondition')}</h3>
               </div>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Cleaned Before</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.cleanedBefore')}</label>
                 <select 
                   className="w-full bg-white p-4 min-h-[60px] industrial-shadow text-lg disabled:bg-slate-100 disabled:cursor-not-allowed"
                   value={cleanedBefore}
                   onChange={(e) => setCleanedBefore(e.target.value)}
                   disabled={!isEditMode}
                 >
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
+                  <option value="yes">{t('common.yes')}</option>
+                  <option value="no">{t('common.no')}</option>
                 </select>
               </div>
 
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Included Items</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.includedItems')}</label>
                 {isEditMode && (
                   <button 
                     onClick={() => setIsAddingItem(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-midnight-ink text-white font-bold text-xs uppercase tracking-widest industrial-shadow hover:bg-ink transition-all"
                   >
-                    <Plus className="w-4 h-4" /> Add Item
+                    <Plus className="w-4 h-4" /> {t('addReservation.addItem')}
                   </button>
                 )}
               </div>
@@ -662,7 +664,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                       className="flex-1 p-3 text-sm uppercase industrial-shadow"
                       value={newItemName}
                       onChange={(e) => setNewItemName(e.target.value)}
-                      placeholder="New item name..."
+                      placeholder={t('addReservation.itemNamePlaceholder')}
                       autoFocus
                     />
                     <button 
@@ -675,7 +677,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                       onClick={() => setIsAddingItem(false)}
                       className="px-4 py-3 bg-slate-200 text-ink font-bold text-xs uppercase tracking-widest flex items-center justify-center"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                   </motion.div>
                 )}
@@ -698,7 +700,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Condition Feedback</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.conditionFeedback')}</label>
                 <div className={`flex gap-2 text-midnight-ink transition-opacity ${!isEditMode ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
                   {[1, 2, 3, 4, 5].map((val) => (
                     <button 
@@ -716,7 +718,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
               </div>
 
               <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Notes</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.notes')}</label>
                 <textarea 
                   className="w-full bg-white p-4 min-h-[100px] industrial-shadow resize-none overflow-hidden disabled:bg-slate-100 disabled:cursor-not-allowed"
                   value={notes}
@@ -728,7 +730,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                     }
                   }}
                   ref={notesRef}
-                  placeholder="Enter specific observations..."
+                  placeholder={t('addReservation.notesPlaceholder')}
                   disabled={!isEditMode}
                 />
               </div>
@@ -757,14 +759,14 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                   className={`flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-sm uppercase tracking-[0.2em] industrial-shadow transition-all cursor-pointer ${!isEditMode || isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted-mint'}`}
                 >
                   {isUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
-                  {isUploading ? 'Uploading...' : 'Update Contract PDF'}
+                  {isUploading ? t('addReservation.uploading') : t('editReservation.updateDocSuccess')}
                 </label>
               </div>
 
               {uploadedDocUrl && (
                 <div className="flex items-center gap-2 p-4 bg-primary/10 text-primary border border-primary/20">
                   <FileText className="w-5 h-5" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-midnight-ink">New Doc Ready</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-midnight-ink">{t('editReservation.newDocReady')}</span>
                 </div>
               )}
 
@@ -772,7 +774,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                 disabled={!isEditMode}
                 className={`flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-sm uppercase tracking-[0.2em] industrial-shadow transition-all ${!isEditMode ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted-mint'}`}
               >
-                <Monitor className="w-6 h-6" /> Images to PDF
+                <Monitor className="w-6 h-6" /> {t('addReservation.imagesToPdf')}
               </button>
             </div>
           </div>
@@ -781,11 +783,11 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
           <div className="px-6 py-8 sm:px-10 bg-midnight-ink flex flex-col gap-8 shrink-0">
             <div className="flex flex-wrap gap-x-12 gap-y-6 items-center text-white border-l-4 border-primary pl-8 py-2">
               <div>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">Total Price</p>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">{t('addReservation.totalPrice')}</p>
                 <p className="text-2xl sm:text-3xl font-black">${totalPrice.toFixed(2)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">Balance Due</p>
+                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">{t('addReservation.balanceDue')}</p>
                 <p className="text-2xl sm:text-3xl font-black text-primary">${balanceDue.toFixed(2)}</p>
               </div>
             </div>
@@ -795,19 +797,19 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                 onClick={handleDelete}
                 className="px-4 py-5 text-red-500 font-bold uppercase tracking-[0.2em] border border-red-500/30 hover:bg-red-500/10 transition-colors min-h-[60px]"
               >
-                <Trash2 className="w-4 h-4 inline mr-2" /> DELETE
+                <Trash2 className="w-4 h-4 inline mr-2" /> {t('editReservation.delete')}
               </button>
               <button 
                 onClick={onClose}
                 className="px-4 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
               >
-                CANCEL
+                {t('common.cancel')}
               </button>
               <button 
                 onClick={handleComplete}
                 className="px-4 py-5 bg-slate-700 text-white font-bold uppercase tracking-[0.2em] hover:bg-slate-600 transition-colors min-h-[60px]"
               >
-                <CheckCircle className="w-4 h-4 inline mr-2" /> COMPLETED
+                <CheckCircle className="w-4 h-4 inline mr-2" /> {t('editReservation.complete')}
               </button>
               <button 
                 disabled={!isFormValid || !isEditMode || isSubmitting}
@@ -815,7 +817,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
                 className={`px-4 py-5 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow transition-all min-h-[60px] flex items-center justify-center gap-2 ${(!isFormValid || !isEditMode || isSubmitting) ? 'opacity-50 pointer-events-none' : 'active:scale-[0.98]'}`}
               >
                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isSubmitting ? 'SAVING...' : 'CONFIRM CHANGES'}
+                {isSubmitting ? t('addReservation.recording') : t('editReservation.save')}
               </button>
             </div>
           </div>

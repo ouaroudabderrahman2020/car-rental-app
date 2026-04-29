@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type ViewMode = 'day' | 'month' | 'year';
 
 export default function CalendarTool() {
+  const { t, i18n } = useTranslation();
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -17,8 +19,8 @@ export default function CalendarTool() {
 
   const renderHeader = () => {
     let title = '';
-    if (viewMode === 'day') title = currentDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    if (viewMode === 'month') title = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    if (viewMode === 'day') title = currentDate.toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (viewMode === 'month') title = currentDate.toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' });
     if (viewMode === 'year') title = currentDate.getFullYear().toString();
 
     return (
@@ -30,7 +32,7 @@ export default function CalendarTool() {
               onClick={() => setViewMode(mode)}
               className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest industrial-shadow transition-all ${viewMode === mode ? 'bg-primary text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
             >
-              {mode}
+              {mode === 'day' ? t('common.days.sun').slice(0, 3) : mode === 'month' ? t('nav.fleet').slice(0, 3) : t('fleet.year')}
             </button>
           ))}
         </div>
@@ -46,9 +48,9 @@ export default function CalendarTool() {
   const renderDayView = () => (
     <div className="p-8 flex flex-col items-center justify-center space-y-4">
       <div className="text-8xl font-black text-midnight-ink">{currentDate.getDate()}</div>
-      <div className="text-2xl font-bold text-primary uppercase tracking-[0.2em]">{currentDate.toLocaleDateString('en-US', { weekday: 'long' })}</div>
+      <div className="text-2xl font-bold text-primary uppercase tracking-[0.2em]">{currentDate.toLocaleDateString(i18n.language, { weekday: 'long' })}</div>
       <div className="w-full max-w-md bg-muted-cream p-4 border-l-4 border-midnight-ink text-sm font-medium">
-        No specific schedule records found for this workstation today.
+        {t('common.noData')}
       </div>
     </div>
   );
@@ -61,10 +63,15 @@ export default function CalendarTool() {
     for (let i = 0; i < firstDay; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
+    const weekDays = [
+      t('common.days.sun'), t('common.days.mon'), t('common.days.tue'), 
+      t('common.days.wed'), t('common.days.thu'), t('common.days.fri'), t('common.days.sat')
+    ];
+
     return (
       <div className="p-4 grid grid-cols-7 gap-1 font-sans">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-          <div key={d} className="text-center py-2 text-[10px] font-black uppercase tracking-widest text-midnight-ink/40">{d}</div>
+        {weekDays.map(d => (
+          <div key={d} className="text-center py-2 text-[10px] font-black uppercase tracking-widest text-midnight-ink/40">{d.slice(0, 3)}</div>
         ))}
         {days.map((day, idx) => (
           <div 
@@ -79,7 +86,7 @@ export default function CalendarTool() {
   };
 
   const renderYearView = () => {
-    const months = Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleDateString('en-US', { month: 'short' }));
+    const months = Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleDateString(i18n.language, { month: 'short' }));
     return (
       <div className="p-8 grid grid-cols-3 sm:grid-cols-4 gap-4 font-sans">
         {months.map((m, idx) => (

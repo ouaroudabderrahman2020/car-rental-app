@@ -4,6 +4,7 @@ import {
   Settings, Trash2, Plus, Check, ChevronDown, Edit, Lock, Loader2 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { Car } from '../types';
 
@@ -27,6 +28,7 @@ interface EssentialItem {
 }
 
 export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetailsModalProps) {
+  const { t } = useTranslation();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -219,12 +221,12 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
         await supabase.from('maintenance_intervals').insert(maintenanceData);
       }
 
-      alert('Vehicle Profile Updated Successfully.');
+      alert(t('carDetails.updateSuccess'));
       setIsEditMode(false);
       onClose();
     } catch (error: any) {
       console.error('Update error:', error);
-      alert('Failed to update vehicle profile.');
+      alert(t('carDetails.updateError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -232,7 +234,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
 
   const handleRemoveCar = async () => {
     if (!carData?.id) return;
-    if (confirm('Are you sure you want to remove this vehicle from the fleet?')) {
+    if (confirm(t('carDetails.removeCarConfirm'))) {
       try {
         const { error } = await supabase
           .from('cars')
@@ -241,7 +243,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
         if (error) throw error;
         onClose();
       } catch (error) {
-        alert('Delete failed');
+        alert(t('common.error'));
       }
     }
   };
@@ -258,8 +260,8 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
         {/* Header */}
         <div className="px-6 py-6 sm:px-10 sm:py-8 bg-midnight-ink flex justify-between items-center shrink-0">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">Car Details</h2>
-            <p className="text-white/80 text-sm sm:text-base">Review or update existing vehicle profile in fleet.</p>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">{t('carDetails.title')}</h2>
+            <p className="text-white/80 text-sm sm:text-base">{t('carDetails.subtitle')}</p>
           </div>
           <div className="flex items-center gap-4">
             <button 
@@ -267,7 +269,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
               className={`flex items-center gap-2 px-4 py-2 text-white font-bold text-xs uppercase tracking-widest industrial-shadow transition-all ${isEditMode ? 'bg-midnight-ink' : 'bg-primary'}`}
             >
               {isEditMode ? <Lock className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-              <span>{isEditMode ? 'Lock & Save' : 'Edit Profile'}</span>
+              <span>{isEditMode ? t('carDetails.lockSave') : t('carDetails.editProfile')}</span>
             </button>
             <button onClick={onClose} className="p-2 text-white hover:bg-white/10 transition-colors">
               <X className="w-6 h-6" />
@@ -282,16 +284,16 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
             <div className="section-header-rule">
               <div className="section-header-content">
                 <CarIcon className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Vehicle Specifications</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('carDetails.specs')}</h3>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { label: 'Brand', val: brand, setter: setBrand },
-                { label: 'Model', val: model, setter: setModel },
-                { label: 'License Plate', val: plate, setter: setPlate, extra: 'uppercase' },
-                { label: 'Color', val: color, setter: setColor },
+                { label: t('carForm.brand'), val: brand, setter: setBrand },
+                { label: t('carForm.model'), val: model, setter: setModel },
+                { label: t('carForm.plate'), val: plate, setter: setPlate, extra: 'uppercase' },
+                { label: t('carForm.color'), val: color, setter: setColor },
               ].map(field => (
                 <div key={field.label} className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{field.label}</label>
@@ -300,13 +302,13 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                     value={field.val}
                     onChange={(e) => field.setter(e.target.value)}
                     disabled={!isEditMode}
-                    placeholder="Enter details..."
+                    placeholder={t('carForm.placeholder')}
                   />
                 </div>
               ))}
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Fuel Type</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.fuelType')}</label>
                 <div className="relative">
                   <select 
                     className="w-full bg-white p-4 industrial-shadow appearance-none disabled:bg-slate-50 disabled:cursor-default"
@@ -314,6 +316,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                     onChange={(e) => setFuelType(e.target.value)}
                     disabled={!isEditMode}
                   >
+                    <option>{t('common.noData')}</option>
                     <option>Petrol</option>
                     <option>Diesel</option>
                     <option>Electric</option>
@@ -324,7 +327,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Transmission</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.transmission')}</label>
                 <div className="flex industrial-shadow h-[60px]">
                   <button 
                     disabled={!isEditMode}
@@ -344,31 +347,31 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Starting Odometer (KM)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.odometer')}</label>
                 <input 
                   type="number"
                   className="w-full bg-white p-4 industrial-shadow disabled:bg-slate-50"
                   value={odometer}
                   onChange={(e) => setOdometer(e.target.value)}
                   disabled={!isEditMode}
-                  placeholder="Enter details..."
+                  placeholder={t('carForm.placeholder')}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Daily Rental Price (USD)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.dailyRate')}</label>
                 <input 
                   type="number"
                   className="w-full bg-white p-4 industrial-shadow disabled:bg-slate-50"
                   value={dailyRate}
                   onChange={(e) => setDailyRate(e.target.value)}
                   disabled={!isEditMode}
-                  placeholder="Enter details..."
+                  placeholder={t('carForm.placeholder')}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Starting Fuel Level (%)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.startingFuel')}</label>
                 <input 
                   type="number"
                   min="0"
@@ -382,7 +385,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
               </div>
 
               <div className="sm:col-span-2 lg:col-span-4 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Current Status</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.status')}</label>
                 <div className="relative">
                   <select 
                     className={`w-full bg-white p-4 industrial-shadow border-l-4 ${getStatusColor()} appearance-none font-bold disabled:bg-slate-50`}
@@ -390,9 +393,9 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                     onChange={(e) => setStatus(e.target.value)}
                     disabled={!isEditMode}
                   >
-                    <option className="text-green-600 font-bold">Available</option>
-                    <option className="text-amber-600 font-bold">In Maintenance</option>
-                    <option className="text-slate-600 font-bold">Decommissioned</option>
+                    <option value="Available" className="text-green-600 font-bold">{t('common.available')}</option>
+                    <option value="In Maintenance" className="text-amber-600 font-bold">{t('common.maintenance')}</option>
+                    <option value="Decommissioned" className="text-slate-600 font-bold">{t('common.decommissioned')}</option>
                   </select>
                   {isEditMode && <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40 pointer-events-none" />}
                 </div>
@@ -405,60 +408,60 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
             <div className="section-header-rule">
               <div className="section-header-content">
                 <Camera className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Media & Equipment</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('carDetails.media')}</h3>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Vehicle Image Upload</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carDetails.imageUpload')}</label>
                 <div className={`w-full aspect-video border-2 border-dashed border-form-border bg-muted-cream flex flex-col items-center justify-center transition-colors ${isEditMode ? 'cursor-pointer hover:bg-muted-mint' : 'cursor-default'}`}>
                   <Camera className="w-12 h-12 text-midnight-ink/40" />
-                  <p className="mt-2 text-xs font-bold uppercase tracking-widest text-midnight-ink/60">Drag or click to upload photo</p>
+                  <p className="mt-2 text-xs font-bold uppercase tracking-widest text-midnight-ink/60">{t('carDetails.imageHint')}</p>
                 </div>
               </div>
               <div className="space-y-6">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Documentation PDF Upload</label>
+                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carDetails.docUpload')}</label>
                   <button 
                     disabled={!isEditMode}
                     className={`w-full flex items-center justify-between gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-xs uppercase tracking-[0.2em] industrial-shadow transition-all ${isEditMode ? 'hover:bg-muted-mint' : 'opacity-70 cursor-default'}`}
                   >
-                    <span>Car Documentation PDF</span>
+                    <span>{t('carDetails.docLabel')}</span>
                     <Upload className="w-5 h-5" />
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">GPS SIM Number</label>
+                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.gpsSim')}</label>
                     <input 
                       className="w-full bg-white p-4 industrial-shadow disabled:bg-slate-50"
                       value={gpsSim}
                       onChange={(e) => setGpsSim(e.target.value)}
                       disabled={!isEditMode}
-                      placeholder="Enter details..."
+                      placeholder={t('carForm.placeholder')}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Number of Seats</label>
+                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.seats')}</label>
                     <input 
                       type="number"
                       className="w-full bg-white p-4 industrial-shadow disabled:bg-slate-50"
                       value={seats}
                       onChange={(e) => setSeats(e.target.value)}
                       disabled={!isEditMode}
-                      placeholder="Enter details..."
+                      placeholder={t('carForm.placeholder')}
                     />
                   </div>
                 </div>
               </div>
               <div className="lg:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Damage Notes</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.damageNotes')}</label>
                 <textarea 
                   className="w-full bg-white p-4 min-h-[100px] industrial-shadow resize-none disabled:bg-slate-50"
                   value={damageNotes}
                   onChange={(e) => setDamageNotes(e.target.value)}
                   disabled={!isEditMode}
-                  placeholder="Enter details..."
+                  placeholder={t('carForm.placeholder')}
                 />
               </div>
             </div>
@@ -469,19 +472,19 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
             <div className="section-header-rule">
               <div className="section-header-content">
                 <Verified className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Included Essentials</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('carDetails.essentials')}</h3>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Included Items</label>
+                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.includedItems')}</label>
                   {isEditMode && (
                     <button 
                       onClick={() => setIsAddingEssential(true)}
                       className="text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
                     >
-                      <Plus className="w-4 h-4" /> Add Item
+                      <Plus className="w-4 h-4" /> {t('carDetails.addItem')}
                     </button>
                   )}
                 </div>
@@ -498,7 +501,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                           className="flex-1 p-2 text-sm bg-white border-form-border"
                           value={newEssentialText}
                           onChange={(e) => setNewEssentialText(e.target.value)}
-                          placeholder="Item name..."
+                          placeholder={t('carDetails.itemName')}
                           autoFocus
                         />
                         <button 
@@ -543,11 +546,11 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                 </div>
               </div>
               <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Paperwork & Compliance</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carDetails.paperwork')}</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
-                    'Registration Card ID', 'Insurance Expiration', 
-                    'Technical Inspection', 'Tax Renewal Date'
+                    t('carForm.registrationCard'), t('carForm.insuranceExpir'), 
+                    t('carForm.techInspection'), t('carForm.taxRenewal')
                   ].map(docLabel => (
                     <div key={docLabel} className="space-y-1">
                       <p className="text-[10px] font-bold uppercase text-midnight-ink/60">{docLabel}</p>
@@ -568,7 +571,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
             <div className="section-header-rule">
               <div className="section-header-content">
                 <Settings className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Maintenance Intervals</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('carDetails.maintenance')}</h3>
               </div>
             </div>
             <div className="space-y-4">
@@ -578,7 +581,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                     onClick={handleAddInterval}
                     className="flex items-center gap-2 px-4 py-2 bg-midnight-ink text-white font-bold text-xs uppercase tracking-widest industrial-shadow hover:bg-ink transition-all"
                   >
-                    <Plus className="w-4 h-4" /> Add interval
+                    <Plus className="w-4 h-4" /> {t('carDetails.addInterval')}
                   </button>
                 )}
               </div>
@@ -586,16 +589,16 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                 <table className="w-full border-collapse">
                   <thead className="hidden md:table-header-group">
                     <tr className="bg-muted-cream text-left">
-                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">Interval type</th>
-                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">Interval value</th>
-                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">Last completed</th>
+                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carDetails.intervalType')}</th>
+                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carDetails.intervalValue')}</th>
+                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carDetails.lastCompleted')}</th>
                       <th className="p-3 w-[60px] border border-form-border"></th>
                     </tr>
                   </thead>
                   <tbody className="flex flex-col gap-4 md:table-row-group">
                     {intervals.map((interval) => (
                       <tr key={interval.id} className="group border border-form-border p-4 md:p-0 flex flex-col md:table-row bg-white industrial-shadow md:shadow-none">
-                        <td className="md:p-2 md:border md:border-form-border before:content-['INTERVAL_TYPE'] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0">
+                        <td className="md:p-2 md:border md:border-form-border before:content-[attr(data-label)] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0" data-label={t('carDetails.intervalType').toUpperCase()}>
                           <select 
                             className="w-full p-2 text-sm bg-transparent border-none focus:ring-0 disabled:bg-slate-50"
                             value={interval.type}
@@ -605,16 +608,16 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                             {serviceOptions.map(opt => <option key={opt}>{opt}</option>)}
                           </select>
                         </td>
-                        <td className="md:p-2 md:border md:border-form-border before:content-['INTERVAL_VALUE'] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0">
+                        <td className="md:p-2 md:border md:border-form-border before:content-[attr(data-label)] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0" data-label={t('carDetails.intervalValue').toUpperCase()}>
                           <input 
                             className="w-full p-2 text-sm border-none focus:ring-0 disabled:bg-slate-50" 
-                            placeholder="Enter details..." 
+                            placeholder={t('carForm.placeholder')} 
                             value={interval.value}
                             onChange={(e) => handleUpdateInterval(interval.id, 'value', e.target.value)}
                             disabled={!isEditMode}
                           />
                         </td>
-                        <td className="md:p-2 md:border md:border-form-border before:content-['LAST_COMPLETED'] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0">
+                        <td className="md:p-2 md:border md:border-form-border before:content-[attr(data-label)] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0" data-label={t('carDetails.lastCompleted').toUpperCase()}>
                           <input 
                             type="date"
                             className="w-full p-2 text-sm border-none focus:ring-0 disabled:bg-slate-50"
@@ -647,13 +650,13 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
               onClick={onClose}
               className="w-full sm:flex-1 px-8 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
             >
-              CANCEL
+              {t('common.cancel')}
             </button>
             <button 
               onClick={handleRemoveCar}
               className="w-full sm:flex-1 px-8 py-5 bg-red-600 text-white font-black uppercase tracking-[0.2em] industrial-shadow hover:bg-red-700 active:scale-[0.98] transition-all min-h-[60px]"
             >
-              REMOVE CAR
+              {t('carDetails.removeCar')}
             </button>
             <button 
               disabled={isSubmitting}
@@ -661,7 +664,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
               className={`w-full sm:flex-[2] px-8 py-5 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow active:scale-[0.98] transition-all min-h-[60px] flex items-center justify-center gap-2 ${!isEditMode || isSubmitting ? 'opacity-50 pointer-events-none' : ''}`}
             >
               {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isSubmitting ? 'PROCESSING...' : 'CONFIRM'}
+              {isSubmitting ? t('carForm.processing') : t('carDetails.lockSave')}
             </button>
           </div>
         </div>

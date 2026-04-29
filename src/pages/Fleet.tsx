@@ -1,5 +1,6 @@
 import { Plus, Car as CarIcon, Loader2, Download } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import AddCarModal from '../components/AddCarModal';
 import CarDetailsModal from '../components/CarDetailsModal';
 import { supabase } from '../lib/supabase';
@@ -15,12 +16,17 @@ interface FormattedCar extends Car {
 }
 
 export default function Fleet() {
+  const { t, i18n } = useTranslation();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<FormattedCar | null>(null);
   const [fleetData, setFleetData] = useState<FormattedCar[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'USD' }).format(val);
+  };
 
   const fetchFleet = async () => {
     setLoading(true);
@@ -36,7 +42,7 @@ export default function Fleet() {
         const formattedData: FormattedCar[] = data.map(car => ({
           ...car,
           name: `${car.brand} ${car.model}`,
-          rate: `$${car.daily_rate}/Day`,
+          rate: `${formatCurrency(car.daily_rate)} ${t('common.perDay')}`,
           statusColor: car.status === 'Available' ? 'bg-primary' : 
                        car.status === 'In Maintenance' ? 'bg-workshop-amber' : 
                        car.status === 'Rented' ? 'bg-indigo-600' : 'bg-slate-500',
@@ -56,16 +62,16 @@ export default function Fleet() {
     setIsExporting(true);
     const { success, error } = await gasService.exportData('fleet', fleetData);
     if (!success) {
-      alert(`Export failed: ${error}`);
+      alert(`${t('common.exportError')}: ${error}`);
     } else {
-      alert('Fleet data exported to Google Sheets successfully!');
+      alert(t('common.exportSuccess'));
     }
     setIsExporting(false);
   };
 
   useEffect(() => {
     fetchFleet();
-  }, []);
+  }, [i18n.language]);
 
   const handleOpenDetails = (car: FormattedCar) => {
     setSelectedCar(car);
@@ -93,9 +99,9 @@ export default function Fleet() {
       {/* Fleet Overview Title Section */}
       <div className="bg-muted-mint py-8 border-b border-slate-200/50">
         <div className="max-w-[1440px] mx-auto px-margin">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-gutter border-l-4 border-primary pl-gutter">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-gutter border-s-4 border-primary ps-gutter">
             <div>
-              <h1 className="font-h1 text-h3 md:text-h2 text-ink">Fleet Overview</h1>
+              <h1 className="font-h1 text-h3 md:text-h2 text-ink">{t('nav.fleet')}</h1>
             </div>
             <div className="flex gap-4">
               <button 
@@ -104,14 +110,14 @@ export default function Fleet() {
                 className="px-6 py-2.5 bg-midnight text-white font-button text-sm rounded-none industrial-shadow hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
               >
                 {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                {isExporting ? 'EXPORTING...' : 'EXPORT TO SHEETS'}
+                {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
               </button>
               <button 
                 onClick={() => setIsAddModalOpen(true)}
                 className="px-6 py-2.5 bg-primary text-white font-button text-sm rounded-none industrial-shadow hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                ADD NEW CAR
+                {t('fleet.addCar', 'ADD NEW CAR')}
               </button>
             </div>
           </div>
@@ -123,7 +129,7 @@ export default function Fleet() {
         <div className="max-w-[1440px] mx-auto px-margin">
           <div className="flex items-center gap-4 mb-10">
             <div className="w-3 h-8 bg-ink"></div>
-            <h2 className="text-2xl font-bold text-ink">Inventory Status</h2>
+            <h2 className="text-2xl font-bold text-ink">{t('nav.fleet')}</h2>
             <div className="h-[1px] flex-grow bg-slate-200/50"></div>
           </div>
 
@@ -148,7 +154,7 @@ export default function Fleet() {
               ))
             ) : fleetData.length === 0 ? (
               <div className="col-span-full py-20 bg-white industrial-shadow text-center">
-                <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">No vehicles found in fleet.</p>
+                <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.noData', 'No vehicles found in fleet.')}</p>
               </div>
             ) : (
               fleetData.map((car) => (
@@ -169,8 +175,8 @@ export default function Fleet() {
                         }}
                       />
                       {car.needsMaintenance && (
-                        <div className="absolute top-4 left-4 px-3 py-1 bg-workshop-amber text-white text-[10px] font-black uppercase tracking-widest industrial-shadow">
-                          Service Due
+                        <div className="absolute top-4 start-4 px-3 py-1 bg-workshop-amber text-white text-[10px] font-black uppercase tracking-widest industrial-shadow">
+                          {t('common.maintenance', 'Service Due')}
                         </div>
                       )}
                       <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-0 transition-opacity pointer-events-none">
@@ -182,12 +188,14 @@ export default function Fleet() {
                         <h3 className="font-bold text-lg text-ink leading-tight mb-4">{car.name}</h3>
                         <div className="space-y-3">
                           <div className="flex flex-col">
-                            <span className="text-ink uppercase font-bold text-[10px] tracking-widest leading-none mb-1 opacity-70">Plate Number</span>
+                            <span className="text-ink uppercase font-bold text-[10px] tracking-widest leading-none mb-1 opacity-70">{t('fleet.plateNumber', 'Plate Number')}</span>
                             <span className="font-semibold text-midnight text-sm">{car.plate}</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-ink uppercase font-bold text-[10px] tracking-widest leading-none mb-1 opacity-70">Daily Rate</span>
-                            <span className="text-primary font-bold text-lg">{car.rate}</span>
+                            <span className="text-ink uppercase font-bold text-[10px] tracking-widest leading-none mb-1 opacity-70">{t('fleet.dailyRate', 'Daily Rate')}</span>
+                            <span className="text-primary font-bold text-lg">
+                              {t('common.price')}: ${car.daily_rate} {t('common.perDay')}
+                            </span>
                           </div>
                         </div>
                       </div>

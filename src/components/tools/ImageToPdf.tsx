@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, X, FileText, Download, RotateCcw, Link as LinkIcon, Image as ImageIcon, Check } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface ConversionResult {
   id: string;
@@ -11,6 +12,7 @@ interface ConversionResult {
 }
 
 export default function ImageToPdf() {
+  const { t } = useTranslation();
   const [images, setImages] = useState<{ id: string, name: string, url: string, file: File }[]>([]);
   const [mode, setMode] = useState<'single' | 'separate'>('single');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -166,8 +168,8 @@ export default function ImageToPdf() {
             className="w-full border-4 border-dashed border-midnight-ink/20 bg-muted-cream hover:bg-muted-mint transition-all p-12 flex flex-col items-center justify-center cursor-pointer industrial-shadow"
           >
             <ImageIcon className="w-16 h-16 text-midnight-ink/40 mb-4" />
-            <p className="font-black uppercase tracking-[0.2em] text-midnight-ink">Drop images here or click to upload</p>
-            <p className="text-[10px] uppercase tracking-widest text-midnight-ink/40 mt-2">Supports JPG, PNG (pdf-lib restricted)</p>
+            <p className="font-black uppercase tracking-[0.2em] text-midnight-ink">{t('tools.imageToPdfTools.dropzoneTitle')}</p>
+            <p className="text-[10px] uppercase tracking-widest text-midnight-ink/40 mt-2">{t('tools.imageToPdfTools.dropzoneDesc')}</p>
             <input 
               type="file" 
               hidden 
@@ -182,19 +184,19 @@ export default function ImageToPdf() {
           {images.length > 0 && (
             <div className="flex flex-col sm:flex-row gap-6 p-6 bg-white industrial-shadow">
               <div className="flex-1 space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-midnight-ink/40">Conversion Output Mode</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-midnight-ink/40">{t('common.actions')}</label>
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setMode('single')}
                     className={`flex-1 py-4 font-black uppercase text-xs tracking-widest transition-all ${mode === 'single' ? 'bg-midnight-ink text-white' : 'bg-muted-cream hover:bg-slate-100'}`}
                   >
-                    ONE PDF FOR ALL
+                    {t('tools.imageToPdfTools.modeSingle')}
                   </button>
                   <button 
                     onClick={() => setMode('separate')}
                     className={`flex-1 py-4 font-black uppercase text-xs tracking-widest transition-all ${mode === 'separate' ? 'bg-midnight-ink text-white' : 'bg-muted-cream hover:bg-slate-100'}`}
                   >
-                    SEPARATE PDFS
+                    {t('tools.imageToPdfTools.modeSeparate')}
                   </button>
                 </div>
               </div>
@@ -218,7 +220,7 @@ export default function ImageToPdf() {
                     exit={{ opacity: 0, scale: 0.9 }}
                     className="relative aspect-square industrial-shadow border-2 border-midnight-ink group"
                   >
-                    <img src={img.url} alt="To convert" className="w-full h-full object-cover" />
+                    <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
                     <button 
                       onClick={() => removeImage(img.id)}
                       className="absolute -top-2 -right-2 bg-red-600 text-white p-1 shadow-lg hover:scale-110 transition-transform"
@@ -239,7 +241,7 @@ export default function ImageToPdf() {
             disabled={images.length === 0 || isProcessing}
             className="w-full py-6 bg-midnight-ink text-white font-black uppercase tracking-[0.3em] industrial-shadow hover:bg-primary transition-all active:scale-[0.98] disabled:opacity-30 disabled:grayscale"
           >
-            {isProcessing ? 'PROCESSING...' : 'CONVERT TO PDF'}
+            {isProcessing ? t('tools.imageToPdfTools.processing') : t('tools.imageToPdfTools.convertButton')}
           </button>
         </>
       ) : (
@@ -247,7 +249,7 @@ export default function ImageToPdf() {
           <div className="section-header-rule">
             <div className="section-header-content">
               <FileText className="w-6 h-6 text-midnight-ink" />
-              <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Generated Results ({selectedResultIds.length}/{results.length} Selected)</h3>
+              <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('tools.imageToPdfTools.resultsTitle')} ({selectedResultIds.length}/{results.length})</h3>
             </div>
           </div>
 
@@ -281,21 +283,21 @@ export default function ImageToPdf() {
               onClick={reset}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-4 border-2 border-midnight-ink font-black uppercase text-xs tracking-widest hover:bg-muted-cream transition-all"
             >
-              <RotateCcw className="w-4 h-4" /> RESET TOOL
+              <RotateCcw className="w-4 h-4" /> {t('tools.imageToPdfTools.reset')}
             </button>
             <button 
               onClick={assignToReservation}
               disabled={selectedResultIds.length === 0}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-4 border-2 border-midnight-ink font-black uppercase text-xs tracking-widest hover:bg-warm-accent transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <LinkIcon className="w-4 h-4" /> ASSIGN SELECTED
+              <LinkIcon className="w-4 h-4" /> {t('reservationDetails.lockSave')}
             </button>
             <button 
               onClick={handleDownload}
               disabled={selectedResultIds.length === 0}
               className="flex-[2] flex items-center justify-center gap-2 px-6 py-4 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:grayscale disabled:cursor-not-allowed"
             >
-              <Download className="w-5 h-5" /> DOWNLOAD SELECTED ({selectedResultIds.length})
+              <Download className="w-5 h-5" /> {t('tools.imageToPdfTools.downloadSelected')} ({selectedResultIds.length})
             </button>
           </div>
         </>

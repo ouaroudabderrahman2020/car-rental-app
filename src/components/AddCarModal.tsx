@@ -4,6 +4,7 @@ import {
   Settings, Trash2, Plus, Check, ChevronDown, Loader2 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 
 interface AddCarModalProps {
@@ -25,6 +26,7 @@ interface EssentialItem {
 }
 
 export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
+  const { t } = useTranslation();
   // Form State
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -111,13 +113,13 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
 
   const handleConfirm = async () => {
     if (!brand || !model || !plate || !dailyRate) {
-      alert('Please fill in required fields (Brand, Model, Plate, Rate).');
+      alert(t('carForm.fillRequired'));
       return;
     }
 
     if (!validatePlate(plate)) {
-      setErrors({ plate: 'Invalid license plate format (2-15 chars, alphanumeric)' });
-      alert('Please fix validation errors.');
+      setErrors({ plate: t('carForm.invalidPlate') });
+      alert(t('common.error'));
       return;
     }
     setErrors({});
@@ -180,11 +182,11 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
         if (maintError) throw maintError;
       }
 
-      alert('Vehicle Registered Successfully.');
+      alert(t('carForm.success'));
       onClose();
     } catch (error: any) {
       console.error('Error inserting car:', error);
-      alert(`Error: ${error.message || 'Failed to register vehicle'}`);
+      alert(`${t('common.error')}: ${error.message || t('carForm.processing')}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -202,8 +204,8 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
         {/* Header */}
         <div className="px-6 py-6 sm:px-10 sm:py-8 bg-midnight-ink flex justify-between items-center shrink-0">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">Add New Car</h2>
-            <p className="text-white/80 text-sm sm:text-base">Complete the vehicle profile to register in fleet.</p>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">{t('carForm.title')}</h2>
+            <p className="text-white/80 text-sm sm:text-base">{t('carForm.subtitle')}</p>
           </div>
           <button onClick={onClose} className="p-2 text-white hover:bg-white/10 transition-colors">
             <X className="w-6 h-6" />
@@ -217,16 +219,16 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
             <div className="section-header-rule">
               <div className="section-header-content">
                 <CarIcon className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Vehicle Specifications</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('carForm.specs')}</h3>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { label: 'Brand', val: brand, setter: setBrand },
-                { label: 'Model', val: model, setter: setModel },
-                { label: 'License Plate', val: plate, setter: setPlate, extra: 'uppercase', error: errors.plate },
-                { label: 'Color', val: color, setter: setColor },
+                { label: t('carForm.brand'), val: brand, setter: setBrand },
+                { label: t('carForm.model'), val: model, setter: setModel },
+                { label: t('carForm.plate'), val: plate, setter: setPlate, extra: 'uppercase', error: errors.plate },
+                { label: t('carForm.color'), val: color, setter: setColor },
               ].map(field => (
                 <div key={field.label} className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{field.label}</label>
@@ -234,71 +236,71 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
                     className={`w-full bg-white p-4 industrial-shadow ${field.extra || ''} ${field.error ? 'border-2 border-red-500' : ''}`}
                     value={field.val}
                     onChange={(e) => field.setter(e.target.value)}
-                    placeholder="Enter details..."
+                    placeholder={t('carForm.placeholder')}
                   />
                   {field.error && <p className="text-[10px] text-red-500 font-bold uppercase">{field.error}</p>}
                 </div>
               ))}
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Fuel Type</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.fuelType')}</label>
                 <div className="relative">
                   <select 
                     className="w-full bg-white p-4 industrial-shadow appearance-none"
                     value={fuelType}
                     onChange={(e) => setFuelType(e.target.value)}
                   >
-                    <option>Petrol</option>
-                    <option>Diesel</option>
-                    <option>Electric</option>
-                    <option>Hybrid</option>
+                    <option value="Petrol">{t('carForm.fuelPetrol', 'Petrol')}</option>
+                    <option value="Diesel">{t('carForm.fuelDiesel', 'Diesel')}</option>
+                    <option value="Electric">{t('carForm.fuelElectric', 'Electric')}</option>
+                    <option value="Hybrid">{t('carForm.fuelHybrid', 'Hybrid')}</option>
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40 pointer-events-none" />
+                  <ChevronDown className="absolute end-4 top-1/2 -translate-y-1/2 text-ink/40 pointer-events-none" />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Transmission</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.transmission')}</label>
                 <div className="flex industrial-shadow h-[60px]">
                   <button 
                     onClick={() => setTransmission('Automatic')}
                     className={`flex-1 font-bold text-xs uppercase tracking-widest transition-colors border-1.5 border-form-border ${transmission === 'Automatic' ? 'bg-midnight-ink text-white' : 'bg-white text-midnight-ink'}`}
                   >
-                    Automatic
+                    {t('carForm.transAuto', 'Automatic')}
                   </button>
                   <button 
                     onClick={() => setTransmission('Manual')}
-                    className={`flex-1 font-bold text-xs uppercase tracking-widest transition-colors border-l-0 border-1.5 border-form-border ${transmission === 'Manual' ? 'bg-midnight-ink text-white' : 'bg-white text-midnight-ink'}`}
+                    className={`flex-1 font-bold text-xs uppercase tracking-widest transition-colors border-s-0 border-1.5 border-form-border ${transmission === 'Manual' ? 'bg-midnight-ink text-white' : 'bg-white text-midnight-ink'}`}
                   >
-                    Manual
+                    {t('carForm.transManual', 'Manual')}
                   </button>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Starting Odometer (KM)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.odometer')}</label>
                 <input 
                   type="number"
                   className="w-full bg-white p-4 industrial-shadow"
                   value={odometer}
                   onChange={(e) => setOdometer(e.target.value)}
-                  placeholder="Enter details..."
+                  placeholder={t('carForm.placeholder')}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Daily Rental Price (USD)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.dailyRate')}</label>
                 <input 
                   type="number"
                   className="w-full bg-white p-4 industrial-shadow"
                   value={dailyRate}
                   onChange={(e) => setDailyRate(e.target.value)}
-                  placeholder="Enter details..."
+                  placeholder={t('carForm.placeholder')}
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Starting Fuel Level (%)</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.startingFuel')}</label>
                 <input 
                   type="number"
                   min="0"
@@ -311,18 +313,18 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
               </div>
 
               <div className="sm:col-span-2 lg:col-span-4 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Current Status</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.status')}</label>
                 <div className="relative">
                   <select 
-                    className={`w-full bg-white p-4 industrial-shadow border-l-4 ${getStatusColor()} appearance-none font-bold`}
+                    className={`w-full bg-white p-4 industrial-shadow border-s-4 ${getStatusColor()} appearance-none font-bold`}
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                   >
-                    <option className="text-green-600 font-bold">Available</option>
-                    <option className="text-amber-600 font-bold">In Maintenance</option>
-                    <option className="text-slate-600 font-bold">Decommissioned</option>
+                    <option value="Available" className="text-green-600 font-bold">{t('common.available')}</option>
+                    <option value="In Maintenance" className="text-amber-600 font-bold">{t('common.maintenance')}</option>
+                    <option value="Decommissioned" className="text-slate-600 font-bold">{t('common.decommissioned', 'Decommissioned')}</option>
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40 pointer-events-none" />
+                  <ChevronDown className="absolute end-4 top-1/2 -translate-y-1/2 text-ink/40 pointer-events-none" />
                 </div>
               </div>
             </div>
@@ -333,54 +335,54 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
             <div className="section-header-rule">
               <div className="section-header-content">
                 <Camera className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Media & Equipment</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('carForm.media')}</h3>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Vehicle Image Upload</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.uploadImage')}</label>
                 <div className="w-full aspect-video border-2 border-dashed border-form-border bg-muted-cream flex flex-col items-center justify-center cursor-pointer hover:bg-muted-mint transition-colors">
                   <Camera className="w-12 h-12 text-midnight-ink/40" />
-                  <p className="mt-2 text-xs font-bold uppercase tracking-widest text-midnight-ink/60">Drag or click to upload photo</p>
+                  <p className="mt-2 text-xs font-bold uppercase tracking-widest text-midnight-ink/60">{t('carForm.dragOrClick')}</p>
                 </div>
               </div>
               <div className="space-y-6">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Documentation PDF Upload</label>
+                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.uploadPdf')}</label>
                   <button className="w-full flex items-center justify-between gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink hover:bg-muted-mint transition-colors font-black text-xs uppercase tracking-[0.2em] industrial-shadow">
-                    <span>Car Documentation PDF</span>
+                    <span>{t('carForm.pdfLabel')}</span>
                     <Upload className="w-5 h-5" />
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">GPS SIM Number</label>
+                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.gpsSim')}</label>
                     <input 
                       className="w-full bg-white p-4 industrial-shadow"
                       value={gpsSim}
                       onChange={(e) => setGpsSim(e.target.value)}
-                      placeholder="Enter details..."
+                      placeholder={t('carForm.placeholder')}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Number of Seats</label>
+                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.seats')}</label>
                     <input 
                       type="number"
                       className="w-full bg-white p-4 industrial-shadow"
                       value={seats}
                       onChange={(e) => setSeats(e.target.value)}
-                      placeholder="Enter details..."
+                      placeholder={t('carForm.placeholder')}
                     />
                   </div>
                 </div>
               </div>
               <div className="lg:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Damage Notes</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.damageNotes')}</label>
                 <textarea 
                   className="w-full bg-white p-4 min-h-[100px] industrial-shadow resize-none"
                   value={damageNotes}
                   onChange={(e) => setDamageNotes(e.target.value)}
-                  placeholder="Enter details..."
+                  placeholder={t('carForm.placeholder')}
                 />
               </div>
             </div>
@@ -391,18 +393,18 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
             <div className="section-header-rule">
               <div className="section-header-content">
                 <Verified className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Included Essentials</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('carForm.essentials')}</h3>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Included Items</label>
+                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.includedItems')}</label>
                   <button 
                     onClick={() => setIsAddingEssential(true)}
                     className="text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
                   >
-                    <Plus className="w-4 h-4" /> Add Item
+                    <Plus className="w-4 h-4" /> {t('carForm.addItem')}
                   </button>
                 </div>
                 <AnimatePresence>
@@ -418,7 +420,7 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
                           className="flex-1 p-2 text-sm bg-white border-form-border"
                           value={newEssentialText}
                           onChange={(e) => setNewEssentialText(e.target.value)}
-                          placeholder="Item name..."
+                          placeholder={t('carForm.itemName')}
                           autoFocus
                         />
                         <button 
@@ -460,14 +462,16 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
                 </div>
               </div>
               <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">Paperwork & Compliance</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.paperwork')}</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
-                    'Registration Card ID', 'Insurance Expiration', 
-                    'Technical Inspection', 'Tax Renewal Date'
-                  ].map(docLabel => (
-                    <div key={docLabel} className="space-y-1">
-                      <p className="text-[10px] font-bold uppercase text-midnight-ink/60">{docLabel}</p>
+                    { key: 'registrationCard', label: t('carForm.registrationCard') },
+                    { key: 'insuranceExpir', label: t('carForm.insuranceExpir') },
+                    { key: 'techInspection', label: t('carForm.techInspection') },
+                    { key: 'taxRenewal', label: t('carForm.taxRenewal') }
+                  ].map(doc => (
+                    <div key={doc.key} className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase text-midnight-ink/60">{doc.label}</p>
                       <input className="w-full bg-white p-3 text-sm industrial-shadow" type="date" />
                     </div>
                   ))}
@@ -481,7 +485,7 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
             <div className="section-header-rule">
               <div className="section-header-content">
                 <Settings className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Maintenance Intervals</h3>
+                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('carForm.maintenance')}</h3>
               </div>
             </div>
             <div className="space-y-4">
@@ -490,23 +494,23 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
                   onClick={handleAddInterval}
                   className="flex items-center gap-2 px-4 py-2 bg-midnight-ink text-white font-bold text-xs uppercase tracking-widest industrial-shadow hover:bg-ink transition-all"
                 >
-                  <Plus className="w-4 h-4" /> Add interval
+                  <Plus className="w-4 h-4" /> {t('carForm.addInterval')}
                 </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead className="hidden md:table-header-group">
                     <tr className="bg-muted-cream text-left">
-                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">Interval type</th>
-                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">Interval value</th>
-                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">Last completed</th>
+                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carForm.intervalType')}</th>
+                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carForm.intervalValue')}</th>
+                      <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carForm.lastCompleted')}</th>
                       <th className="p-3 w-[60px] border border-form-border"></th>
                     </tr>
                   </thead>
                   <tbody className="flex flex-col gap-4 md:table-row-group">
                     {intervals.map((interval) => (
                       <tr key={interval.id} className="group border border-form-border p-4 md:p-0 flex flex-col md:table-row bg-white industrial-shadow md:shadow-none">
-                        <td className="md:p-2 md:border md:border-form-border before:content-['INTERVAL_TYPE'] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0">
+                        <td className="md:p-2 md:border md:border-form-border before:content-[attr(data-label)] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0" data-label={t('carForm.intervalType').toUpperCase()}>
                           <select 
                             className="w-full p-2 text-sm bg-transparent border-none focus:ring-0"
                             value={interval.type}
@@ -515,15 +519,15 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
                             {serviceOptions.map(opt => <option key={opt}>{opt}</option>)}
                           </select>
                         </td>
-                        <td className="md:p-2 md:border md:border-form-border before:content-['INTERVAL_VALUE'] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0">
+                        <td className="md:p-2 md:border md:border-form-border before:content-[attr(data-label)] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0" data-label={t('carForm.intervalValue').toUpperCase()}>
                           <input 
                             className="w-full p-2 text-sm border-none focus:ring-0" 
-                            placeholder="Enter details..." 
+                            placeholder={t('carForm.placeholder')} 
                             value={interval.value}
                             onChange={(e) => handleUpdateInterval(interval.id, 'value', e.target.value)}
                           />
                         </td>
-                        <td className="md:p-2 md:border md:border-form-border before:content-['LAST_COMPLETED'] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0">
+                        <td className="md:p-2 md:border md:border-form-border before:content-[attr(data-label)] before:block before:md:hidden before:text-[10px] before:font-bold before:text-slate-500 mb-2 md:mb-0" data-label={t('carForm.lastCompleted').toUpperCase()}>
                           <input 
                             type="date"
                             className="w-full p-2 text-sm border-none focus:ring-0"
@@ -553,7 +557,7 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
               onClick={onClose}
               className="w-full sm:flex-1 px-8 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
             >
-              CANCEL
+              {t('common.cancel')}
             </button>
             <button 
               disabled={isSubmitting}
@@ -563,9 +567,9 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  PROCESSING...
+                  {t('carForm.processing')}
                 </>
-              ) : 'CONFIRM'}
+              ) : t('carForm.confirm')}
             </button>
           </div>
         </div>
