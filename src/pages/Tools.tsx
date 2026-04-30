@@ -1,6 +1,7 @@
 import { Calculator, Calendar, FileType } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import Layout from '../components/Layout';
 import ToolModal from '../components/ToolModal';
 
 export default function Tools() {
@@ -14,14 +15,13 @@ export default function Tools() {
   ];
 
   return (
-    <div className="min-h-full bg-muted-mint pb-12">
-      <main className="w-full">
-        <div className="py-12">
-          <div className="max-w-[1440px] mx-auto px-margin text-center">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-ink mb-12">{t('tools.title')}</h1>
-            
-            {/* Tool Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+    <Layout title={t('tools.title')}>
+      <div className="min-h-full bg-muted-mint pb-12">
+        <main className="w-full">
+          <div className="py-12">
+            <div className="max-w-[1440px] mx-auto px-margin text-center">
+              {/* Tool Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               {tools.map((tool) => (
                 <button 
                   key={tool.key}
@@ -46,5 +46,6 @@ export default function Tools() {
         toolName={selectedTool || ''} 
       />
     </div>
-  );
+  </Layout>
+);
 }

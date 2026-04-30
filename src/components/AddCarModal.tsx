@@ -6,6 +6,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { useStatus } from '../contexts/StatusContext';
 
 interface AddCarModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ interface EssentialItem {
 
 export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
   const { t } = useTranslation();
+  const { setStatus } = useStatus();
   // Form State
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -36,7 +38,7 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
   const [transmission, setTransmission] = useState<'Automatic' | 'Manual'>('Automatic');
   const [odometer, setOdometer] = useState('');
   const [dailyRate, setDailyRate] = useState('');
-  const [status, setStatus] = useState('Available');
+  const [carStatus, setCarStatus] = useState('Available');
   const [damageNotes, setDamageNotes] = useState('');
   const [gpsSim, setGpsSim] = useState('');
   const [seats, setSeats] = useState('');
@@ -103,7 +105,7 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
   };
 
   const getStatusColor = () => {
-    switch (status) {
+    switch (carStatus) {
       case 'Available': return 'border-green-500';
       case 'In Maintenance': return 'border-amber-500';
       case 'Decommissioned': return 'border-slate-500';
@@ -123,8 +125,9 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
       return;
     }
     setErrors({});
-
     setIsSubmitting(true);
+    setStatus(t('common.savingCar'), 'processing', 0);
+
     try {
       const { data: carData, error: carError } = await supabase
         .from('cars')
@@ -137,7 +140,7 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
           transmission,
           odometer: parseInt(odometer) || 0,
           daily_rate: parseFloat(dailyRate),
-          status,
+          status: carStatus,
           starting_fuel_level: parseInt(startingFuelLevel) || 100,
           gps_sim: gpsSim,
           seats: parseInt(seats) || 5,
@@ -183,9 +186,11 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
       }
 
       alert(t('carForm.success'));
+      setStatus(t('common.dataSaved'), 'success');
       onClose();
     } catch (error: any) {
       console.error('Error inserting car:', error);
+      setStatus(t('common.error'), 'error');
       alert(`${t('common.error')}: ${error.message || t('carForm.processing')}`);
     } finally {
       setIsSubmitting(false);
@@ -317,8 +322,8 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
                 <div className="relative">
                   <select 
                     className={`w-full bg-white p-4 industrial-shadow border-s-4 ${getStatusColor()} appearance-none font-bold`}
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
+                    value={carStatus}
+                    onChange={(e) => setCarStatus(e.target.value)}
                   >
                     <option value="Available" className="text-green-600 font-bold">{t('common.available')}</option>
                     <option value="In Maintenance" className="text-amber-600 font-bold">{t('common.maintenance')}</option>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import Layout from '../components/Layout';
 
 export default function Financials() {
   const { t, i18n } = useTranslation();
@@ -71,13 +72,12 @@ export default function Financials() {
   };
 
   return (
-    <div className="w-full bg-muted-cream min-h-screen">
-      <main className="w-full">
-        <div className="py-12">
-          <div className="max-w-[1440px] mx-auto px-margin">
-            <h1 className="font-h1 text-4xl sm:text-5xl md:text-6xl text-ink mb-12 font-extrabold">{t('financials.title')}</h1>
-            
-            {loading ? (
+    <Layout title={t('financials.title')}>
+      <div className="w-full bg-muted-cream min-h-screen">
+        <main className="w-full">
+          <div className="py-12">
+            <div className="max-w-[1440px] mx-auto px-margin">
+              {loading ? (
               <div className="flex flex-col items-center justify-center py-20 space-y-4">
                 <Loader2 className="w-12 h-12 text-primary animate-spin" />
                 <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('financials.calculating')}</p>
@@ -86,21 +86,21 @@ export default function Financials() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
                   <div className="bg-white p-8 border border-border-tint shadow-[0_4px_20px_rgba(19,27,46,0.04)] industrial-shadow">
-                    <p className="text-xs font-bold text-slate-blue mb-2 uppercase tracking-widest">{t('financials.totalIncome')}</p>
+                    <p className="text-fluid-sm font-bold text-slate-blue mb-2 uppercase tracking-widest">{t('financials.totalIncome')}</p>
                     <h2 className="text-3xl md:text-4xl text-midnight font-bold mb-2">{formatCurrency(stats.totalIncome)}</h2>
-                    <p className="text-primary font-bold">{t('financials.refCompleted')}</p>
+                    <p className="text-primary font-bold text-fluid-base">{t('financials.refCompleted')}</p>
                   </div>
 
                   <div className="bg-white p-8 border border-border-tint shadow-[0_4px_20px_rgba(19,27,46,0.04)] industrial-shadow">
-                    <p className="text-xs font-bold text-slate-blue mb-2 uppercase tracking-widest">{t('financials.lastMonth')}</p>
+                    <p className="text-fluid-sm font-bold text-slate-blue mb-2 uppercase tracking-widest">{t('financials.lastMonth')}</p>
                     <h2 className="text-3xl md:text-4xl text-midnight font-bold mb-2">{formatCurrency(stats.lastMonthIncome)}</h2>
-                    <p className="text-slate-blue font-semibold">{stats.lastMonthName}</p>
+                    <p className="text-slate-blue font-semibold text-fluid-base">{stats.lastMonthName}</p>
                   </div>
 
                   <div className="bg-white p-8 border border-border-tint shadow-[0_4px_20px_rgba(19,27,46,0.04)] industrial-shadow">
-                    <p className="text-xs font-bold text-slate-blue mb-2 uppercase tracking-widest">{t('financials.currentMonth')}</p>
+                    <p className="text-fluid-sm font-bold text-slate-blue mb-2 uppercase tracking-widest">{t('financials.currentMonth')}</p>
                     <h2 className="text-3xl md:text-4xl text-midnight font-bold mb-2">{formatCurrency(stats.currentMonthIncome)}</h2>
-                    <p className="text-primary italic font-bold">{stats.currentMonthName} ({t('financials.inProgress')})</p>
+                    <p className="text-primary italic font-bold text-fluid-base">{stats.currentMonthName} ({t('financials.inProgress')})</p>
                   </div>
                 </div>
 
@@ -118,5 +118,6 @@ export default function Financials() {
         </div>
       </main>
     </div>
-  );
+  </Layout>
+);
 }

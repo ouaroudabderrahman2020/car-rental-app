@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ArrowRight, Loader2, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import Layout from '../components/Layout';
 import AddReservationModal from '../components/AddReservationModal';
 import EditReservationModal from '../components/EditReservationModal';
 import ReservationDetailsModal from '../components/ReservationDetailsModal';
@@ -125,73 +126,67 @@ export default function Reservations() {
   };
 
   return (
-    <div className="w-full">
-      {/* Page Header Section */}
-      <div className="bg-muted-mint py-8">
-        <div className="max-w-[1440px] mx-auto px-margin">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-gutter ps-0">
-            <div>
-              <h1 className="font-h1 text-h3 md:text-h2 text-midnight font-extrabold">{t('nav.reservations')}</h1>
-            </div>
-            <div className="flex gap-4">
-              <button 
-                onClick={handleExport}
-                disabled={isExporting}
-                className="px-6 py-2.5 bg-midnight text-white font-button text-sm rounded-none industrial-shadow hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
-              >
-                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                {isExporting ? t('common.loading') : t('common.export', 'EXPORT TO SHEETS')}
-              </button>
-              <button 
-                onClick={() => setIsAddModalOpen(true)}
-                className="px-6 py-2.5 bg-primary text-white font-button text-sm rounded-none industrial-shadow hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> {t('reservations.newReservation')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <AddReservationModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => {
-          setIsAddModalOpen(false);
-          fetchReservations();
-        }} 
-      />
-
-      {selectedReservation && (
-        <EditReservationModal
-          isOpen={isEditModalOpen}
+    <Layout title={t('nav.reservations')}>
+      <div className="w-full bg-muted-mint">
+        <AddReservationModal 
+          isOpen={isAddModalOpen} 
           onClose={() => {
-            setIsEditModalOpen(false);
+            setIsAddModalOpen(false);
             fetchReservations();
-          }}
-          reservationData={selectedReservation}
+          }} 
         />
-      )}
 
-      {selectedReservation && (
-        <ReservationDetailsModal
-          isOpen={isDetailsModalOpen}
-          onClose={() => {
-            setIsDetailsModalOpen(false);
-            fetchReservations();
-          }}
-          reservationData={selectedReservation}
-        />
-      )}
+        {selectedReservation && (
+          <EditReservationModal
+            isOpen={isEditModalOpen}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              fetchReservations();
+            }}
+            reservationData={selectedReservation}
+          />
+        )}
 
-      {/* Section: Active Reservations */}
-      <section className="bg-muted-mint py-lg">
-        <div className="max-w-[1440px] mx-auto px-margin">
-          <div className="flex items-center gap-4 mb-8">
-            <h2 className="text-2xl font-bold text-accent-blue">{t('reservations.activeTitle')}</h2>
-            <div className="h-[1px] flex-grow bg-midnight/10"></div>
-            <span className="px-3 py-1 bg-accent-blue text-white text-xs font-bold uppercase tracking-widest whitespace-nowrap">{activeReservations.length} {t('reservations.activeCount')}</span>
-          </div>
-          <div className="lg:bg-white lg:industrial-shadow overflow-hidden min-h-[200px] flex items-center justify-center">
+        {selectedReservation && (
+          <ReservationDetailsModal
+            isOpen={isDetailsModalOpen}
+            onClose={() => {
+              setIsDetailsModalOpen(false);
+              fetchReservations();
+            }}
+            reservationData={selectedReservation}
+          />
+        )}
+
+        {/* Section: Active Reservations */}
+        <section className="py-lg">
+          <div className="max-w-[1440px] mx-auto px-margin">
+            {/* Action Toolbar */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pt-10">
+              <div className="flex items-center gap-4">
+                <div className="w-3 h-8 bg-accent-blue"></div>
+                <h2 className="text-2xl font-bold text-accent-blue uppercase tracking-tight">{t('reservations.activeTitle')}</h2>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-3">
+                <button 
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
+                >
+                  {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {isExporting ? t('common.loading') : t('common.export', 'EXPORT TO SHEETS')}
+                </button>
+                <button 
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> {t('reservations.newReservation')}
+                </button>
+              </div>
+            </div>
+
+            <div className="lg:bg-white lg:industrial-shadow overflow-hidden min-h-[200px] flex items-center justify-center">
             {loading ? (
               <div className="py-12 flex flex-col items-center justify-center space-y-4">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
@@ -200,7 +195,7 @@ export default function Reservations() {
             ) : (
               <table className="w-full text-left border-collapse responsive-table">
                 <thead>
-                  <tr className="bg-[#1E293B] text-white font-sans text-xs uppercase tracking-widest border-b border-midnight/20">
+                  <tr className="bg-[#1E293B] text-white font-sans text-fluid-sm uppercase tracking-widest border-b border-midnight/20">
                     <th className="py-4 px-6 border-e border-white/10 font-extrabold text-center">{t('reservations.reservationId')}</th>
                     <th className="py-4 px-6 border-e border-white/10 font-extrabold text-center">{t('reservations.customerName')}</th>
                     <th className="py-4 px-6 border-e border-white/10 font-extrabold text-center">{t('reservations.car')}</th>
@@ -225,7 +220,7 @@ export default function Reservations() {
                       <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.startDate')}>{row.pickup}</td>
                       <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.endDate')}>{row.return}</td>
                       <td className="py-6 px-6 text-center border-e border-border-tint" data-label={t('common.status')}>
-                        <span className={`px-2 py-1 ${row.statusColor} text-[11px] font-black uppercase tracking-tighter inline-block`}>{row.state}</span>
+                        <span className={`px-2 py-1 ${row.statusColor} text-fluid-sm font-black uppercase tracking-tighter inline-block`}>{row.state}</span>
                       </td>
                       <td className="py-6 px-6 text-center standard-row-text" data-label={t('reservations.totalAmount')}>{row.price}</td>
                     </tr>
@@ -243,7 +238,7 @@ export default function Reservations() {
           <div className="flex items-center gap-4 mb-8">
             <h2 className="text-2xl font-bold text-primary">{t('reservations.completed')}</h2>
             <div className="h-[1px] flex-grow bg-midnight/10"></div>
-            <a className="px-4 py-1 bg-midnight text-white text-xs font-bold uppercase tracking-widest hover:brightness-125 transition-colors flex items-center gap-2 whitespace-nowrap" href="/archive">
+            <a className="px-4 py-1 bg-midnight text-white text-fluid-sm font-bold uppercase tracking-widest hover:brightness-125 transition-colors flex items-center gap-2 whitespace-nowrap" href="/archive">
               {t('reservations.history')}
               <ArrowRight className="w-3 h-3" />
             </a>
@@ -251,7 +246,7 @@ export default function Reservations() {
           <div className="lg:bg-white lg:industrial-shadow overflow-hidden">
             <table className="w-full text-left border-collapse responsive-table">
               <thead>
-                <tr className="bg-[#1E293B] text-white font-sans text-xs uppercase tracking-[0.1em] border-b border-midnight/20">
+                <tr className="bg-[#1E293B] text-white font-sans text-fluid-sm uppercase tracking-[0.1em] border-b border-midnight/20">
                   <th className="py-4 px-6 border-e border-white/10 font-extrabold text-center">{t('reservations.reservationId')}</th>
                   <th className="py-4 px-6 border-e border-white/10 font-extrabold text-center">{t('reservations.customerName')}</th>
                   <th className="py-4 px-6 border-e border-white/10 font-extrabold text-center">{t('archive.table.car')}</th>
@@ -266,7 +261,7 @@ export default function Reservations() {
                     <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('reservations.customerName')}>
                       <div className="flex flex-col items-center">
                         <div className="font-semibold cursor-pointer hover:text-primary transition-colors">{row.client}</div>
-                        <div className={`text-[11px] font-bold uppercase tracking-tighter ${row.clientType === t('common.clientTypes.repeat') ? 'text-primary' : 'text-midnight/40'}`}>
+                        <div className={`text-fluid-sm font-bold uppercase tracking-tighter ${row.clientType === t('common.clientTypes.repeat') ? 'text-primary' : 'text-midnight/40'}`}>
                           {row.clientType}
                         </div>
                       </div>
@@ -274,13 +269,13 @@ export default function Reservations() {
                     <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.car')}>
                       <div className="flex flex-col items-center">
                         <div className="font-semibold cursor-pointer hover:text-primary transition-colors">{row.carName}</div>
-                        <div className="text-xs text-midnight">{t('fleet.mileageDriven')}: {row.mileage}</div>
+                        <div className="text-fluid-sm text-midnight">{t('fleet.mileageDriven')}: {row.mileage}</div>
                       </div>
                     </td>
                     <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.duration')}>
                       <div className="flex flex-col items-center">
                         <div className="font-semibold text-accent-blue">{row.durationString}</div>
-                        <div className="text-xs text-midnight">{row.hours}</div>
+                        <div className="text-fluid-sm text-midnight">{row.hours}</div>
                       </div>
                     </td>
                     <td className="py-6 px-6 text-center font-bold text-midnight" data-label={t('reservations.totalAmount')}>{row.price}</td>
@@ -292,6 +287,7 @@ export default function Reservations() {
         </div>
       </section>
     </div>
-  );
+  </Layout>
+);
 }
 

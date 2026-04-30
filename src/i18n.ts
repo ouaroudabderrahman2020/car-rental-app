@@ -11,7 +11,42 @@ const resources = {
         reservations: "Reservations",
         archive: "Archive",
         financials: "Financials",
-        tools: "Tools"
+        tools: "Tools",
+        crm: "Clients"
+      },
+      crm: {
+        title: "Client CRM",
+        subtitle: "Manage relationships and track customer lifecycle",
+        searchPlaceholder: "Search by name or ID...",
+        table: {
+          customer: "Customer",
+          trust: "Trust Rank",
+          documents: "Documents",
+          activity: "Activity",
+          revenue: "Revenue"
+        },
+        modal: {
+          title: "Client Details",
+          edit: "Edit",
+          save: "Confirm",
+          delete: "Delete",
+          close: "Close",
+          bookingHistory: "Booking History",
+          details: "Client Information",
+          name: "Name",
+          phone: "Phone",
+          idCard: "ID Card",
+          license: "License",
+          licenseExpiry: "License Expiry",
+          safety: {
+            valid: "Valid",
+            expired: "Expired"
+          },
+          liveStatus: "Live Car",
+          rentals: "rentals",
+          spent: "Spent",
+          blacklisted: "BLACKLISTED"
+        }
       },
       common: {
         bookNow: "Book Now",
@@ -49,6 +84,14 @@ const resources = {
         yes: "Yes",
         no: "No",
         overdue: "Overdue",
+        systemReady: "System Ready",
+        processing: "Processing...",
+        savingCar: "Saving car details...",
+        savingReservation: "Saving reservation...",
+        deleting: "Deleting...",
+        actionCompleted: "Action Completed",
+        dataSaved: "Data Saved",
+        dataDeleted: "Data Deleted",
         days: {
           sun: "Sun",
           mon: "Mon",
@@ -341,7 +384,42 @@ const resources = {
         reservations: "Réservations",
         archive: "Archive",
         financials: "Finances",
-        tools: "Outils"
+        tools: "Outils",
+        crm: "Clients"
+      },
+      crm: {
+        title: "CRM Clients",
+        subtitle: "Gérez les relations et suivez le cycle de vie des clients",
+        searchPlaceholder: "Rechercher par nom ou identifiant...",
+        table: {
+          customer: "Client",
+          trust: "Niveau de Confiance",
+          documents: "Documents",
+          activity: "Activité",
+          revenue: "Chiffre d'Affaires"
+        },
+        modal: {
+          title: "Détails du Client",
+          edit: "Modifier",
+          save: "Confirmer",
+          delete: "Supprimer",
+          close: "Fermer",
+          bookingHistory: "Historique des Réservations",
+          details: "Informations Client",
+          name: "Nom",
+          phone: "Téléphone",
+          idCard: "Carte d'Identité",
+          license: "Permis",
+          licenseExpiry: "Expiration Permis",
+          safety: {
+            valid: "Valide",
+            expired: "Expiré"
+          },
+          liveStatus: "En location",
+          rentals: "locations",
+          spent: "Dépensé",
+          blacklisted: "LISTE NOIRE"
+        }
       },
       common: {
         bookNow: "Réserver Maintenant",
@@ -379,6 +457,14 @@ const resources = {
         yes: "Oui",
         no: "Non",
         overdue: "Retard",
+        systemReady: "Système prêt",
+        processing: "Traitement...",
+        savingCar: "Enregistrement des détails de la voiture...",
+        savingReservation: "Enregistrement de la réservation...",
+        deleting: "Suppression...",
+        actionCompleted: "Action terminée",
+        dataSaved: "Données enregistrées",
+        dataDeleted: "Données supprimées",
         days: {
           sun: "Dim",
           mon: "Lun",
@@ -671,7 +757,42 @@ const resources = {
         reservations: "الحجوزات",
         archive: "الأرشيف",
         financials: "المالية",
-        tools: "الأدوات"
+        tools: "الأدوات",
+        crm: "العملاء"
+      },
+      crm: {
+        title: "إدارة العملاء",
+        subtitle: "إدارة العلاقات وتتبع دورة حياة العميل",
+        searchPlaceholder: "البحث بالاسم أو الرقم التعريف...",
+        table: {
+          customer: "العميل",
+          trust: "درجة الثقة",
+          documents: "الوثائق",
+          activity: "النشاط",
+          revenue: "الإيرادات"
+        },
+        modal: {
+          title: "تفاصيل العميل",
+          edit: "تعديل",
+          save: "تأكيد",
+          delete: "حذف",
+          close: "إغلاق",
+          bookingHistory: "سجل الحجوزات",
+          details: "معلومات العميل",
+          name: "الاسم",
+          phone: "الهاتف",
+          idCard: "بطاقة الهوية",
+          license: "الرخصة",
+          licenseExpiry: "انتهاء الرخصة",
+          safety: {
+            valid: "صالح",
+            expired: "منتهي"
+          },
+          liveStatus: "سيارة نشطة",
+          rentals: "إيجارات",
+          spent: "أنفق",
+          blacklisted: "القائمة السوداء"
+        }
       },
       common: {
         bookNow: "احجز الآن",
@@ -709,6 +830,14 @@ const resources = {
         yes: "نعم",
         no: "لا",
         overdue: "متأخر",
+        systemReady: "النظام جاهز",
+        processing: "جارِ المعالجة...",
+        savingCar: "جارِ حفظ تفاصيل السيارة...",
+        savingReservation: "جارِ حفظ الحجز...",
+        deleting: "جارِ الحذف...",
+        actionCompleted: "تم اكتمال الإجراء",
+        dataSaved: "تم حفظ البيانات",
+        dataDeleted: "تم حذف البيانات",
         days: {
           sun: "الأحد",
           mon: "الاثنين",

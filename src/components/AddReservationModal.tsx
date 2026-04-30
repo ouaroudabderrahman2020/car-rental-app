@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
 import { useReservations } from '../hooks/useReservations';
 import { useVerifiedTime } from '../hooks/useVerifiedTime';
+import { useStatus } from '../contexts/StatusContext';
 
 interface AddReservationModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ interface AddReservationModalProps {
 
 export default function AddReservationModal({ isOpen, onClose }: AddReservationModalProps) {
   const { t } = useTranslation();
+  const { setStatus } = useStatus();
   // Form State
   const [carBrand, setCarBrand] = useState('');
   const [carModel, setCarModel] = useState('');
@@ -195,11 +197,14 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
     if (!file) return;
 
     setIsUploading(true);
+    setStatus(t('reservations.form.uploading'), 'processing', 0);
     const result = await gasService.uploadFile(file);
     if (result.success) {
       setUploadedDocUrl(result.fileUrl || t('reservations.form.docLinked'));
+      setStatus(t('common.success'), 'success');
       alert(t('reservations.form.driveSuccess'));
     } else {
+      setStatus(t('common.error'), 'error');
       alert(`${t('reservations.form.driveError')}: ${result.error}`);
     }
     setIsUploading(false);
@@ -223,6 +228,7 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
     }
 
     setErrors({});
+    setStatus(t('common.savingReservation'), 'processing', 0);
 
     try {
       const { data, error } = await createReservation({
@@ -239,10 +245,12 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
 
       if (error) throw new Error(error);
 
+      setStatus(t('common.dataSaved'), 'success');
       alert(t('reservations.form.success'));
       onClose();
     } catch (error: any) {
       console.error('Error inserting reservation:', error);
+      setStatus(t('common.error'), 'error');
       alert(`${t('common.error')}: ${error.message || t('reservations.form.driveError')}`);
     }
   };
@@ -306,7 +314,7 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
                           <span className={`text-[10px] px-2 py-0.5 font-bold uppercase ${
                             car.status === 'Available' ? 'bg-primary/20 text-primary' : 'bg-indigo-100 text-indigo-600'
                           }`}>
-                            {t(`common.${car.status.toLowerCase()}`, car.status)}
+                            {String(t(`common.${car.status.toLowerCase()}`, car.status))}
                           </span>
                         </div>
                       ))}

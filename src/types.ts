@@ -48,5 +48,10 @@ export interface Customer {
   id: string;
   name: string;
   phone: string;
-  license_number?: string;
+  license_number: string;
+  license_expiry: string;
+  id_card_number: string;
+  trust_rank: number; // 1-5
+  is_blacklisted: boolean;
+  created_at: string;
 }

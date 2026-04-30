@@ -1,10 +1,12 @@
 import { Plus, Car as CarIcon, Loader2, Download } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import Layout from '../components/Layout';
 import AddCarModal from '../components/AddCarModal';
 import CarDetailsModal from '../components/CarDetailsModal';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
+import { useStatus } from '../contexts/StatusContext';
 import { Car } from '../types';
 
 interface FormattedCar extends Car {
@@ -17,6 +19,7 @@ interface FormattedCar extends Car {
 
 export default function Fleet() {
   const { t, i18n } = useTranslation();
+  const { setStatus } = useStatus();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<FormattedCar | null>(null);
@@ -60,10 +63,13 @@ export default function Fleet() {
 
   const handleExport = async () => {
     setIsExporting(true);
+    setStatus(t('tools.imageToPdfTools.processing'), 'processing', 0);
     const { success, error } = await gasService.exportData('fleet', fleetData);
     if (!success) {
+      setStatus(t('common.exportError'), 'error');
       alert(`${t('common.exportError')}: ${error}`);
     } else {
+      setStatus(t('common.exportSuccess'), 'success');
       alert(t('common.exportSuccess'));
     }
     setIsExporting(false);
@@ -79,58 +85,43 @@ export default function Fleet() {
   };
 
   return (
-    <div className="w-full bg-muted-mint min-h-full pb-10">
-      <AddCarModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => {
-          setIsAddModalOpen(false);
-          fetchFleet();
-        }} 
-      />
-      
-      {selectedCar && (
-        <CarDetailsModal 
-          isOpen={isDetailsModalOpen} 
-          onClose={() => setIsDetailsModalOpen(false)} 
-          carData={selectedCar} 
+    <Layout title={t('nav.fleet')}>
+      <div className="w-full bg-muted-mint min-h-full pb-10">
+        <AddCarModal 
+          isOpen={isAddModalOpen} 
+          onClose={() => {
+            setIsAddModalOpen(false);
+            fetchFleet();
+          }} 
         />
-      )}
 
-      {/* Fleet Overview Title Section */}
-      <div className="bg-muted-mint py-8 border-b border-slate-200/50">
+      {/* Fleet Grid */}
+      <section className="py-lg">
         <div className="max-w-[1440px] mx-auto px-margin">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-gutter border-s-4 border-primary ps-gutter">
-            <div>
-              <h1 className="font-h1 text-h3 md:text-h2 text-ink">{t('nav.fleet')}</h1>
+          {/* Action Toolbar */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+            <div className="flex items-center gap-4">
+              <div className="w-3 h-8 bg-ink"></div>
+              <h2 className="text-2xl font-bold text-ink uppercase tracking-tight">{t('fleet.inventory', 'Vehicle Inventory')}</h2>
             </div>
-            <div className="flex gap-4">
+            
+            <div className="flex flex-wrap items-center gap-3">
               <button 
                 onClick={handleExport}
                 disabled={isExporting}
-                className="px-6 py-2.5 bg-midnight text-white font-button text-sm rounded-none industrial-shadow hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
+                className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
               >
                 {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
               </button>
               <button 
                 onClick={() => setIsAddModalOpen(true)}
-                className="px-6 py-2.5 bg-primary text-white font-button text-sm rounded-none industrial-shadow hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] transition-all flex items-center gap-2"
+                className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 {t('fleet.addCar', 'ADD NEW CAR')}
               </button>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Fleet Grid */}
-      <section className="py-lg">
-        <div className="max-w-[1440px] mx-auto px-margin">
-          <div className="flex items-center gap-4 mb-10">
-            <div className="w-3 h-8 bg-ink"></div>
-            <h2 className="text-2xl font-bold text-ink">{t('nav.fleet')}</h2>
-            <div className="h-[1px] flex-grow bg-slate-200/50"></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -175,7 +166,7 @@ export default function Fleet() {
                         }}
                       />
                       {car.needsMaintenance && (
-                        <div className="absolute top-4 start-4 px-3 py-1 bg-workshop-amber text-white text-[10px] font-black uppercase tracking-widest industrial-shadow">
+                        <div className="absolute top-4 start-4 px-3 py-1 bg-workshop-amber text-white text-fluid-sm font-black uppercase tracking-widest industrial-shadow">
                           {t('common.maintenance', 'Service Due')}
                         </div>
                       )}
@@ -185,15 +176,15 @@ export default function Fleet() {
                     </div>
                     <div className="p-6 flex-grow flex flex-col justify-between">
                       <div>
-                        <h3 className="font-bold text-lg text-ink leading-tight mb-4">{car.name}</h3>
+                        <h3 className="font-bold text-fluid-base text-ink leading-tight mb-4">{car.name}</h3>
                         <div className="space-y-3">
                           <div className="flex flex-col">
-                            <span className="text-ink uppercase font-bold text-[10px] tracking-widest leading-none mb-1 opacity-70">{t('fleet.plateNumber', 'Plate Number')}</span>
-                            <span className="font-semibold text-midnight text-sm">{car.plate}</span>
+                            <span className="text-ink uppercase font-bold text-fluid-sm tracking-widest leading-none mb-1 opacity-70">{t('fleet.plateNumber', 'Plate Number')}</span>
+                            <span className="font-semibold text-midnight text-fluid-sm">{car.plate}</span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="text-ink uppercase font-bold text-[10px] tracking-widest leading-none mb-1 opacity-70">{t('fleet.dailyRate', 'Daily Rate')}</span>
-                            <span className="text-primary font-bold text-lg">
+                            <span className="text-ink uppercase font-bold text-fluid-sm tracking-widest leading-none mb-1 opacity-70">{t('fleet.dailyRate', 'Daily Rate')}</span>
+                            <span className="text-primary font-bold text-fluid-base">
                               {t('common.price')}: ${car.daily_rate} {t('common.perDay')}
                             </span>
                           </div>
@@ -212,5 +203,6 @@ export default function Fleet() {
         </div>
       </section>
     </div>
-  );
+  </Layout>
+);
 }
