@@ -19,13 +19,36 @@ export interface FileUploadData {
 
 export const gasService = {
   /**
-   * Uploads a file to Google Drive via GAS
+   * Uploads base64 data to Google Drive via GAS
    */
-  async uploadFile(file: File): Promise<{ success: boolean; fileUrl?: string; error?: string }> {
+  async uploadBase64(data: { base64Data: string; fileName: string; contentType: string }): Promise<{ success: boolean; fileUrl?: string; error?: string }> {
     if (!GAS_URL) {
-      return { success: false, error: 'GAS_URL not configured in environment.' };
+      return { success: false, error: 'GAS_URL not configured.' };
     }
 
+    try {
+      await fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        body: JSON.stringify({
+          action: 'upload_file',
+          ...data
+        })
+      });
+      return { success: true, fileUrl: 'Uploaded to Drive' };
+    } catch (error) {
+      console.error('GAS Upload Error:', error);
+      return { success: false, error: 'Communication error with Google Services.' };
+    }
+  },
+
+  /**
+   * Uploads a file to Google Drive via GAS (kept for backward compatibility or direct use)
+   */
+  async uploadFile(file: File): Promise<{ success: boolean; fileUrl?: string; error?: string }> {
     if (file.size > MAX_FILE_SIZE) {
       return { success: false, error: 'File size exceeds 5MB limit.' };
     }
@@ -33,32 +56,13 @@ export const gasService = {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = async () => {
-        try {
-          const base64Data = (reader.result as string).split(',')[1];
-          // Using standard mode: 'cors' and handling opaque responses if necessary
-          // Note: GAS doesn't support CORS unless deployed as exec, so we use no-cors
-          // However, we can use a small hack: catch opaque response as success
-          await fetch(GAS_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {
-              'Content-Type': 'text/plain', // Avoid preflight by using simple content type
-            },
-            body: JSON.stringify({
-              action: 'upload_file',
-              base64Data,
-              fileName: file.name,
-              contentType: file.type
-            })
-          });
-          
-          // With no-cors, we can't see the response body.
-          // In a production app, you'd use a proxy or update GAS to handle CORS.
-          resolve({ success: true, fileUrl: 'Uploaded to Drive' });
-        } catch (error) {
-          console.error('GAS Upload Error:', error);
-          resolve({ success: false, error: 'Communication error with Google Services.' });
-        }
+        const base64Data = (reader.result as string).split(',')[1];
+        const res = await this.uploadBase64({
+          base64Data,
+          fileName: file.name,
+          contentType: file.type
+        });
+        resolve(res);
       };
       reader.onerror = () => resolve({ success: false, error: 'Error reading file.' });
       reader.readAsDataURL(file);

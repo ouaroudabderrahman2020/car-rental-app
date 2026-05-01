@@ -171,6 +171,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
             error={errors.selectedCarId ? t('common.required') : ''}
             className="flex-1 min-w-[200px] max-w-[280px]"
             disabled={disabled}
+            required
           >
             <option value="">{t('reservations.form.selectCar', 'Select a Car')}</option>
             {availableCars.map(car => (
@@ -188,6 +189,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
             error={errors.pickupDate ? t('common.required') : ''}
             className="flex-1 min-w-[200px] max-w-[280px]"
             disabled={disabled}
+            required
           />
 
           <div className="flex-1 min-w-[200px] max-w-[280px] space-y-0">
@@ -198,6 +200,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
               onChange={(e) => setReturnDate(e.target.value)}
               error={errors.returnDate ? t('common.required') : ''}
               disabled={disabled}
+              required
             />
             {validateDates() && returnDate && pickupDate && new Date(returnDate) <= new Date(pickupDate) && (
               <p className="text-[10px] text-red-500 font-bold uppercase mt-1 px-2">{validateDates()}</p>
@@ -266,6 +269,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                   placeholder={t('reservations.form.clientPlaceholder')}
                   error={errors.clientName ? t('common.required') : ''}
                   disabled={disabled}
+                  required
                 />
               </div>
               {isClientModified && !disabled && (
@@ -303,7 +307,6 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
             type="tel"
             value={clientPhone}
             onChange={(e) => setClientPhone(e.target.value)}
-            error={errors.phone}
             className="flex-1 min-w-[200px] max-w-[280px]"
             disabled={disabled}
             style={{ zIndex: 40 }}
@@ -313,7 +316,6 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
             label={t('reservations.form.idCardNumber')}
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
-            error={errors.id}
             className="flex-1 min-w-[200px] max-w-[280px]"
             disabled={disabled}
             style={{ zIndex: 30 }}
@@ -324,7 +326,6 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
               label={t('reservations.form.licenseNumber')}
               value={clientLicense}
               onChange={(e) => setClientLicense(e.target.value)}
-              error={errors.license}
               disabled={disabled}
             />
           </div>

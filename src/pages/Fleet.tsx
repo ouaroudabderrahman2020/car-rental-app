@@ -95,6 +95,16 @@ export default function Fleet() {
             fetchFleet();
           }} 
         />
+        {selectedCar && (
+          <CarDetailsModal
+            isOpen={isDetailsModalOpen}
+            onClose={() => {
+              setIsDetailsModalOpen(false);
+              fetchFleet();
+            }}
+            carData={selectedCar}
+          />
+        )}
 
       {/* Fleet Grid */}
       <section className="py-lg">

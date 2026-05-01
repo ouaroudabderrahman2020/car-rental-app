@@ -2,7 +2,7 @@ import { Calculator, Calendar, FileType } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
-import ToolModal from '../components/ToolModal';
+import Modal1 from '../components/Modal1';
 
 export default function Tools() {
   const { t } = useTranslation();
@@ -40,7 +40,7 @@ export default function Tools() {
         </div>
       </main>
 
-      <ToolModal 
+      <Modal1 
         isOpen={!!selectedTool} 
         onClose={() => setSelectedTool(null)} 
         toolName={selectedTool || ''} 

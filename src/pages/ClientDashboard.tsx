@@ -6,7 +6,8 @@ import { supabase } from '../lib/supabase';
 import { Customer, Reservation } from '../types';
 import Layout from '../components/Layout';
 import { SectionHeader } from '../components/SectionHeader';
-import ClientDetailModal from '../components/ClientDetailModal';
+import ClientDetailsModal from '../components/ClientDetailsModal';
+import AddClientModal from '../components/AddClientModal';
 import { useStatus } from '../contexts/StatusContext';
 
 export default function ClientDashboard() {
@@ -17,7 +18,8 @@ export default function ClientDashboard() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState<Customer | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -113,7 +115,6 @@ export default function ClientDashboard() {
       <div className="min-h-screen bg-white pb-20">
         {/* Main Content */}
         <div className="max-w-[1440px] mx-auto px-4 md:px-margin v-section-gap">
-          {/* Toolbar: Search and Actions */}
           <SectionHeader 
             title={t('crm.table.title', 'Client Directory')}
             actions={
@@ -129,13 +130,23 @@ export default function ClientDashboard() {
                   />
                 </div>
 
-                <button className="bg-midnight-ink text-white py-4 px-8 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-widest text-fluid-sm shrink-0">
+                <button onClick={() => setIsAddModalOpen(true)} className="bg-midnight-ink text-white py-4 px-8 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-widest text-fluid-sm shrink-0">
                   <Plus className="w-5 h-5" />
                   {t('common.add')}
                 </button>
               </div>
             }
           />
+          
+          {/* Filtered Clients Card Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-10">
+            {filteredClients.map(client => (
+              <div key={client.id} className="bg-white p-4 border border-slate-200 cursor-pointer hover:shadow-md transition-all shadow-sm group" onClick={() => { setSelectedClient(client); setIsDetailsModalOpen(true); }}>
+                <p className="font-bold text-sm truncate group-hover:text-primary transition-colors">{client.name}</p>
+                <p className="text-xs text-slate-500 truncate">{client.phone}</p>
+              </div>
+            ))}
+          </div>
 
           <div className="bg-white border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
@@ -250,13 +261,18 @@ export default function ClientDashboard() {
           </div>
         </div>
 
-        <ClientDetailModal 
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+        <ClientDetailsModal 
+          isOpen={isDetailsModalOpen}
+          onClose={() => setIsDetailsModalOpen(false)}
           client={selectedClient}
-          reservations={reservations}
-          onDelete={handleDeleteClient}
-          onUpdate={handleUpdateClient}
+        />
+        <AddClientModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onConfirm={(client) => {
+            fetchData();
+            setIsAddModalOpen(false);
+          }}
         />
       </div>
     </Layout>

@@ -16,6 +16,7 @@ interface Field1Props {
   as?: 'input' | 'select' | 'textarea';
   disabled?: boolean;
   style?: React.CSSProperties;
+  required?: boolean;
 }
 
 const Field1: React.FC<Field1Props> = ({
@@ -32,7 +33,8 @@ const Field1: React.FC<Field1Props> = ({
   children,
   as = 'input',
   disabled = false,
-  style
+  style,
+  required
 }) => {
   const isSelect = as === 'select';
   const isTextarea = as === 'textarea';
@@ -70,6 +72,7 @@ const Field1: React.FC<Field1Props> = ({
           `}
         >
           {label}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
 
         <AnimatePresence>

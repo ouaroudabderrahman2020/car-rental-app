@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
 import { useReservations } from '../hooks/useReservations';
 import { useVerifiedTime } from '../hooks/useVerifiedTime';
+import { useStatus } from '../contexts/StatusContext';
 import { Reservation, Car as CarType } from '../types';
 
 import FormSection from './FormSection';
@@ -24,6 +25,7 @@ interface EditReservationModalProps {
 
 export default function EditReservationModal({ isOpen, onClose, reservationData }: EditReservationModalProps) {
   const { t } = useTranslation();
+  const { setStatus } = useStatus();
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Form State (initialized from reservationData if provided)
@@ -58,6 +60,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
   const { verifiedTime } = useVerifiedTime();
   const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingContract, setIsGeneratingContract] = useState(false);
+  const [pendingFile, setPendingFile] = useState<{ base64Data: string; fileName: string; contentType: string } | null>(null);
   const [uploadedDocUrl, setUploadedDocUrl] = useState<string | null>(null);
   const [availableCars, setAvailableCars] = useState<CarType[]>([]);
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
@@ -231,15 +234,52 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
     setIsUploading(true);
-    const result = await gasService.uploadFile(file);
-    if (result.success) {
-      setUploadedDocUrl(result.fileUrl || 'File Uploaded');
-      alert(t('editReservation.updateDocSuccess'));
-    } else {
-      alert(`${t('common.error')}: ${result.error}`);
+    setStatus(t('reservations.form.processingFile'), 'processing', 0);
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Data = (reader.result as string).split(',')[1];
+      setPendingFile({
+        base64Data,
+        fileName: file.name,
+        contentType: file.type
+      });
+      setUploadedDocUrl(file.name);
+      setStatus(t('reservations.form.fileReady'), 'success');
+      setIsUploading(false);
+    };
+    reader.onerror = () => {
+      setStatus(t('common.error'), 'error');
+      setIsUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerGasSideEffects = async (resData: any) => {
+    setStatus(t('common.syncingExternal'), 'processing', 30);
+    
+    const tasks = [];
+    
+    // 1. Export to Sheets
+    tasks.push(gasService.exportData('reservations', [resData]));
+    
+    // 2. Upload Pending File
+    if (pendingFile) {
+      tasks.push(gasService.uploadBase64(pendingFile));
     }
-    setIsUploading(false);
+    
+    // 3. Generate Contract
+    tasks.push(gasService.generateContract(resData));
+    
+    try {
+      await Promise.allSettled(tasks);
+      return true;
+    } catch (e) {
+      console.error('GAS Side Effects failed', e);
+      return false;
+    }
   };
 
   const handleConfirm = async () => {
@@ -256,7 +296,6 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
     if (!pickupDate) newErrors.pickupDate = 'required';
     if (!returnDate) newErrors.returnDate = 'required';
     
-    // Format validations
     if (clientPhone && !validatePhone(clientPhone)) newErrors.phone = t('addReservation.errors.invalidPhone');
     if (clientId && !validateId(clientId)) newErrors.id = t('addReservation.errors.invalidId');
     if (clientLicense && !validateId(clientLicense)) newErrors.license = t('addReservation.errors.invalidLicense');
@@ -267,38 +306,51 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
     }
 
     setErrors({});
+    setStatus(t('common.processingSubmission', 'Processing submission...'), 'processing', 10);
     
+    const reservationUpdateData = {
+      customer_name: clientName,
+      customer_phone: clientPhone,
+      start_date: new Date(pickupDate).toISOString(),
+      end_date: new Date(returnDate).toISOString(),
+      extended_return_date: extendedReturnDate ? new Date(extendedReturnDate).toISOString() : null,
+      total_price: totalPrice,
+      prepayment: typeof prepayment === 'string' ? parseFloat(prepayment) || 0 : prepayment,
+      deposit_type: depositType,
+      deposit_amount: typeof depositAmount === 'string' ? parseFloat(depositAmount) || 0 : depositAmount,
+      car_id: selectedCarId!,
+      fuel_level_out: parseInt(fuelOut) || null,
+      odometer_out: parseInt(odometerOut) || null,
+      cleaned_before: cleanedBefore,
+      included_items: includedItems,
+      notes: notes,
+      rating: rating,
+    };
+
     try {
+      // 1. Sync to Supabase
       const { error } = await updateReservation(
         reservationData.id,
-        {
-          customer_name: clientName,
-          customer_phone: clientPhone,
-          start_date: new Date(pickupDate).toISOString(),
-          end_date: new Date(returnDate).toISOString(),
-          extended_return_date: extendedReturnDate ? new Date(extendedReturnDate).toISOString() : null,
-          total_price: totalPrice,
-          prepayment: typeof prepayment === 'string' ? parseFloat(prepayment) || 0 : prepayment,
-          deposit_type: depositType,
-          deposit_amount: typeof depositAmount === 'string' ? parseFloat(depositAmount) || 0 : depositAmount,
-          car_id: selectedCarId!,
-          fuel_level_out: parseInt(fuelOut) || null,
-          odometer_out: parseInt(odometerOut) || null,
-          cleaned_before: cleanedBefore,
-          included_items: includedItems,
-          notes: notes,
-          rating: rating,
-        },
+        reservationUpdateData,
         reservationData.car_id
       );
 
       if (error) throw new Error(error);
 
-      alert(t('editReservation.updateSuccess'));
+      // 2. Trigger GAS Side Effects simultaneously
+      await triggerGasSideEffects({
+        ...reservationUpdateData,
+        car_brand: carBrand,
+        car_model: carModel,
+        license_plate: licensePlate
+      });
+
+      setStatus(t('common.success'), 'success');
       setIsEditMode(false);
       onClose();
     } catch (error: any) {
       console.error('Update error:', error);
+      setStatus(t('common.error'), 'error');
       alert(`Failed to save changes: ${error.message}`);
     }
   };
@@ -340,14 +392,33 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
   };
 
   const handleComplete = async () => {
+    setStatus(t('common.processingSubmission', 'Processing submission...'), 'processing', 10);
     try {
+      const reservationDataToUpdate = { 
+        status: 'Completed' as const,
+        odometer_in: parseInt(odometerIn) || null,
+        fuel_level_in: parseInt(fuelIn) || null,
+        customer_name: clientName,
+        customer_phone: clientPhone,
+        start_date: new Date(pickupDate).toISOString(),
+        end_date: new Date(returnDate).toISOString(),
+        extended_return_date: extendedReturnDate ? new Date(extendedReturnDate).toISOString() : null,
+        total_price: totalPrice,
+        prepayment: typeof prepayment === 'string' ? parseFloat(prepayment) || 0 : prepayment,
+        deposit_type: depositType,
+        deposit_amount: typeof depositAmount === 'string' ? parseFloat(depositAmount) || 0 : depositAmount,
+        car_id: selectedCarId!,
+        fuel_level_out: parseInt(fuelOut) || null,
+        odometer_out: parseInt(odometerOut) || null,
+        cleaned_before: cleanedBefore,
+        included_items: includedItems,
+        notes: notes,
+        rating: rating,
+      };
+
       const { error } = await supabase
         .from('reservations')
-        .update({ 
-          status: 'Completed',
-          odometer_in: parseInt(odometerIn) || null,
-          fuel_level_in: parseInt(fuelIn) || null
-        })
+        .update(reservationDataToUpdate)
         .eq('id', reservationData.id);
       
       if (error) throw error;
@@ -364,11 +435,21 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
           .eq('id', selectedCarId);
       }
 
+      // GAS Side Effects
+      await triggerGasSideEffects({
+        ...reservationDataToUpdate,
+        car_brand: carBrand,
+        car_model: carModel,
+        license_plate: licensePlate
+      });
+
+      setStatus(t('common.success'), 'success');
       alert(t('editReservation.completeConfirm'));
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Completion error:', error);
-      alert(t('common.error'));
+      setStatus(t('common.error'), 'error');
+      alert(`${t('common.error')}: ${error.message}`);
     }
   };
 

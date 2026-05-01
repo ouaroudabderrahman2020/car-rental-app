@@ -6,13 +6,14 @@ import CalculatorTool from './tools/CalculatorTool';
 import CalendarTool from './tools/CalendarTool';
 import ImageToPdf from './tools/ImageToPdf';
 
-interface ToolModalProps {
+interface Modal1Props {
   isOpen: boolean;
   onClose: () => void;
   toolName: string;
+  children?: React.ReactNode;
 }
 
-export default function ToolModal({ isOpen, onClose, toolName }: ToolModalProps) {
+export default function Modal1({ isOpen, onClose, toolName, children }: Modal1Props) {
   const { t } = useTranslation();
   if (!isOpen) return null;
 
@@ -66,7 +67,7 @@ export default function ToolModal({ isOpen, onClose, toolName }: ToolModalProps)
 
         {/* Content Area */}
         <div className="flex-1 p-4 sm:p-10 overflow-y-auto min-h-[500px]">
-          {renderTool()}
+          {children || renderTool()}
         </div>
 
         {/* Footer */}

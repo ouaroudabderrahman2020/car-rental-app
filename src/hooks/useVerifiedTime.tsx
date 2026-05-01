@@ -42,19 +42,26 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
     setSyncStatus('syncing');
 
     const tryLayer1 = async () => {
-      const data = await fetchWithTimeout('https://worldtimeapi.org/api/timezone/Africa/Casablanca');
-      return new Date(data.datetime).getTime();
-    };
-
-    const tryLayer2 = async () => {
-      const data = await fetchWithTimeout('https://www.timeapi.io/api/Time/current/zone?timeZone=Africa/Casablanca');
+      const response = await fetch('https://www.timeapi.io/api/Time/current/zone?timeZone=Africa/Casablanca');
+      if (!response.ok) throw new Error('TimeAPI failed');
+      const data = await response.json();
       return new Date(data.dateTime).getTime();
     };
 
+    const tryLayer2 = async () => {
+      // Use Google's Date header as a very reliable fallback
+      const response = await fetch('https://www.google.com', { method: 'HEAD', mode: 'no-cors' });
+      const dateHeader = response.headers.get('Date');
+      if (!dateHeader) throw new Error('No Date header');
+      // GMT+1 is 3600000ms offset from GMT
+      return new Date(dateHeader).getTime() + 3600000;
+    };
+
     const tryLayer3 = async () => {
-      const data = await fetchWithTimeout('https://worldclockapi.com/api/json/utc/now');
-      // worldclockapi often returns a simple structure, adjust if needed
-      return new Date(data.currentDateTime).getTime();
+      const response = await fetch('https://worldtimeapi.org/api/timezone/Africa/Casablanca');
+      if (!response.ok) throw new Error('WorldTimeAPI failed');
+      const data = await response.json();
+      return new Date(data.datetime).getTime();
     };
 
     const layers = [tryLayer1, tryLayer2, tryLayer3];
@@ -84,13 +91,16 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
 
     if (!success) {
       setSyncStatus('error');
-      console.error('[ClockService] All layers failed. Retrying in 30s...');
+      console.error('[ClockService] All layers failed. Falling back to system time. Retrying in 1 hour...');
+      // Fallback to system time, but mark as not fully synced
+      setIsSynced(false);
+      
       // Ensure we don't start multiple parallel retries
       if (hourlyTimeoutRef.current) clearTimeout(hourlyTimeoutRef.current);
       hourlyTimeoutRef.current = setTimeout(() => {
         isSyncingRef.current = false;
         syncWithServer();
-      }, 30000);
+      }, 3600000); // Retry in 1 hour
     } else {
       if (hourlyTimeoutRef.current) clearTimeout(hourlyTimeoutRef.current);
       hourlyTimeoutRef.current = setTimeout(() => {
