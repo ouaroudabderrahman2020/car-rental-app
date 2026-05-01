@@ -7,7 +7,9 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
-import { Reservation } from '../types';
+import { gasService } from '../services/gasService';
+import FormSection from './FormSection';
+import ReservationForm from './ReservationForm';
 
 interface ReservationDetailsModalProps {
   isOpen: boolean;
@@ -47,6 +49,10 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
   const [rating, setRating] = useState(reservationData?.rating || 4);
 
   // UI State
+  const [availableCars, setAvailableCars] = useState<any[]>([]);
+  const [selectedCarId, setSelectedCarId] = useState<string | null>(reservationData?.car_id || null);
+  const [allCustomers, setAllCustomers] = useState<any[]>([]);
+  const [isGeneratingContract, setIsGeneratingContract] = useState(false);
   const [carListActive, setCarListActive] = useState(false);
   const [plateListActive, setPlateListActive] = useState(false);
   const [clientListActive, setClientListActive] = useState(false);
@@ -65,13 +71,45 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
       setCarBrand(reservationData.carBrand || '');
       setCarModel(reservationData.car || '');
       setClientName(reservationData.client || '');
+      setSelectedCarId(reservationData.car_id || null);
+      setPickupDate(reservationData.start_date?.slice(0, 16) || reservationData.pickupDate || '');
+      setReturnDate(reservationData.end_date?.slice(0, 16) || reservationData.returnDate || '');
+      setDailyRate(reservationData.daily_rate || reservationData.rate || 0);
+      setClientPhone(reservationData.customer_phone || reservationData.phone || '');
+      setPrepayment(reservationData.prepayment || 0);
+      setOdometerOut(reservationData.odometer_out?.toString() || reservationData.odometerOut || '');
+      setFuelOut(reservationData.fuel_level_out?.toString() || reservationData.fuelOut || '');
     }
   }, [reservationData]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [{ data: cars }, { data: customers }] = await Promise.all([
+        supabase
+          .from('cars')
+          .select('*')
+          .neq('status', 'Decommissioned'),
+        supabase
+          .from('customers')
+          .select('*')
+      ]);
+      
+      if (cars) setAvailableCars(cars);
+      if (customers) setAllCustomers(customers);
+    };
+    if (isOpen) fetchData();
+  }, [isOpen]);
 
   useEffect(() => {
     const calculate = () => {
       const start = new Date(pickupDate);
       const end = extendedReturnDate ? new Date(extendedReturnDate) : new Date(returnDate);
+
+      const reservationStateInfo = { 
+        label: reservationData?.status || 'Active', 
+        color: 'text-primary', 
+        borderColor: 'border-primary' 
+      };
 
       if (start.getTime() && end.getTime() && end > start) {
         const diffMs = end.getTime() - start.getTime();
@@ -105,6 +143,53 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors] = useState<{ [key: string]: string }>({});
+
+  const validateDates = () => {
+    if (pickupDate && returnDate) {
+      if (new Date(returnDate) <= new Date(pickupDate)) {
+        return t('addReservation.errors.dateRange');
+      }
+    }
+    return null;
+  };
+
+  const handleCreateContract = async () => {
+    if (!isFormValid) return;
+    setIsGeneratingContract(true);
+    
+    // Prepare reservation data for template
+    const reservationDataToGAS = {
+      customer_name: clientName,
+      customer_phone: clientPhone,
+      customer_id: clientId,
+      car_brand: carBrand,
+      car_model: carModel,
+      license_plate: licensePlate,
+      pickup_date: pickupDate,
+      return_date: returnDate,
+      total_price: totalPrice,
+      prepayment: prepayment,
+      balance_due: balanceDue,
+      deposit_amount: depositAmount,
+      deposit_type: depositType
+    };
+
+    const result = await gasService.generateContract(reservationDataToGAS);
+    if (result.success) {
+      alert(t('reservations.form.contractSuccess', 'Contract generated successfully in Drive!'));
+    } else {
+      alert(`${t('common.error')}: ${result.error}`);
+    }
+    setIsGeneratingContract(false);
+  };
+
+  const handleFileUpload = (e: any) => {
+    console.log('File upload triggered', e);
+  };
+
+  const isClientModified = false;
+  const handleAddNewClient = () => {};
 
   const handleDelete = async () => {
     if (!reservationData?.id) return;
@@ -155,12 +240,20 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
           customer_phone: clientPhone,
           start_date: new Date(pickupDate).toISOString(),
           end_date: new Date(returnDate).toISOString(),
+          extended_return_date: extendedReturnDate ? new Date(extendedReturnDate).toISOString() : null,
           total_price: totalPrice,
-          odometer_out: parseInt(odometerOut) || 0,
-          odometer_in: parseInt(odometerIn) || 0,
-          fuel_level_out: parseInt(fuelOut) || 0,
-          fuel_level_in: parseInt(fuelIn) || 0,
-          notes: notes
+          prepayment: typeof prepayment === 'string' ? parseFloat(prepayment) || 0 : prepayment,
+          deposit_type: depositType,
+          deposit_amount: typeof depositAmount === 'string' ? parseFloat(depositAmount) || 0 : depositAmount,
+          car_id: selectedCarId!,
+          fuel_level_out: parseInt(fuelOut) || null,
+          fuel_level_in: parseInt(fuelIn) || null,
+          odometer_out: parseInt(odometerOut) || null,
+          odometer_in: parseInt(odometerIn) || null,
+          cleaned_before: cleanedBefore,
+          included_items: includedItems,
+          notes: notes,
+          rating: rating,
         })
         .eq('id', reservationData.id);
 
@@ -206,408 +299,80 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
 
         {/* Content */}
         <div className="bg-white w-full">
-          {/* Section 1: Car & Schedule */}
-          <div className="p-4 sm:p-10 space-y-8">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <CarIcon className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.carSchedule')}</h3>
-              </div>
-            </div>
+          <ReservationForm 
+            t={t}
+            availableCars={availableCars}
+            selectedCarId={selectedCarId}
+            setSelectedCarId={setSelectedCarId}
+            setCarBrand={setCarBrand}
+            setCarModel={setCarModel}
+            setLicensePlate={setLicensePlate}
+            setDailyRate={setDailyRate}
+            setOdometerOut={setOdometerOut}
+            setFuelOut={setFuelOut}
+            pickupDate={pickupDate}
+            setPickupDate={setPickupDate}
+            returnDate={returnDate}
+            setReturnDate={setReturnDate}
+            extendedReturnDate={extendedReturnDate}
+            setExtendedReturnDate={setExtendedReturnDate}
+            validateDates={validateDates}
+            reservationState={{ 
+              label: reservationData?.status || 'Active', 
+              color: 'text-primary', 
+              borderColor: 'border-primary' 
+            }}
+            duration={duration}
+            dailyRate={dailyRate}
+            totalPrice={totalPrice}
+            clientName={clientName}
+            setClientName={setClientName}
+            setClientListActive={setClientListActive}
+            clientListActive={clientListActive}
+            allCustomers={allCustomers}
+            isClientModified={isClientModified}
+            handleAddNewClient={handleAddNewClient}
+            clientPhone={clientPhone}
+            setClientPhone={setClientPhone}
+            clientId={clientId}
+            setClientId={setClientId}
+            clientLicense={clientLicense}
+            setClientLicense={setClientLicense}
+            errors={errors}
+            rating={rating}
+            setRating={setRating}
+            notes={notes}
+            setNotes={setNotes}
+            notesRef={notesRef}
+            prepayment={prepayment}
+            setPrepayment={setPrepayment}
+            balanceDue={balanceDue}
+            depositType={depositType}
+            setDepositType={setDepositType}
+            depositAmount={depositAmount}
+            setDepositAmount={setDepositAmount}
+            odometerOut={odometerOut}
+            odometerIn={odometerIn}
+            setOdometerIn={setOdometerIn}
+            fuelOut={fuelOut}
+            fuelIn={fuelIn}
+            setFuelIn={setFuelIn}
+            cleanedBefore={cleanedBefore}
+            setCleanedBefore={setCleanedBefore}
+            isAddingItem={isAddingItem}
+            setIsAddingItem={setIsAddingItem}
+            newItemName={newItemName}
+            setNewItemName={setNewItemName}
+            handleAddItem={handleAddItem}
+            includedItems={includedItems}
+            handleFileUpload={handleFileUpload}
+            handleCreateContract={handleCreateContract}
+            isUploading={false}
+            isGeneratingContract={isGeneratingContract}
+            disabled={!isEditMode}
+          />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="space-y-2 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.brandSelection')}</label>
-                <div className="relative">
-                  <input 
-                    className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase font-bold disabled:bg-slate-50 disabled:cursor-default"
-                    value={carBrand}
-                    onChange={(e) => setCarBrand(e.target.value)}
-                    onFocus={() => isEditMode && setCarListActive(true)}
-                    onBlur={() => setTimeout(() => setCarListActive(false), 200)}
-                    disabled={!isEditMode}
-                    placeholder={t('reservations.form.brandPlaceholder')}
-                  />
-                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40 w-5 h-5" />
-                  {carListActive && isEditMode && (
-                    <div className="combobox-list active">
-                      {['Audi - A6 (ABC-1234)', 'BMW - 3 Series (XYZ-7890)', 'Tesla - Model 3 (TSL-333)'].map(carLabel => (
-                        <div key={carLabel} className="combobox-item" onClick={() => {
-                          const [brand, rest] = carLabel.split(' - ');
-                          const [model, plateWithParens] = rest.split(' (');
-                          const plate = plateWithParens.replace(')', '');
-                          setCarBrand(brand);
-                          setCarModel(model);
-                          setLicensePlate(plate);
-                        }}>{carLabel}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.modelReadOnly')}</label>
-                <input 
-                  className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60 disabled:cursor-default"
-                  value={carModel}
-                  readOnly
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.plateReadOnly')}</label>
-                <input 
-                  className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60 disabled:cursor-default"
-                  value={licensePlate}
-                  readOnly
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.pickupDate')}</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
-                  value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.returnDate')}</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
-                  value={returnDate}
-                  onChange={(e) => setReturnDate(e.target.value)}
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.extendedReturn')}</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
-                  value={extendedReturnDate}
-                  onChange={(e) => setExtendedReturnDate(e.target.value)}
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.duration')}</label>
-                <div className="w-full bg-muted-cream border-l-4 border-midnight-ink p-4 min-h-[60px] flex items-center font-bold text-ink/70">
-                  {duration}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.dailyRate')}</label>
-                <input 
-                  type="number" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow font-bold disabled:bg-slate-50"
-                  value={dailyRate}
-                  onChange={(e) => setDailyRate(Number(e.target.value))}
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.totalPriceCalc')}</label>
-                <div className="w-full bg-muted-mint p-4 min-h-[60px] flex items-center justify-center font-black text-2xl text-ink industrial-shadow border-[1.5px] border-form-border">
-                  {totalPrice.toFixed(2)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Client Profile */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <User className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.clientProfile')}</h3>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="sm:col-span-2 space-y-1 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.fullName')}</label>
-                <div className="relative">
-                  <input 
-                    className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase disabled:bg-slate-50"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    onFocus={() => isEditMode && setClientListActive(true)}
-                    onBlur={() => setTimeout(() => setClientListActive(false), 200)}
-                    disabled={!isEditMode}
-                    placeholder={t('reservations.form.clientPlaceholder')}
-                  />
-                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40 w-5 h-5" />
-                  {clientListActive && isEditMode && (
-                    <div className="combobox-list active">
-                      {['Johnathan Doe', 'Jane Smith', 'Michael Scott', 'Alexander Pierce'].map(client => (
-                        <div key={client} className="combobox-item" onClick={() => setClientName(client)}>{client}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.phoneNumber')}</label>
-                <input 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  disabled={!isEditMode}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.idCardNumber')}</label>
-                <input 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  disabled={!isEditMode}
-                />
-              </div>
-              <div className="sm:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.licenseNumber')}</label>
-                <input 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-50"
-                  value={clientLicense}
-                  onChange={(e) => setClientLicense(e.target.value)}
-                  disabled={!isEditMode}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Financial Alignment */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <CreditCard className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.financialAlignment')}</h3>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.prepayment')}</label>
-                <input 
-                  type="number" 
-                  className="w-full p-4 text-xl font-bold bg-white disabled:bg-slate-50"
-                  value={prepayment}
-                  onChange={(e) => setPrepayment(Number(e.target.value))}
-                  disabled={!isEditMode}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.balanceDue')}</label>
-                <div className="py-4 text-2xl font-black text-primary px-4 border-[1.5px] border-transparent">
-                  ${balanceDue.toFixed(2)}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.depositType')}</label>
-                <select 
-                  className="w-full p-4 bg-white text-lg disabled:bg-slate-50"
-                  value={depositType}
-                  onChange={(e) => {
-                    const newType = e.target.value;
-                    setDepositType(newType);
-                    if (newType === 'None') {
-                      setDepositAmount(0);
-                    }
-                  }}
-                  disabled={!isEditMode}
-                >
-                  <option value="Cash">{t('reservations.form.cash')}</option>
-                  <option value="Cheque">{t('reservations.form.cheque')}</option>
-                  <option value="None">{t('reservations.form.none')}</option>
-                </select>
-              </div>
-              <div className={`space-y-2 transition-opacity ${depositType === 'None' || !isEditMode ? 'opacity-50' : 'opacity-100'}`}>
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.depositAmt')}</label>
-                <input 
-                  type="number" 
-                  className="w-full p-4 bg-white text-lg disabled:bg-slate-50"
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(Number(e.target.value))}
-                  disabled={!isEditMode || depositType === 'None'}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Logistics Tracking */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <Monitor className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.logisticsTracking')}</h3>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { label: t('reservations.form.odometerOut'), val: odometerOut, setter: setOdometerOut },
-                { label: t('reservations.form.odometerIn'), val: odometerIn, setter: setOdometerIn },
-                { label: t('reservations.form.fuelOut'), val: fuelOut, setter: setFuelOut },
-                { label: t('reservations.form.fuelIn'), val: fuelIn, setter: setFuelIn },
-              ].map((field) => (
-                <div key={field.label} className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{field.label}</label>
-                  <input 
-                    className="w-full p-4 bg-white text-lg disabled:bg-slate-50"
-                    value={field.val}
-                    onChange={(e) => field.setter(e.target.value)}
-                    disabled={!isEditMode}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 5: Details & Condition */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <ClipboardList className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.detailsCondition')}</h3>
-              </div>
-            </div>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.cleanedBefore')}</label>
-                <select 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow text-lg disabled:bg-slate-50"
-                  value={cleanedBefore}
-                  onChange={(e) => setCleanedBefore(e.target.value)}
-                  disabled={!isEditMode}
-                >
-                  <option value="yes">{t('reservations.form.yes')}</option>
-                  <option value="no">{t('reservations.form.no')}</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.includedItems')}</label>
-                {isEditMode && (
-                  <button 
-                    onClick={() => setIsAddingItem(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-midnight-ink text-white font-bold text-xs uppercase tracking-widest industrial-shadow hover:bg-ink transition-all"
-                  >
-                    <Plus className="w-4 h-4" /> {t('reservations.form.addItem')}
-                  </button>
-                )}
-              </div>
-
-              <AnimatePresence>
-                {isAddingItem && isEditMode && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex gap-2 flex-wrap"
-                  >
-                    <input 
-                      className="flex-1 p-3 text-sm uppercase industrial-shadow"
-                      value={newItemName}
-                      onChange={(e) => setNewItemName(e.target.value)}
-                      placeholder={t('reservations.form.newItemPlaceholder')}
-                      autoFocus
-                    />
-                    <button 
-                      onClick={handleAddItem}
-                      className="px-4 py-3 bg-primary text-white font-bold text-xs uppercase tracking-widest industrial-shadow flex items-center justify-center min-w-[50px]"
-                    >
-                      <Check className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => setIsAddingItem(false)}
-                      className="px-4 py-3 bg-slate-200 text-ink font-bold text-xs uppercase tracking-widest flex items-center justify-center"
-                    >
-                      {t('common.cancel')}
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {includedItems.map((item) => (
-                  <label key={item} className="flex items-center gap-3 cursor-default bg-white p-4 industrial-shadow border-[1.5px] border-form-border">
-                    <input 
-                      type="checkbox" 
-                      defaultChecked 
-                      className="w-6 h-6 border-2 border-midnight-ink text-primary focus:ring-0 rounded-none disabled:bg-slate-50" 
-                      disabled={!isEditMode}
-                    />
-                    <span className="text-sm font-bold uppercase">{item}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.conditionFeedback')}</label>
-                <div className={`flex gap-2 text-midnight-ink transition-opacity ${!isEditMode ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
-                  {[1, 2, 3, 4, 5].map((val) => (
-                    <button key={val} onClick={() => isEditMode && setRating(val)} className={`transition-all`}>
-                      <Star 
-                        className={`w-10 h-10 ${rating >= val ? 'fill-current' : 'fill-none'}`} 
-                        strokeWidth={1}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.notes')}</label>
-                <textarea 
-                  className="w-full bg-white p-4 min-h-[100px] industrial-shadow resize-none disabled:bg-slate-50"
-                  value={notes}
-                  onChange={(e) => {
-                    setNotes(e.target.value);
-                    if (notesRef.current) {
-                      notesRef.current.style.height = 'auto';
-                      notesRef.current.style.height = notesRef.current.scrollHeight + 'px';
-                    }
-                  }}
-                  ref={notesRef}
-                  disabled={!isEditMode}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 6: Documentation */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <Upload className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.documentation')}</h3>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-6">
-              <button 
-                disabled={!isEditMode}
-                className={`flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-sm uppercase tracking-[0.2em] industrial-shadow transition-all ${!isEditMode ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted-mint'}`}
-              >
-                <Upload className="w-6 h-6" /> {t('reservations.form.uploadContract')}
-              </button>
-              <button 
-                disabled={!isEditMode}
-                className={`flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-sm uppercase tracking-[0.2em] industrial-shadow transition-all ${!isEditMode ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted-mint'}`}
-              >
-                <Monitor className="w-6 h-6" /> {t('reservations.form.gallery')}
-              </button>
-            </div>
-          </div>
+          {/* Footer */}
 
           {/* Footer */}
           <div className="px-6 py-8 sm:px-10 bg-midnight-ink flex flex-col gap-8 shrink-0">

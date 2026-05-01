@@ -12,6 +12,11 @@ import { useReservations } from '../hooks/useReservations';
 import { useVerifiedTime } from '../hooks/useVerifiedTime';
 import { useStatus } from '../contexts/StatusContext';
 
+import Button1 from './Button1';
+import Field1 from './Field1';
+import FormSection from './FormSection';
+import ReservationForm from './ReservationForm';
+
 interface AddReservationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,20 +32,22 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
   const [pickupDate, setPickupDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [extendedReturnDate, setExtendedReturnDate] = useState('');
-  const [dailyRate, setDailyRate] = useState(120);
+  const [dailyRate, setDailyRate] = useState<string | number>('');
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientId, setClientId] = useState('');
   const [clientLicense, setClientLicense] = useState('');
-  const [prepayment, setPrepayment] = useState(0);
-  const [depositType, setDepositType] = useState('None');
-  const [depositAmount, setDepositAmount] = useState(0);
+  const [prepayment, setPrepayment] = useState<string | number>('');
+  const [depositType, setDepositType] = useState('');
+  const [depositAmount, setDepositAmount] = useState<string | number>('');
   const [odometerOut, setOdometerOut] = useState('');
   const [odometerIn, setOdometerIn] = useState('');
   const [fuelOut, setFuelOut] = useState('');
   const [fuelIn, setFuelIn] = useState('');
-  const [cleanedBefore, setCleanedBefore] = useState('yes');
+  const [cleanedBefore, setCleanedBefore] = useState('');
   const [includedItems, setIncludedItems] = useState<string[]>([]);
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
 
   // Initial items translation
   useEffect(() => {
@@ -54,7 +61,7 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
         t('reservations.form.includedItemsList.wrench')
       ]);
     }
-  }, [isOpen, t, includedItems.length]);
+  }, [isOpen, t]);
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState(0);
 
@@ -64,33 +71,30 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
   const [availableCars, setAvailableCars] = useState<any[]>([]);
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeneratingContract, setIsGeneratingContract] = useState(false);
   const [uploadedDocUrl, setUploadedDocUrl] = useState<string | null>(null);
-  const [carListActive, setCarListActive] = useState(false);
-  const [plateListActive, setPlateListActive] = useState(false);
   const [clientListActive, setClientListActive] = useState(false);
-  const [isAddingItem, setIsAddingItem] = useState(false);
-  const [newItemName, setNewItemName] = useState('');
+  const [allCustomers, setAllCustomers] = useState<any[]>([]);
+  const [isAddingNewClient, setIsAddingNewClient] = useState(false);
 
   // Validation State
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Initial pickup date
-  useEffect(() => {
-    if (isOpen && !pickupDate) {
-      // Localize to Morocco/Browser local-offset display but based on verified UTC
-      const localVerified = new Date(verifiedTime);
-      localVerified.setMinutes(localVerified.getMinutes() - localVerified.getTimezoneOffset());
-      setPickupDate(localVerified.toISOString().slice(0, 16));
-    }
-  }, [isOpen, verifiedTime, pickupDate]);
+  // Removed auto-fill for pickupDate to ensure modal starts empty
 
   const validateDates = () => {
+    const start = new Date(pickupDate);
+    const end = new Date(returnDate);
+    const ext = extendedReturnDate ? new Date(extendedReturnDate) : null;
+
     if (pickupDate && returnDate) {
-      if (new Date(returnDate) <= new Date(pickupDate)) {
-        return t('reservations.form.errors.dateRange');
+      if (end <= start) {
+        return t('reservations.form.errors.returnBeforePickup', 'Return Date must be later than Pick-up Date');
       }
-      if (new Date(pickupDate) < new Date(verifiedTime.getTime() - 300000)) { // 5 min buffer
-        return t('reservations.form.errors.datePast');
+    }
+    if (returnDate && ext) {
+      if (ext <= end) {
+        return t('reservations.form.errors.extBeforeReturn', 'Extended Return must be later than Return Date');
       }
     }
     return null;
@@ -123,19 +127,19 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
       if (pickupDate && (returnDate || extendedReturnDate)) {
         if (now < start) {
           setReservationState({ 
-            label: t('reservations.confirmed').toUpperCase(), 
+            label: 'Reserved', 
             color: 'bg-slate-header text-white', 
             borderColor: '#475569' 
           });
         } else if (now > end) {
           setReservationState({ 
-            label: t('common.overdue').toUpperCase(), 
+            label: 'Overdue', 
             color: 'bg-red-600 text-white', 
             borderColor: '#DC2626' 
           });
         } else {
           setReservationState({ 
-            label: t('reservations.confirmed').toUpperCase(), 
+            label: 'Active', 
             color: 'bg-primary text-white', 
             borderColor: '#31A984' 
           });
@@ -157,9 +161,11 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
         setDuration(`${d} ${t('reservations.form.days')}, ${h} ${t('reservations.form.hours')}`);
 
         const billableDays = Math.ceil(totalHours / 24);
-        const total = billableDays * dailyRate;
+        const rate = typeof dailyRate === 'string' ? parseFloat(dailyRate) || 0 : dailyRate;
+        const total = billableDays * rate;
         setTotalPrice(total);
-        setBalanceDue(total - prepayment);
+        const prepay = typeof prepayment === 'string' ? parseFloat(prepayment) || 0 : prepayment;
+        setBalanceDue(total - prepay);
       } else {
         setDuration(t('reservations.form.invalidRange'));
         setTotalPrice(0);
@@ -171,15 +177,37 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
   }, [pickupDate, returnDate, extendedReturnDate, dailyRate, prepayment]);
 
   useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     const fetchCars = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('cars')
         .select('id, brand, model, plate, daily_rate, odometer, starting_fuel_level, status')
-        .neq('status', 'In Maintenance'); // Allow Rented and Available cars
+        .neq('status', 'Decommissioned'); 
       
       if (data) setAvailableCars(data);
     };
-    if (isOpen) fetchCars();
+
+    const fetchCustomers = async () => {
+      const { data } = await supabase
+        .from('customers')
+        .select('*');
+      if (data) setAllCustomers(data);
+    };
+
+    if (isOpen) {
+      fetchCars();
+      fetchCustomers();
+    }
   }, [isOpen]);
 
   const handleAddItem = () => {
@@ -191,6 +219,39 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
   };
 
   const isFormValid = selectedCarId !== null && clientName.trim() !== '' && pickupDate !== '' && returnDate !== '';
+
+  const handleCreateContract = async () => {
+    if (!isFormValid) return;
+    setIsGeneratingContract(true);
+    setStatus(t('reservations.form.generating', 'Generating contract...'), 'processing', 0);
+    
+    // Prepare reservation data for template
+    const reservationData = {
+      customer_name: clientName,
+      customer_phone: clientPhone,
+      customer_id: clientId,
+      car_brand: carBrand,
+      car_model: carModel,
+      license_plate: licensePlate,
+      pickup_date: pickupDate,
+      return_date: returnDate,
+      total_price: totalPrice,
+      prepayment: prepayment,
+      balance_due: balanceDue,
+      deposit_amount: depositAmount,
+      deposit_type: depositType
+    };
+
+    const result = await gasService.generateContract(reservationData);
+    if (result.success) {
+      setStatus(t('common.success'), 'success');
+      alert(t('reservations.form.contractSuccess', 'Contract generated successfully in Drive!'));
+    } else {
+      setStatus(t('common.error'), 'error');
+      alert(`${t('common.error')}: ${result.error}`);
+    }
+    setIsGeneratingContract(false);
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -211,19 +272,27 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
   };
 
   const handleConfirm = async () => {
-    if (!isFormValid) return;
-
-    // Strict Validation
-    const newErrors: { [key: string]: string } = {};
+    // Check validation first
     const dateError = validateDates();
-    if (dateError) newErrors.dates = dateError;
+    if (dateError) {
+      alert(dateError);
+      return;
+    }
+    
+    // Strict Validation for missing required fields
+    const newErrors: { [key: string]: string } = {};
+    if (!selectedCarId) newErrors.selectedCarId = 'required';
+    if (!clientName.trim()) newErrors.clientName = 'required';
+    if (!pickupDate) newErrors.pickupDate = 'required';
+    if (!returnDate) newErrors.returnDate = 'required';
+    
+    // Format validations
     if (clientPhone && !validatePhone(clientPhone)) newErrors.phone = t('reservations.form.errors.invalidPhone');
     if (clientId && !validateId(clientId)) newErrors.id = t('reservations.form.errors.invalidId');
     if (clientLicense && !validateId(clientLicense)) newErrors.license = t('reservations.form.errors.invalidLicense');
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      alert(newErrors.dates || t('common.error'));
       return;
     }
 
@@ -231,22 +300,29 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
     setStatus(t('common.savingReservation'), 'processing', 0);
 
     try {
-      const { data, error } = await createReservation({
+      const { error } = await createReservation({
         car_id: selectedCarId!,
         customer_name: clientName,
         customer_phone: clientPhone,
         start_date: new Date(pickupDate).toISOString(),
         end_date: new Date(returnDate).toISOString(),
+        extended_return_date: extendedReturnDate ? new Date(extendedReturnDate).toISOString() : null,
         status: 'Confirmed',
         total_price: totalPrice,
+        prepayment: typeof prepayment === 'string' ? parseFloat(prepayment) || 0 : prepayment,
+        deposit_type: depositType,
+        deposit_amount: typeof depositAmount === 'string' ? parseFloat(depositAmount) || 0 : depositAmount,
         fuel_level_out: parseInt(fuelOut) || null,
         odometer_out: parseInt(odometerOut) || null,
+        cleaned_before: cleanedBefore,
+        included_items: includedItems,
+        notes: notes,
+        rating: rating,
       });
 
       if (error) throw new Error(error);
 
       setStatus(t('common.dataSaved'), 'success');
-      alert(t('reservations.form.success'));
       onClose();
     } catch (error: any) {
       console.error('Error inserting reservation:', error);
@@ -254,6 +330,66 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
       alert(`${t('common.error')}: ${error.message || t('reservations.form.driveError')}`);
     }
   };
+
+  const handleArchive = async () => {
+    if (!isFormValid) return;
+    setStatus(t('common.archiving', 'Archiving reservation...'), 'processing', 0);
+    try {
+      const { error } = await createReservation({
+        car_id: selectedCarId!,
+        customer_name: clientName,
+        customer_phone: clientPhone,
+        start_date: new Date(pickupDate).toISOString(),
+        end_date: new Date(returnDate).toISOString(),
+        extended_return_date: extendedReturnDate ? new Date(extendedReturnDate).toISOString() : null,
+        status: 'Completed',
+        total_price: totalPrice,
+        prepayment: typeof prepayment === 'string' ? parseFloat(prepayment) || 0 : prepayment,
+        deposit_type: depositType,
+        deposit_amount: typeof depositAmount === 'string' ? parseFloat(depositAmount) || 0 : depositAmount,
+        fuel_level_out: parseInt(fuelOut) || null,
+        odometer_out: parseInt(odometerOut) || null,
+        cleaned_before: cleanedBefore,
+        included_items: includedItems,
+        notes: notes,
+        rating: rating,
+      });
+
+      if (error) throw new Error(error);
+
+      setStatus(t('common.archived', 'Archived successfully'), 'success');
+      onClose();
+    } catch (error: any) {
+      setStatus(t('common.error'), 'error');
+      alert(`Error archiving: ${error.message}`);
+    }
+  };
+
+  const handleAddNewClient = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([{
+          name: clientName,
+          phone: clientPhone,
+          id_card_number: clientId,
+          license_number: clientLicense,
+          trust_rank: rating || 3
+        }])
+        .select();
+      
+      if (error) throw error;
+      if (data) {
+        setAllCustomers([...allCustomers, data[0]]);
+        setIsAddingNewClient(false);
+        alert(t('common.clientAdded', 'New client profile created'));
+      }
+    } catch (error: any) {
+      alert(`Error creating client: ${error.message}`);
+    }
+  };
+
+  const isClientModified = clientName.trim() !== '' && !allCustomers.some(c => c.name === clientName);
 
   if (!isOpen) return null;
 
@@ -274,479 +410,109 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
 
         {/* Content */}
         <div className="bg-white w-full">
-          {/* Section 1: Car & Schedule */}
-          <div className="p-4 sm:p-10 space-y-8">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <CarIcon className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.carSchedule')}</h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="space-y-2 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.brandSelection')}</label>
-                <div className="relative">
-                  <input 
-                    className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase font-bold"
-                    value={carBrand}
-                    onChange={(e) => setCarBrand(e.target.value)}
-                    onFocus={() => setCarListActive(true)}
-                    onBlur={() => setTimeout(() => setCarListActive(false), 200)}
-                    placeholder={t('reservations.form.brandPlaceholder')}
-                  />
-                  <Search className="absolute end-4 top-1/2 -translate-y-1/2 text-ink/40" />
-                  {carListActive && (
-                    <div className="combobox-list active">
-                      {availableCars.filter(c => 
-                        `${c.brand} ${c.model} ${c.plate}`.toLowerCase().includes(carBrand.toLowerCase())
-                      ).map(car => (
-                        <div key={car.id} className="combobox-item flex justify-between items-center" onClick={() => {
-                          setCarBrand(car.brand);
-                          setCarModel(car.model);
-                          setLicensePlate(car.plate);
-                          setDailyRate(car.daily_rate);
-                          setSelectedCarId(car.id);
-                          setOdometerOut(car.odometer.toString());
-                          setFuelOut(car.starting_fuel_level?.toString() || '100');
-                        }}>
-                          <span>{car.brand} - {car.model} ({car.plate})</span>
-                          <span className={`text-[10px] px-2 py-0.5 font-bold uppercase ${
-                            car.status === 'Available' ? 'bg-primary/20 text-primary' : 'bg-indigo-100 text-indigo-600'
-                          }`}>
-                            {String(t(`common.${car.status.toLowerCase()}`, car.status))}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.modelReadOnly')}</label>
-                <input 
-                  className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60"
-                  value={carModel}
-                  readOnly
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.plateReadOnly')}</label>
-                <input 
-                  className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60"
-                  value={licensePlate}
-                  readOnly
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.pickupDate')}</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow"
-                  value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.returnDate')}</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow"
-                  value={returnDate}
-                  onChange={(e) => setReturnDate(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.extendedReturn')}</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow"
-                  value={extendedReturnDate}
-                  onChange={(e) => setExtendedReturnDate(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.state')}</label>
-                <div className="w-full bg-white p-4 min-h-[60px] flex items-center font-bold industrial-shadow" style={{ borderInlineStart: `4px solid ${reservationState.borderColor}` }}>
-                  <span className={`px-3 py-1 text-xs font-black uppercase tracking-widest ${reservationState.color}`}>
-                    {reservationState.label}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.duration')}</label>
-                <div className="w-full bg-muted-cream border-s-4 border-midnight-ink p-4 min-h-[60px] flex items-center font-bold text-ink/70">
-                  {duration}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.dailyRate')}</label>
-                <input 
-                  type="number" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow font-bold"
-                  value={dailyRate}
-                  onChange={(e) => setDailyRate(Number(e.target.value))}
-                />
-              </div>
-
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.totalPriceCalc')}</label>
-                <div className="w-full bg-muted-mint p-4 min-h-[60px] flex items-center justify-center font-black text-2xl text-ink industrial-shadow border-[1.5px] border-form-border">
-                  {totalPrice.toFixed(2)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Client Profile */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <User className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.clientProfile')}</h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="sm:col-span-2 space-y-2 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.fullName')}</label>
-                <div className="relative">
-                  <input 
-                    className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    onFocus={() => setClientListActive(true)}
-                    onBlur={() => setTimeout(() => setClientListActive(false), 200)}
-                    placeholder={t('reservations.form.clientPlaceholder')}
-                  />
-                  <Search className="absolute end-4 top-1/2 -translate-y-1/2 text-ink/40" />
-                  {clientListActive && (
-                    <div className="combobox-list active">
-                      {['Johnathan Doe', 'Jane Smith', 'Michael Scott'].map(client => (
-                        <div key={client} className="combobox-item" onClick={() => setClientName(client)}>{client}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.phoneNumber')}</label>
-                <input 
-                  type="tel" 
-                  className={`w-full bg-white p-4 min-h-[60px] industrial-shadow ${errors.phone ? 'border-2 border-red-500' : ''}`}
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                />
-                {errors.phone && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.phone}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.idCardNumber')}</label>
-                <input 
-                  className={`w-full bg-white p-4 min-h-[60px] industrial-shadow ${errors.id ? 'border-2 border-red-500' : ''}`}
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                />
-                {errors.id && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.id}</p>}
-              </div>
-
-              <div className="sm:col-span-2 space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.licenseNumber')}</label>
-                <input 
-                  className={`w-full bg-white p-4 min-h-[60px] industrial-shadow ${errors.license ? 'border-2 border-red-500' : ''}`}
-                  value={clientLicense}
-                  onChange={(e) => setClientLicense(e.target.value)}
-                />
-                {errors.license && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.license}</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Financial Alignment */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <CreditCard className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.financialAlignment')}</h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.prepayment')}</label>
-                <input 
-                  type="number" 
-                  className="w-full p-4 text-xl font-bold bg-white"
-                  value={prepayment}
-                  onChange={(e) => setPrepayment(Number(e.target.value))}
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.balanceDue')}</label>
-                <div className="py-4 text-2xl font-black text-primary px-4 border-[1.5px] border-transparent">
-                  ${balanceDue.toFixed(2)}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.depositType')}</label>
-                <select 
-                  className="w-full p-4 bg-white text-lg"
-                  value={depositType}
-                  onChange={(e) => setDepositType(e.target.value)}
-                >
-                  <option value="None">{t('common.noData')}</option>
-                  <option value="Cash">{t('reservations.form.cash')}</option>
-                  <option value="Cheque">{t('reservations.form.cheque')}</option>
-                </select>
-              </div>
-
-              <div className={`space-y-2 transition-opacity ${depositType === 'None' ? 'opacity-50' : 'opacity-100'}`}>
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.depositAmount')}</label>
-                <input 
-                  type="number" 
-                  className="w-full p-4 bg-white text-lg disabled:bg-gray-50"
-                  disabled={depositType === 'None'}
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(Number(e.target.value))}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Logistics Tracking */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <Monitor className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.logisticsTracking')}</h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { label: t('reservations.form.odometerOut'), val: odometerOut, setter: setOdometerOut, placeholder: 'KM' },
-                { label: t('reservations.form.odometerIn'), val: odometerIn, setter: setOdometerIn, placeholder: 'KM' },
-                { label: t('reservations.form.fuelOut'), val: fuelOut, setter: setFuelOut, placeholder: '%' },
-                { label: t('reservations.form.fuelIn'), val: fuelIn, setter: setFuelIn, placeholder: '%' },
-              ].map((field) => (
-                <div key={field.label} className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{field.label}</label>
-                  <input 
-                    className="w-full p-4 bg-white text-lg"
-                    value={field.val}
-                    onChange={(e) => field.setter(e.target.value)}
-                    placeholder={field.placeholder}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 5: Details & Condition */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <ClipboardList className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.detailsCondition')}</h3>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.cleanedBefore')}</label>
-                <select 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow text-lg"
-                  value={cleanedBefore}
-                  onChange={(e) => setCleanedBefore(e.target.value)}
-                >
-                  <option value="yes">{t('common.yes')}</option>
-                  <option value="no">{t('common.no')}</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.includedItems')}</label>
-                <button 
-                  onClick={() => setIsAddingItem(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-midnight-ink text-white font-bold text-xs uppercase tracking-widest industrial-shadow hover:bg-ink transition-all"
-                >
-                  <Plus className="w-4 h-4" /> {t('reservations.form.addItem')}
-                </button>
-              </div>
-
-              <AnimatePresence>
-                {isAddingItem && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex gap-2 flex-wrap"
-                  >
-                    <input 
-                      className="flex-1 p-3 text-sm uppercase industrial-shadow"
-                      value={newItemName}
-                      onChange={(e) => setNewItemName(e.target.value)}
-                      placeholder={t('reservations.form.newItemPlaceholder')}
-                      autoFocus
-                    />
-                    <button 
-                      onClick={handleAddItem}
-                      className="px-4 py-3 bg-primary text-white font-bold text-xs uppercase tracking-widest industrial-shadow flex items-center justify-center min-w-[50px]"
-                    >
-                      <Check className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => setIsAddingItem(false)}
-                      className="px-4 py-3 bg-slate-200 text-ink font-bold text-xs uppercase tracking-widest flex items-center justify-center"
-                    >
-                      {t('common.cancel')}
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {includedItems.map((item) => (
-                  <label key={item} className="flex items-center gap-3 cursor-pointer bg-white p-4 industrial-shadow border-[1.5px] border-form-border">
-                    <input 
-                      type="checkbox" 
-                      defaultChecked 
-                      className="w-6 h-6 border-2 border-midnight-ink text-primary focus:ring-0 rounded-none" 
-                    />
-                    <span className="text-sm font-bold uppercase">{item}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.conditionFeedback')}</label>
-                <div className="flex gap-2 text-midnight-ink">
-                  {[1, 2, 3, 4, 5].map((val) => (
-                    <button 
-                      key={val}
-                      onClick={() => setRating(val)}
-                      className={`transition-all ${rating >= val ? 'fill-midnight-ink' : ''}`}
-                    >
-                      <Star 
-                        className={`w-10 h-10 ${rating >= val ? 'fill-current' : 'fill-none'}`} 
-                        strokeWidth={1}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('reservations.form.notes')}</label>
-                <textarea 
-                  className="w-full bg-white p-4 min-h-[100px] industrial-shadow resize-none overflow-hidden"
-                  value={notes}
-                  onChange={(e) => {
-                    setNotes(e.target.value);
-                    if (notesRef.current) {
-                      notesRef.current.style.height = 'auto';
-                      notesRef.current.style.height = notesRef.current.scrollHeight + 'px';
-                    }
-                  }}
-                  ref={notesRef}
-                  placeholder={t('reservations.form.notesPlaceholder')}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 6: Documentation */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <Upload className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('reservations.form.documentation')}</h3>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-6">
-              <div className="relative">
-                <input 
-                  type="file" 
-                  id="contract-upload" 
-                  className="hidden" 
-                  onChange={handleFileUpload}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                />
-                <label 
-                  htmlFor="contract-upload"
-                  className={`flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink hover:bg-muted-mint transition-colors font-black text-sm uppercase tracking-[0.2em] industrial-shadow cursor-pointer ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
-                >
-                  {isUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
-                  {isUploading ? t('reservations.form.uploading') : t('reservations.form.uploadContract')}
-                </label>
-              </div>
-              
-              {uploadedDocUrl && (
-                <div className="flex items-center gap-2 p-4 bg-primary/10 text-primary industrial-shadow border border-primary/20">
-                  <FileText className="w-5 h-5" />
-                  <span className="text-xs font-bold uppercase tracking-widest">{t('reservations.form.docLinked')}</span>
-                </div>
-              )}
-
-              <button className="flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink hover:bg-muted-mint transition-colors font-black text-sm uppercase tracking-[0.2em] industrial-shadow">
-                <Monitor className="w-6 h-6" /> {t('reservations.form.imagesToPdf')}
-              </button>
-            </div>
-          </div>
+          <ReservationForm 
+            t={t}
+            availableCars={availableCars}
+            selectedCarId={selectedCarId}
+            setSelectedCarId={setSelectedCarId}
+            setCarBrand={setCarBrand}
+            setCarModel={setCarModel}
+            setLicensePlate={setLicensePlate}
+            setDailyRate={setDailyRate}
+            setOdometerOut={setOdometerOut}
+            setFuelOut={setFuelOut}
+            pickupDate={pickupDate}
+            setPickupDate={setPickupDate}
+            returnDate={returnDate}
+            setReturnDate={setReturnDate}
+            extendedReturnDate={extendedReturnDate}
+            setExtendedReturnDate={setExtendedReturnDate}
+            validateDates={validateDates}
+            reservationState={reservationState}
+            duration={duration}
+            dailyRate={dailyRate}
+            totalPrice={totalPrice}
+            clientName={clientName}
+            setClientName={setClientName}
+            setClientListActive={setClientListActive}
+            clientListActive={clientListActive}
+            allCustomers={allCustomers}
+            isClientModified={isClientModified}
+            handleAddNewClient={handleAddNewClient}
+            clientPhone={clientPhone}
+            setClientPhone={setClientPhone}
+            clientId={clientId}
+            setClientId={setClientId}
+            clientLicense={clientLicense}
+            setClientLicense={setClientLicense}
+            errors={errors}
+            rating={rating}
+            setRating={setRating}
+            notes={notes}
+            setNotes={setNotes}
+            notesRef={notesRef}
+            prepayment={prepayment}
+            setPrepayment={setPrepayment}
+            balanceDue={balanceDue}
+            depositType={depositType}
+            setDepositType={setDepositType}
+            depositAmount={depositAmount}
+            setDepositAmount={setDepositAmount}
+            odometerOut={odometerOut}
+            odometerIn={odometerIn}
+            setOdometerIn={setOdometerIn}
+            fuelOut={fuelOut}
+            fuelIn={fuelIn}
+            setFuelIn={setFuelIn}
+            cleanedBefore={cleanedBefore}
+            setCleanedBefore={setCleanedBefore}
+            isAddingItem={isAddingItem}
+            setIsAddingItem={setIsAddingItem}
+            newItemName={newItemName}
+            setNewItemName={setNewItemName}
+            handleAddItem={handleAddItem}
+            includedItems={includedItems}
+            handleFileUpload={handleFileUpload}
+            handleCreateContract={handleCreateContract}
+            isUploading={isUploading}
+            isGeneratingContract={isGeneratingContract}
+          />
 
           {/* Footer Card */}
-          <div className="px-6 py-8 sm:px-10 bg-midnight-ink flex flex-col gap-8 shrink-0">
-            <div className="flex flex-wrap gap-x-12 gap-y-6 items-center text-white border-s-4 border-primary ps-8 py-2">
+          <div className="px-6 py-8 sm:px-10 bg-slate-50 flex flex-col gap-8 shrink-0 border-t border-black">
+            <div className="flex flex-wrap gap-x-12 gap-y-6 items-center text-ink border-s-4 border-primary ps-8 py-2">
               <div>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">{t('reservations.form.totalPriceCalc')}</p>
+                <p className="text-[10px] font-bold text-ink/60 uppercase tracking-[0.2em]">{t('reservations.form.totalPriceCalc')}</p>
                 <p className="text-2xl sm:text-3xl font-black">{totalPrice.toFixed(2)} USD</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">{t('reservations.form.balanceDue')}</p>
+                <p className="text-[10px] font-bold text-ink/60 uppercase tracking-[0.2em]">{t('reservations.form.balanceDue')}</p>
                 <p className="text-2xl sm:text-3xl font-black text-primary">{balanceDue.toFixed(2)} USD</p>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 w-full">
-              <button 
-                onClick={() => { alert(t('reservations.form.success')); onClose(); }}
-                className="w-full sm:flex-1 px-8 py-5 bg-[#475569] text-white font-bold uppercase tracking-[0.2em] hover:bg-[#334155] transition-colors industrial-shadow min-h-[60px]"
+              <Button1 
+                disabled={!isFormValid || isSubmitting}
+                onClick={handleArchive}
+                className="sm:flex-1"
               >
                 {t('reservations.form.archive')}
-              </button>
-              <button 
+              </Button1>
+              <Button1 
                 onClick={onClose}
-                className="w-full sm:flex-1 px-8 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
+                className="sm:flex-1 !bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"
               >
                 {t('common.cancel')}
-              </button>
-              <button 
+              </Button1>
+              <Button1 
                 disabled={!isFormValid || isSubmitting}
                 onClick={handleConfirm}
-                className={`w-full sm:flex-[1.5] px-8 py-5 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow transition-all min-h-[60px] flex items-center justify-center gap-2 ${(!isFormValid || isSubmitting) ? 'opacity-50 pointer-events-none' : 'active:scale-[0.98]'}`}
+                className="sm:flex-[1.5] !bg-primary !border-primary hover:!bg-primary/90 hover:!border-primary/90"
+                icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {t('reservations.form.recording')}
-                  </>
-                ) : t('common.bookNow')}
-              </button>
+                {isSubmitting ? t('reservations.form.recording') : t('common.confirm', 'Confirm')}
+              </Button1>
             </div>
           </div>
         </div>

@@ -1,12 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { 
   X, Car as CarIcon, Upload, Camera, FileText, Verified, 
-  Settings, Trash2, Plus, Check, ChevronDown, Loader2 
+  Settings, Trash2, Plus, Check, ChevronDown, Loader2, Monitor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useStatus } from '../contexts/StatusContext';
+import Button1 from './Button1';
+import Field1 from './Field1';
 
 interface AddCarModalProps {
   isOpen: boolean;
@@ -235,102 +237,83 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
                 { label: t('carForm.plate'), val: plate, setter: setPlate, extra: 'uppercase', error: errors.plate },
                 { label: t('carForm.color'), val: color, setter: setColor },
               ].map(field => (
-                <div key={field.label} className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{field.label}</label>
-                  <input 
-                    className={`w-full bg-white p-4 industrial-shadow ${field.extra || ''} ${field.error ? 'border-2 border-red-500' : ''}`}
-                    value={field.val}
-                    onChange={(e) => field.setter(e.target.value)}
-                    placeholder={t('carForm.placeholder')}
-                  />
-                  {field.error && <p className="text-[10px] text-red-500 font-bold uppercase">{field.error}</p>}
-                </div>
+                <Field1 
+                  key={field.label}
+                  label={field.label}
+                  value={field.val}
+                  onChange={(e) => field.setter(e.target.value)}
+                  placeholder={t('carForm.placeholder')}
+                  error={field.error}
+                  className={field.extra}
+                />
               ))}
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.fuelType')}</label>
-                <div className="relative">
-                  <select 
-                    className="w-full bg-white p-4 industrial-shadow appearance-none"
-                    value={fuelType}
-                    onChange={(e) => setFuelType(e.target.value)}
-                  >
-                    <option value="Petrol">{t('carForm.fuelPetrol', 'Petrol')}</option>
-                    <option value="Diesel">{t('carForm.fuelDiesel', 'Diesel')}</option>
-                    <option value="Electric">{t('carForm.fuelElectric', 'Electric')}</option>
-                    <option value="Hybrid">{t('carForm.fuelHybrid', 'Hybrid')}</option>
-                  </select>
-                  <ChevronDown className="absolute end-4 top-1/2 -translate-y-1/2 text-ink/40 pointer-events-none" />
-                </div>
-              </div>
+              <Field1 
+                label={t('carForm.fuelType')}
+                as="select"
+                value={fuelType}
+                onChange={(e) => setFuelType(e.target.value)}
+              >
+                <option value="Petrol">{t('carForm.fuelPetrol', 'Petrol')}</option>
+                <option value="Diesel">{t('carForm.fuelDiesel', 'Diesel')}</option>
+                <option value="Electric">{t('carForm.fuelElectric', 'Electric')}</option>
+                <option value="Hybrid">{t('carForm.fuelHybrid', 'Hybrid')}</option>
+              </Field1>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.transmission')}</label>
-                <div className="flex industrial-shadow h-[60px]">
+              <div className="space-y-2">
+                <label className="text-[0.75rem] text-black font-bold relative top-[0.5rem] ml-[7px] px-[3px] bg-white w-fit z-10 uppercase tracking-wider">{t('carForm.transmission')}</label>
+                <div className="flex border-2 border-black rounded-[5px] h-[46px] overflow-hidden">
                   <button 
                     onClick={() => setTransmission('Automatic')}
-                    className={`flex-1 font-bold text-xs uppercase tracking-widest transition-colors border-1.5 border-form-border ${transmission === 'Automatic' ? 'bg-midnight-ink text-white' : 'bg-white text-midnight-ink'}`}
+                    className={`flex-1 font-bold text-xs uppercase tracking-widest transition-colors ${transmission === 'Automatic' ? 'bg-midnight-ink text-white' : 'bg-white text-midnight-ink'}`}
                   >
                     {t('carForm.transAuto', 'Automatic')}
                   </button>
                   <button 
                     onClick={() => setTransmission('Manual')}
-                    className={`flex-1 font-bold text-xs uppercase tracking-widest transition-colors border-s-0 border-1.5 border-form-border ${transmission === 'Manual' ? 'bg-midnight-ink text-white' : 'bg-white text-midnight-ink'}`}
+                    className={`flex-1 font-bold text-xs uppercase tracking-widest transition-colors border-l border-black ${transmission === 'Manual' ? 'bg-midnight-ink text-white' : 'bg-white text-midnight-ink'}`}
                   >
                     {t('carForm.transManual', 'Manual')}
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.odometer')}</label>
-                <input 
-                  type="number"
-                  className="w-full bg-white p-4 industrial-shadow"
-                  value={odometer}
-                  onChange={(e) => setOdometer(e.target.value)}
-                  placeholder={t('carForm.placeholder')}
-                />
-              </div>
+              <Field1 
+                label={t('carForm.odometer')}
+                type="number"
+                value={odometer}
+                onChange={(e) => setOdometer(e.target.value)}
+                placeholder={t('carForm.placeholder')}
+              />
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.dailyRate')}</label>
-                <input 
-                  type="number"
-                  className="w-full bg-white p-4 industrial-shadow"
-                  value={dailyRate}
-                  onChange={(e) => setDailyRate(e.target.value)}
-                  placeholder={t('carForm.placeholder')}
-                />
-              </div>
+              <Field1 
+                label={t('carForm.dailyRate')}
+                type="number"
+                value={dailyRate}
+                onChange={(e) => setDailyRate(e.target.value)}
+                placeholder={t('carForm.placeholder')}
+              />
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.startingFuel')}</label>
-                <input 
-                  type="number"
-                  min="0"
-                  max="100"
-                  className="w-full bg-white p-4 industrial-shadow"
-                  value={startingFuelLevel}
-                  onChange={(e) => setStartingFuelLevel(e.target.value)}
-                  placeholder="0-100"
-                />
-              </div>
+              <Field1 
+                label={t('carForm.startingFuel')}
+                type="number"
+                value={startingFuelLevel}
+                onChange={(e) => setStartingFuelLevel(e.target.value)}
+                placeholder="0-100"
+              />
 
-              <div className="sm:col-span-2 lg:col-span-4 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.status')}</label>
-                <div className="relative">
-                  <select 
-                    className={`w-full bg-white p-4 industrial-shadow border-s-4 ${getStatusColor()} appearance-none font-bold`}
-                    value={carStatus}
-                    onChange={(e) => setCarStatus(e.target.value)}
-                  >
-                    <option value="Available" className="text-green-600 font-bold">{t('common.available')}</option>
-                    <option value="In Maintenance" className="text-amber-600 font-bold">{t('common.maintenance')}</option>
-                    <option value="Decommissioned" className="text-slate-600 font-bold">{t('common.decommissioned', 'Decommissioned')}</option>
-                  </select>
-                  <ChevronDown className="absolute end-4 top-1/2 -translate-y-1/2 text-ink/40 pointer-events-none" />
-                </div>
+              <div className="sm:col-span-2 lg:col-span-4 space-y-2">
+                <Field1 
+                  label={t('carForm.status')}
+                  as="select"
+                  value={carStatus}
+                  onChange={(e) => setCarStatus(e.target.value)}
+                  className={`border-s-4 ${getStatusColor()} font-bold`}
+                >
+                  <option value="Available" className="text-green-600 font-bold">{t('common.available')}</option>
+                  <option value="In Maintenance" className="text-amber-600 font-bold">{t('common.maintenance')}</option>
+                  <option value="Decommissioned" className="text-slate-600 font-bold">{t('common.decommissioned')}</option>
+                </Field1>
               </div>
             </div>
           </div>
@@ -346,45 +329,41 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.uploadImage')}</label>
-                <div className="w-full aspect-video border-2 border-dashed border-form-border bg-muted-cream flex flex-col items-center justify-center cursor-pointer hover:bg-muted-mint transition-colors">
+                <div className="w-full aspect-video border-2 border-dashed border-form-border bg-white flex flex-col items-center justify-center cursor-pointer hover:bg-ink/5 transition-colors">
                   <Camera className="w-12 h-12 text-midnight-ink/40" />
                   <p className="mt-2 text-xs font-bold uppercase tracking-widest text-midnight-ink/60">{t('carForm.dragOrClick')}</p>
                 </div>
               </div>
               <div className="space-y-6">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.uploadPdf')}</label>
-                  <button className="w-full flex items-center justify-between gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink hover:bg-muted-mint transition-colors font-black text-xs uppercase tracking-[0.2em] industrial-shadow">
-                    <span>{t('carForm.pdfLabel')}</span>
-                    <Upload className="w-5 h-5" />
-                  </button>
+                  <Button1 
+                    onClick={() => {}}
+                    className="w-full !justify-between"
+                    icon={<Upload className="w-5 h-5" />}
+                  >
+                    {t('carForm.pdfLabel')}
+                  </Button1>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.gpsSim')}</label>
-                    <input 
-                      className="w-full bg-white p-4 industrial-shadow"
-                      value={gpsSim}
-                      onChange={(e) => setGpsSim(e.target.value)}
-                      placeholder={t('carForm.placeholder')}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.seats')}</label>
-                    <input 
-                      type="number"
-                      className="w-full bg-white p-4 industrial-shadow"
-                      value={seats}
-                      onChange={(e) => setSeats(e.target.value)}
-                      placeholder={t('carForm.placeholder')}
-                    />
-                  </div>
+                  <Field1 
+                    label={t('carForm.gpsSim')}
+                    value={gpsSim}
+                    onChange={(e) => setGpsSim(e.target.value)}
+                    placeholder={t('carForm.placeholder')}
+                  />
+                  <Field1 
+                    label={t('carForm.seats')}
+                    type="number"
+                    value={seats}
+                    onChange={(e) => setSeats(e.target.value)}
+                    placeholder={t('carForm.placeholder')}
+                  />
                 </div>
               </div>
-              <div className="lg:col-span-2 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.damageNotes')}</label>
+              <div className="lg:col-span-2 space-y-2">
+                <label className="text-[0.75rem] text-black font-bold relative top-[0.5rem] ml-[7px] px-[3px] bg-white w-fit z-10 uppercase tracking-wider">{t('carForm.damageNotes')}</label>
                 <textarea 
-                  className="w-full bg-white p-4 min-h-[100px] industrial-shadow resize-none"
+                  className="w-full bg-white p-[11px_10px] min-h-[100px] border-2 border-black rounded-[5px] resize-none font-bold"
                   value={damageNotes}
                   onChange={(e) => setDamageNotes(e.target.value)}
                   placeholder={t('carForm.placeholder')}
@@ -418,7 +397,7 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mb-4 p-4 bg-muted-mint border-1.5 border-primary industrial-shadow overflow-hidden"
+                      className="mb-4 p-4 bg-white border-1.5 border-primary industrial-shadow overflow-hidden"
                     >
                       <div className="flex gap-2">
                         <input 
@@ -505,7 +484,7 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead className="hidden md:table-header-group">
-                    <tr className="bg-muted-cream text-left">
+                    <tr className="bg-white text-left">
                       <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carForm.intervalType')}</th>
                       <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carForm.intervalValue')}</th>
                       <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carForm.lastCompleted')}</th>
@@ -557,25 +536,21 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-8 sm:px-10 bg-midnight-ink flex flex-col sm:flex-row gap-4 shrink-0">
-            <button 
+          <div className="px-6 py-8 sm:px-10 bg-slate-50 border-t border-black flex flex-col sm:flex-row gap-4 shrink-0">
+            <Button1 
               onClick={onClose}
-              className="w-full sm:flex-1 px-8 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
+              className="sm:flex-1 !bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"
             >
               {t('common.cancel')}
-            </button>
-            <button 
+            </Button1>
+            <Button1 
               disabled={isSubmitting}
               onClick={handleConfirm}
-              className="w-full sm:flex-[2] px-8 py-5 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow active:scale-[0.98] transition-all min-h-[60px] flex items-center justify-center gap-2"
+              className="sm:flex-[2]"
+              icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  {t('carForm.processing')}
-                </>
-              ) : t('carForm.confirm')}
-            </button>
+              {isSubmitting ? t('carForm.processing') : t('carForm.confirm')}
+            </Button1>
           </div>
         </div>
       </motion.div>

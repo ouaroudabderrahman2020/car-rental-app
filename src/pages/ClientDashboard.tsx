@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Customer, Reservation } from '../types';
 import Layout from '../components/Layout';
+import { SectionHeader } from '../components/SectionHeader';
 import ClientDetailModal from '../components/ClientDetailModal';
 import { useStatus } from '../contexts/StatusContext';
 
@@ -109,33 +110,38 @@ export default function ClientDashboard() {
 
   return (
     <Layout title={t('crm.title')}>
-      <div className="min-h-screen bg-muted-mint pb-20">
+      <div className="min-h-screen bg-white pb-20">
         {/* Main Content */}
-        <div className="max-w-[1440px] mx-auto px-4 md:px-margin pt-10">
+        <div className="max-w-[1440px] mx-auto px-4 md:px-margin v-section-gap">
           {/* Toolbar: Search and Actions */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-            <div className="relative w-full max-w-md">
-              <Search className="absolute start-4 top-1/2 -translate-y-1/2 text-ink/30 w-5 h-5" />
-              <input 
-                type="text"
-                placeholder={t('crm.searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white border-2 border-midnight-ink/10 p-4 ps-12 font-bold text-ink focus:border-primary transition-all industrial-shadow text-sm"
-              />
-            </div>
+          <SectionHeader 
+            title={t('crm.table.title', 'Client Directory')}
+            actions={
+              <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                <div className="relative w-full max-w-md">
+                  <Search className="absolute start-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                  <input 
+                    type="text" 
+                    placeholder={t('crm.searchPlaceholder')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 p-3 ps-12 font-bold text-ink focus:border-primary transition-all shadow-sm text-sm"
+                  />
+                </div>
 
-            <button className="bg-midnight-ink text-white py-4 px-8 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-widest text-fluid-sm shrink-0">
-              <Plus className="w-5 h-5" />
-              {t('common.add')}
-            </button>
-          </div>
+                <button className="bg-midnight-ink text-white py-4 px-8 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-widest text-fluid-sm shrink-0">
+                  <Plus className="w-5 h-5" />
+                  {t('common.add')}
+                </button>
+              </div>
+            }
+          />
 
-          <div className="bg-white border-2 border-midnight-ink industrial-shadow overflow-hidden">
+          <div className="bg-white border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-start border-collapse">
                 <thead>
-                  <tr className="bg-midnight-ink text-white text-fluid-sm font-black uppercase tracking-[0.2em] border-b-2 border-midnight-ink">
+                  <tr className="bg-slate-800 text-white text-[10px] md:text-xs font-black uppercase tracking-[0.2em] border-b border-slate-800">
                     <th className="py-5 px-8 text-start">{t('crm.table.customer')}</th>
                     <th className="py-5 px-6 text-center">{t('crm.table.trust')}</th>
                     <th className="py-5 px-6 text-center">{t('crm.table.documents')}</th>
@@ -143,7 +149,7 @@ export default function ClientDashboard() {
                     <th className="py-5 px-8 text-end">{t('crm.table.revenue')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-midnight-ink/5">
+                <tbody className="divide-y divide-slate-100">
                   {isLoading ? (
                     <tr>
                       <td colSpan={5} className="py-20 text-center">
@@ -161,7 +167,7 @@ export default function ClientDashboard() {
                           setSelectedClient(client);
                           setIsModalOpen(true);
                         }}
-                        className="group hover:bg-muted-mint cursor-pointer transition-colors"
+                        className="group hover:bg-white cursor-pointer transition-colors"
                       >
                         {/* Customer Info */}
                         <td className="py-6 px-8">

@@ -70,7 +70,7 @@ export default function ToolModal({ isOpen, onClose, toolName }: ToolModalProps)
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-6 sm:px-8 bg-muted-cream border-t border-midnight-ink/10 flex justify-end shrink-0">
+        <div className="px-6 py-6 sm:px-8 bg-white border-t border-midnight-ink/10 flex justify-end shrink-0">
           <button 
             onClick={onClose}
             className="px-10 py-4 bg-midnight-ink text-white font-black uppercase tracking-[0.2em] industrial-shadow hover:bg-primary transition-all active:scale-[0.98]"

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import AddCarModal from '../components/AddCarModal';
+import { SectionHeader } from '../components/SectionHeader';
 import CarDetailsModal from '../components/CarDetailsModal';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
@@ -86,7 +87,7 @@ export default function Fleet() {
 
   return (
     <Layout title={t('nav.fleet')}>
-      <div className="w-full bg-muted-mint min-h-full pb-10">
+      <div className="w-full bg-white min-h-full pb-10">
         <AddCarModal 
           isOpen={isAddModalOpen} 
           onClose={() => {
@@ -97,37 +98,35 @@ export default function Fleet() {
 
       {/* Fleet Grid */}
       <section className="py-lg">
-        <div className="max-w-[1440px] mx-auto px-margin">
+        <div className="max-w-[1440px] mx-auto px-margin v-section-gap">
           {/* Action Toolbar */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-            <div className="flex items-center gap-4">
-              <div className="w-3 h-8 bg-ink"></div>
-              <h2 className="text-2xl font-bold text-ink uppercase tracking-tight">{t('fleet.inventory', 'Vehicle Inventory')}</h2>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-3">
-              <button 
-                onClick={handleExport}
-                disabled={isExporting}
-                className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
-              >
-                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
-              </button>
-              <button 
-                onClick={() => setIsAddModalOpen(true)}
-                className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                {t('fleet.addCar', 'ADD NEW CAR')}
-              </button>
-            </div>
-          </div>
+          <SectionHeader 
+            title={t('fleet.inventory', 'Vehicle Inventory')}
+            actions={
+              <>
+                <button 
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
+                >
+                  {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
+                </button>
+                <button 
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  {t('fleet.addCar', 'ADD NEW CAR')}
+                </button>
+              </>
+            }
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {loading ? (
               Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-white industrial-shadow h-[400px] flex flex-col animate-pulse">
+                <div key={i} className="bg-white border border-slate-100 shadow-sm h-[400px] flex flex-col animate-pulse">
                   <div className="h-1/2 bg-slate-200"></div>
                   <div className="p-6 space-y-4 flex-grow">
                     <div className="h-6 bg-slate-200 w-3/4"></div>
@@ -144,7 +143,7 @@ export default function Fleet() {
                 </div>
               ))
             ) : fleetData.length === 0 ? (
-              <div className="col-span-full py-20 bg-white industrial-shadow text-center">
+              <div className="col-span-full py-20 bg-white border border-slate-100 shadow-sm text-center">
                 <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.noData', 'No vehicles found in fleet.')}</p>
               </div>
             ) : (
@@ -152,7 +151,7 @@ export default function Fleet() {
                 <div 
                   key={car.id} 
                   onClick={() => handleOpenDetails(car)}
-                  className="car-card bg-white industrial-shadow group flex flex-col h-full cursor-pointer hover:scale-[1.02] transition-transform"
+                  className="car-card bg-white border border-slate-200 shadow-sm group flex flex-col h-full cursor-pointer hover:shadow-md transition-all"
                 >
                   <div className="aspect-[3/4] overflow-hidden flex flex-col">
                     <div className="h-1/2 overflow-hidden bg-slate-100 relative">

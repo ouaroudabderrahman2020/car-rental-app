@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Languages, Circle, Loader2, CheckCircle2, AlertCircle, Menu, X } from 'lucide-react';
+import { Languages, Circle, Loader2, CheckCircle2, AlertCircle, Menu, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../lib/supabase';
 import { useVerifiedTime, SyncStatus } from '../hooks/useVerifiedTime';
 import { useStatus } from '../contexts/StatusContext';
+
+import { NavigationOverlay, MenuButton } from './Navigation';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -38,6 +40,28 @@ export default function Layout({ children, title }: LayoutProps) {
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [connectivity, setConnectivity] = useState({ text: 'Active', color: '#31A984' });
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+
+  // Handle body scroll locking
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isMenuOpen]);
+
+  // Handle scroll for floating menu
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      setIsHeaderVisible(scrollY < 100);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Handle RTL/LTR direction
   useEffect(() => {
@@ -104,12 +128,33 @@ export default function Layout({ children, title }: LayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted-mint selection:bg-primary/30">
-      {/* Header: Brand Bar */}
-      <header className="z-[60] w-full flex flex-col items-center bg-slate-blue sticky top-0 border-b border-white/10 shadow-lg">
-        <div className="w-full max-w-[1440px] px-4 md:px-margin flex items-center justify-between h-16">
+    <div className="min-h-screen flex flex-col bg-white selection:bg-primary/30">
+      {/* Floating Sticky Mobile Menu Icon */}
+      <AnimatePresence>
+        {(!isHeaderVisible || isMenuOpen) && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            className="fixed top-2 right-4 rtl:right-auto rtl:left-4 z-[110]"
+          >
+            <MenuButton 
+              isOpen={isMenuOpen}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className={`p-2 transition-colors ${
+                isMenuOpen ? 'text-ink bg-ink/5' : 'text-ink bg-white/80 backdrop-blur-sm shadow-sm hover:bg-ink/5'
+              }`}
+              iconClassName="w-6 h-6"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Header: Brand Bar - Integrated & Borderless-ish */}
+      <header className="z-[60] w-full flex flex-col items-center bg-white border-b border-slate-100 relative">
+        <div className="w-full max-w-[1440px] px-4 md:px-margin flex items-center justify-between h-14">
           <div className="flex items-center gap-8">
-            <NavLink to="/" className="text-xl md:text-2xl font-black tracking-tighter text-white shrink-0 hover:text-primary transition-colors">
+            <NavLink to="/" className="text-xl md:text-2xl font-black tracking-tighter text-ink shrink-0 hover:text-primary transition-colors">
               RentalCore
             </NavLink>
             
@@ -121,7 +166,7 @@ export default function Layout({ children, title }: LayoutProps) {
                   to={item.path}
                   className={({ isActive }) => 
                     `px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all relative group ${
-                      isActive ? 'text-primary' : 'text-white/70 hover:text-white'
+                      isActive ? 'text-primary' : 'text-ink/60 hover:text-ink'
                     }`
                   }
                 >
@@ -132,11 +177,18 @@ export default function Layout({ children, title }: LayoutProps) {
             </nav>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-6 text-white">
-            <div className="flex items-center gap-2 text-[9px] md:text-sm font-medium opacity-90 whitespace-nowrap">
+          <div className="flex items-center gap-2 md:gap-6 text-ink">
+            <div 
+              className="flex items-center gap-2 text-[9px] md:text-xs font-bold opacity-70 whitespace-nowrap uppercase tracking-widest group relative cursor-help"
+              title={formatHeaderClock(verifiedTime)}
+            >
               <SyncIcon status={syncStatus} />
-              <div className="flex flex-col md:flex-row md:items-center md:gap-2">
-                <span>{formatHeaderClock(verifiedTime)}</span>
+              <span className="hidden md:inline">{formatHeaderClock(verifiedTime)}</span>
+              <Clock className="w-3.5 h-3.5 md:hidden" />
+              
+              {/* Custom Tooltip for mobile/icon view */}
+              <div className="absolute top-full mt-2 right-0 bg-midnight-ink text-white text-[10px] py-2 px-3 industrial-shadow opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 md:hidden">
+                {formatHeaderClock(verifiedTime)}
               </div>
             </div>
 
@@ -144,37 +196,37 @@ export default function Layout({ children, title }: LayoutProps) {
               <div className="relative lang-switcher-container">
                 <button 
                   onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                  className="flex items-center gap-1 p-1.5 hover:bg-white/10 rounded-none transition-all border border-transparent hover:border-white/20"
+                  className="flex items-center gap-1 p-1.5 hover:bg-ink/5 rounded-none transition-all border border-transparent hover:border-ink/10"
                 >
-                  <Languages className="w-4 h-4 md:w-5 md:h-5 text-white" />
-                  <span className="text-[10px] md:text-sm font-bold uppercase tracking-widest leading-none">
+                  <Languages className="w-4 h-4 md:w-5 md:h-5 text-ink" />
+                  <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest leading-none">
                     {i18n.language.split('-')[0]}
                   </span>
                 </button>
                 <AnimatePresence>
                   {langDropdownOpen && (
                     <motion.div 
-                      initial={{ opacity: 0, y: -10 }}
+                      initial={{ opacity: 0, y: -5 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
+                      exit={{ opacity: 0, y: -5 }}
                       className="absolute end-0 top-full pt-2 z-[70]"
                     >
                       <div className="bg-white text-midnight shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] border-2 border-midnight min-w-[140px] py-1">
                         <button 
                           onClick={() => { i18n.changeLanguage('en'); setLangDropdownOpen(false); }}
-                          className={`w-full text-start block px-5 py-3 text-[10px] font-black tracking-widest transition-colors hover:bg-primary hover:text-white ${i18n.language.startsWith('en') ? 'bg-muted-mint text-midnight' : ''}`}
+                          className={`w-full text-start block px-5 py-3 text-[10px] font-black tracking-widest transition-colors hover:bg-primary hover:text-white ${i18n.language.startsWith('en') ? 'bg-white text-midnight' : ''}`}
                         >
                           ENGLISH
                         </button>
                         <button 
                           onClick={() => { i18n.changeLanguage('fr'); setLangDropdownOpen(false); }}
-                          className={`w-full text-start block px-5 py-3 text-[10px] font-black tracking-widest transition-colors hover:bg-primary hover:text-white ${i18n.language.startsWith('fr') ? 'bg-muted-mint text-midnight' : ''}`}
+                          className={`w-full text-start block px-5 py-3 text-[10px] font-black tracking-widest transition-colors hover:bg-primary hover:text-white ${i18n.language.startsWith('fr') ? 'bg-white text-midnight' : ''}`}
                         >
                           FRANÇAIS
                         </button>
                         <button 
                           onClick={() => { i18n.changeLanguage('ar'); setLangDropdownOpen(false); }}
-                          className={`w-full text-start block px-5 py-3 text-[10px] font-black tracking-widest transition-colors hover:bg-primary hover:text-white ${i18n.language.startsWith('ar') ? 'bg-muted-mint text-midnight' : ''}`}
+                          className={`w-full text-start block px-5 py-3 text-[10px] font-black tracking-widest transition-colors hover:bg-primary hover:text-white ${i18n.language.startsWith('ar') ? 'bg-white text-midnight' : ''}`}
                         >
                           العربية
                         </button>
@@ -184,78 +236,32 @@ export default function Layout({ children, title }: LayoutProps) {
                 </AnimatePresence>
               </div>
 
-              {/* Mobile Menu Button */}
-              <button 
-                onClick={() => setIsMenuOpen(true)}
-                className="lg:hidden p-2 hover:bg-white/10 transition-colors"
-                aria-label="Open menu"
-              >
-                <Menu className="w-6 h-6 text-white" />
-              </button>
+              {/* Mobile Menu Button - only show when menu is NOT open to avoid double buttons on top of each other */}
+              {!isMenuOpen && (
+                <MenuButton 
+                  isOpen={isMenuOpen}
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="lg:hidden p-2 hover:bg-ink/5 transition-colors z-[110] text-ink"
+                  iconClassName="w-6 h-6"
+                />
+              )}
             </div>
           </div>
         </div>
 
         {/* Mobile Overlay Navigation */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, x: '100%' }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-0 z-[100] bg-slate-blue flex flex-col p-8 overflow-y-auto"
-            >
-              <div className="flex items-center justify-between mb-16">
-                <div className="text-2xl font-black tracking-tighter text-white">
-                  RentalCore
-                </div>
-                <button 
-                  onClick={() => setIsMenuOpen(false)}
-                  className="p-2 hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-8 h-8 text-white" />
-                </button>
-              </div>
-
-              <nav className="flex flex-col gap-8">
-                {navItems.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setIsMenuOpen(false)}
-                    className={({ isActive }) => 
-                      `text-4xl md:text-5xl font-black uppercase tracking-tighter transition-all ${
-                        isActive ? 'text-primary' : 'text-white/60 hover:text-white'
-                      }`
-                    }
-                  >
-                    {item.name}
-                  </NavLink>
-                ))}
-              </nav>
-
-              <div className="mt-auto pt-16 border-t border-white/10 flex flex-col gap-6">
-                <div className="flex items-center justify-between text-white/60">
-                  <span className="text-sm font-bold uppercase tracking-widest">Language</span>
-                  <div className="flex gap-4">
-                    <button onClick={() => i18n.changeLanguage('en')} className={`text-xs font-black p-2 ${i18n.language.startsWith('en') ? 'text-primary' : 'text-white'}`}>EN</button>
-                    <button onClick={() => i18n.changeLanguage('fr')} className={`text-xs font-black p-2 ${i18n.language.startsWith('fr') ? 'text-primary' : 'text-white'}`}>FR</button>
-                    <button onClick={() => i18n.changeLanguage('ar')} className={`text-xs font-black p-2 ${i18n.language.startsWith('ar') ? 'text-primary' : 'text-white'}`}>AR</button>
-                  </div>
-                </div>
-                <div className="text-white/40 text-xs font-medium">
-                  {formatHeaderClock(verifiedTime)}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <NavigationOverlay 
+          isOpen={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          navItems={navItems}
+          formatHeaderClock={formatHeaderClock}
+          verifiedTime={verifiedTime}
+        />
       </header>
 
       <main className="flex-1 w-full overflow-x-hidden">
         {title && (
-          <div className="max-w-[1440px] mx-auto px-4 md:px-margin pt-12">
+          <div className="max-w-[1440px] mx-auto px-4 md:px-margin pt-6 v-title-gap">
             <h1 className="text-fluid-h1 font-black text-ink uppercase tracking-tight break-words m-0">
               {title}
             </h1>
@@ -264,42 +270,27 @@ export default function Layout({ children, title }: LayoutProps) {
         {children}
       </main>
 
-      {/* Sticky Footer */}
-      <footer className="sticky bottom-0 w-full bg-slate-blue text-white py-2 z-[100] border-t border-white/5 pb-2 px-2">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-margin flex flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest shrink-0">
-            <span className="opacity-70 hidden xs:inline">{t('common.serverConnection', 'Server Connection')}</span>
-            <div className="flex items-center gap-1.5 bg-black/20 px-2 py-0.5">
-              <Circle 
-                className="w-2 h-2 fill-current" 
-                style={{ color: connectivity.color, filter: `drop-shadow(0 0 4px ${connectivity.color})` }} 
+      {/* Slim Borderless Sticky Footer */}
+      <footer className="sticky bottom-0 w-full bg-white text-ink/40 py-3 border-t border-slate-50 z-[50] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
+        <div className="max-w-[1440px] mx-auto px-4 md:px-margin flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] font-bold uppercase tracking-[0.2em]">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-1.5 h-1.5 rounded-full" 
+                style={{ backgroundColor: connectivity.color }} 
               />
-              <span id="conn-status">{connectivity.text === 'Active' ? t('common.active') : t('common.offline', 'Offline')}</span>
+              <span>{connectivity.text === 'Active' ? t('common.active') : t('common.offline', 'Offline')}</span>
             </div>
+            
+            {status && (
+              <div className="flex items-center gap-2">
+                {type === 'processing' && <Loader2 className="w-3 h-3 animate-spin" />}
+                <span>{status}</span>
+              </div>
+            )}
           </div>
 
-          {/* Status Indicator */}
-          <div className="flex-1 flex justify-center px-4 overflow-hidden">
-            <motion.div 
-              key={status}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 px-3 md:px-6 py-1 bg-white/5 border border-white/10 max-w-xs md:max-w-md w-full justify-center"
-            >
-              {type === 'processing' && <Loader2 className="w-3 h-3 animate-spin text-primary shrink-0" />}
-              {type === 'success' && <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />}
-              {type === 'error' && <AlertCircle className="w-3 h-3 text-red-400 shrink-0" />}
-              <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-[0.1em] truncate ${
-                type === 'success' ? 'text-primary' : 
-                type === 'error' ? 'text-red-400' : 
-                'text-white/90'
-              }`}>
-                {status || t('common.systemReady')}
-              </span>
-            </motion.div>
-          </div>
-
-          <div className="text-[9px] md:text-[10px] opacity-40 text-end shrink-0">
+          <div>
             © 2026 RentalCore Enterprise
           </div>
         </div>

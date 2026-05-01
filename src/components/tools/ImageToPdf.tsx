@@ -165,7 +165,7 @@ export default function ImageToPdf() {
           {/* Upload Zone */}
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="w-full border-4 border-dashed border-midnight-ink/20 bg-muted-cream hover:bg-muted-mint transition-all p-12 flex flex-col items-center justify-center cursor-pointer industrial-shadow"
+            className="w-full border-4 border-dashed border-midnight-ink/20 bg-white hover:bg-ink/5 transition-all p-12 flex flex-col items-center justify-center cursor-pointer industrial-shadow"
           >
             <ImageIcon className="w-16 h-16 text-midnight-ink/40 mb-4" />
             <p className="font-black uppercase tracking-[0.2em] text-midnight-ink">{t('tools.imageToPdfTools.dropzoneTitle')}</p>
@@ -188,13 +188,13 @@ export default function ImageToPdf() {
                 <div className="flex gap-3">
                   <button 
                     onClick={() => setMode('single')}
-                    className={`flex-1 py-4 font-black uppercase text-xs tracking-widest transition-all ${mode === 'single' ? 'bg-midnight-ink text-white' : 'bg-muted-cream hover:bg-slate-100'}`}
+                    className={`flex-1 py-4 font-black uppercase text-xs tracking-widest transition-all ${mode === 'single' ? 'bg-midnight-ink text-white' : 'bg-white hover:bg-slate-100'}`}
                   >
                     {t('tools.imageToPdfTools.modeSingle')}
                   </button>
                   <button 
                     onClick={() => setMode('separate')}
-                    className={`flex-1 py-4 font-black uppercase text-xs tracking-widest transition-all ${mode === 'separate' ? 'bg-midnight-ink text-white' : 'bg-muted-cream hover:bg-slate-100'}`}
+                    className={`flex-1 py-4 font-black uppercase text-xs tracking-widest transition-all ${mode === 'separate' ? 'bg-midnight-ink text-white' : 'bg-white hover:bg-slate-100'}`}
                   >
                     {t('tools.imageToPdfTools.modeSeparate')}
                   </button>
@@ -281,7 +281,7 @@ export default function ImageToPdf() {
           <div className="flex flex-col sm:flex-row gap-4 border-t-4 border-midnight-ink pt-8">
             <button 
               onClick={reset}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 border-2 border-midnight-ink font-black uppercase text-xs tracking-widest hover:bg-muted-cream transition-all"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 border-2 border-midnight-ink font-black uppercase text-xs tracking-widest hover:bg-ink/5 transition-all"
             >
               <RotateCcw className="w-4 h-4" /> {t('tools.imageToPdfTools.reset')}
             </button>

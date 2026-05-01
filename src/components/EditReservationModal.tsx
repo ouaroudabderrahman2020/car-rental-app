@@ -12,6 +12,10 @@ import { useReservations } from '../hooks/useReservations';
 import { useVerifiedTime } from '../hooks/useVerifiedTime';
 import { Reservation, Car as CarType } from '../types';
 
+import FormSection from './FormSection';
+import Button1 from './Button1';
+import ReservationForm from './ReservationForm';
+
 interface EditReservationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -53,11 +57,12 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
   const { updateReservation, deleteReservation, loading: isSubmitting } = useReservations();
   const { verifiedTime } = useVerifiedTime();
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeneratingContract, setIsGeneratingContract] = useState(false);
   const [uploadedDocUrl, setUploadedDocUrl] = useState<string | null>(null);
   const [availableCars, setAvailableCars] = useState<CarType[]>([]);
+  const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [selectedCarId, setSelectedCarId] = useState<string | null>(reservationData?.car_id || null);
   const [carListActive, setCarListActive] = useState(false);
-  const [plateListActive, setPlateListActive] = useState(false);
   const [clientListActive, setClientListActive] = useState(false);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemName, setNewItemName] = useState('');
@@ -113,14 +118,21 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
   }, [reservationData]);
 
   useEffect(() => {
-    const fetchCars = async () => {
-      const { data } = await supabase
-        .from('cars')
-        .select('*')
-        .neq('status', 'In Maintenance');
-      if (data) setAvailableCars(data as CarType[]);
+    const fetchData = async () => {
+      const [{ data: cars }, { data: customers }] = await Promise.all([
+        supabase
+          .from('cars')
+          .select('*')
+          .neq('status', 'Decommissioned'),
+        supabase
+          .from('customers')
+          .select('*')
+      ]);
+      
+      if (cars) setAvailableCars(cars as CarType[]);
+      if (customers) setAllCustomers(customers);
     };
-    if (isOpen) fetchCars();
+    if (isOpen) fetchData();
   }, [isOpen]);
 
   useEffect(() => {
@@ -135,19 +147,19 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
       if (start.getTime() && end.getTime()) {
         if (start > now) {
           setReservationState({ 
-            label: t('common.reserved'), 
+            label: 'Reserved', 
             color: 'text-amber-600', 
             borderColor: 'border-amber-400' 
           });
         } else if (now > end) {
           setReservationState({ 
-            label: t('common.overdue'), 
+            label: 'Overdue', 
             color: 'text-red-600', 
             borderColor: 'border-red-500' 
           });
         } else {
           setReservationState({ 
-            label: t('common.active'), 
+            label: 'Active', 
             color: 'text-primary', 
             borderColor: 'border-primary' 
           });
@@ -186,6 +198,36 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
 
   const isFormValid = clientName.trim() !== '' && pickupDate !== '' && returnDate !== '';
 
+  const handleCreateContract = async () => {
+    if (!isFormValid) return;
+    setIsGeneratingContract(true);
+    
+    // Prepare reservation data for template
+    const reservationDataToGAS = {
+      customer_name: clientName,
+      customer_phone: clientPhone,
+      customer_id: clientId,
+      car_brand: carBrand,
+      car_model: carModel,
+      license_plate: licensePlate,
+      pickup_date: pickupDate,
+      return_date: returnDate,
+      total_price: totalPrice,
+      prepayment: prepayment,
+      balance_due: balanceDue,
+      deposit_amount: depositAmount,
+      deposit_type: depositType
+    };
+
+    const result = await gasService.generateContract(reservationDataToGAS);
+    if (result.success) {
+      alert(t('reservations.form.contractSuccess', 'Contract generated successfully in Drive!'));
+    } else {
+      alert(`${t('common.error')}: ${result.error}`);
+    }
+    setIsGeneratingContract(false);
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -201,19 +243,26 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
   };
 
   const handleConfirm = async () => {
-    if (!isFormValid || !reservationData.id) return;
-
-    // Strict Validation
-    const newErrors: { [key: string]: string } = {};
     const dateError = validateDates();
-    if (dateError) newErrors.dates = dateError;
+    if (dateError) {
+      alert(dateError);
+      return;
+    }
+    
+    // Strict Validation for missing required fields
+    const newErrors: { [key: string]: string } = {};
+    if (!selectedCarId) newErrors.selectedCarId = 'required';
+    if (!clientName.trim()) newErrors.clientName = 'required';
+    if (!pickupDate) newErrors.pickupDate = 'required';
+    if (!returnDate) newErrors.returnDate = 'required';
+    
+    // Format validations
     if (clientPhone && !validatePhone(clientPhone)) newErrors.phone = t('addReservation.errors.invalidPhone');
     if (clientId && !validateId(clientId)) newErrors.id = t('addReservation.errors.invalidId');
     if (clientLicense && !validateId(clientLicense)) newErrors.license = t('addReservation.errors.invalidLicense');
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      alert(newErrors.dates || t('common.forms.fillRequired'));
       return;
     }
 
@@ -227,10 +276,18 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
           customer_phone: clientPhone,
           start_date: new Date(pickupDate).toISOString(),
           end_date: new Date(returnDate).toISOString(),
+          extended_return_date: extendedReturnDate ? new Date(extendedReturnDate).toISOString() : null,
           total_price: totalPrice,
+          prepayment: typeof prepayment === 'string' ? parseFloat(prepayment) || 0 : prepayment,
+          deposit_type: depositType,
+          deposit_amount: typeof depositAmount === 'string' ? parseFloat(depositAmount) || 0 : depositAmount,
           car_id: selectedCarId!,
           fuel_level_out: parseInt(fuelOut) || null,
-          odometer_out: parseInt(odometerOut) || null
+          odometer_out: parseInt(odometerOut) || null,
+          cleaned_before: cleanedBefore,
+          included_items: includedItems,
+          notes: notes,
+          rating: rating,
         },
         reservationData.car_id
       );
@@ -245,6 +302,31 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
       alert(`Failed to save changes: ${error.message}`);
     }
   };
+
+  const handleAddNewClient = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([{
+          name: clientName,
+          phone: clientPhone,
+          id_card_number: clientId,
+          license_number: clientLicense,
+          trust_rank: rating || 3
+        }])
+        .select();
+      
+      if (error) throw error;
+      if (data) {
+        setAllCustomers([...allCustomers, data[0]]);
+        alert(t('common.clientAdded', 'New client profile created'));
+      }
+    } catch (error: any) {
+      alert(`Error creating client: ${error.message}`);
+    }
+  };
+
+  const isClientModified = isEditMode && clientName.trim() !== '' && !allCustomers.some(c => c.name === clientName);
 
   const handleDelete = async () => {
     if(confirm(t('editReservation.deleteConfirm'))) {
@@ -318,507 +400,117 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
 
         {/* Content */}
         <div className="bg-white w-full">
-          {/* Section 1: Car & Schedule */}
-          <div className="p-4 sm:p-10 space-y-8">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <CarIcon className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.carSchedule')}</h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="space-y-2 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.brandSelect')}</label>
-                <div className="relative">
-                  <input 
-                    className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase font-bold disabled:bg-slate-100 disabled:cursor-not-allowed"
-                    value={carBrand}
-                    onChange={(e) => setCarBrand(e.target.value)}
-                    onFocus={() => isEditMode && setCarListActive(true)}
-                    onBlur={() => setTimeout(() => setCarListActive(false), 200)}
-                    placeholder={t('addReservation.searchPlaceholder')}
-                    disabled={!isEditMode}
-                  />
-                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40" />
-                  {carListActive && isEditMode && (
-                    <div className="combobox-list active">
-                      {availableCars.filter(c => 
-                        `${c.brand} ${c.model} ${c.plate}`.toLowerCase().includes(carBrand.toLowerCase())
-                      ).map(car => (
-                        <div key={car.id} className="combobox-item flex justify-between items-center" onClick={() => {
-                          setCarBrand(car.brand);
-                          setCarModel(car.model);
-                          setLicensePlate(car.plate);
-                          setDailyRate(car.daily_rate);
-                          setSelectedCarId(car.id);
-                          setOdometerOut(car.odometer.toString());
-                          setFuelOut(car.starting_fuel_level?.toString() || '100');
-                        }}>
-                          <span>{car.brand} - {car.model} ({car.plate})</span>
-                          <span className={`text-[10px] px-2 py-0.5 font-bold uppercase ${
-                            car.status === 'Available' ? 'bg-primary/20 text-primary' : 'bg-indigo-100 text-indigo-600'
-                          }`}>
-                            {car.status === 'Available' ? t('common.available') : car.status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.modelReadOnly')}</label>
-                <input 
-                  className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60 disabled:cursor-not-allowed"
-                  value={carModel}
-                  readOnly
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.plateReadOnly')}</label>
-                <input 
-                  className="w-full bg-gray-50 p-4 min-h-[60px] industrial-shadow uppercase font-bold text-ink/60 disabled:cursor-not-allowed"
-                  value={licensePlate}
-                  readOnly
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.pickupDate')}</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.returnDate')}</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  value={returnDate}
-                  onChange={(e) => setReturnDate(e.target.value)}
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.extendedDate')}</label>
-                <input 
-                  type="datetime-local" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  value={extendedReturnDate}
-                  onChange={(e) => setExtendedReturnDate(e.target.value)}
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.status')}</label>
-                <div className={`w-full bg-muted-cream border-l-4 ${reservationState.borderColor} p-4 min-h-[60px] flex items-center font-black uppercase tracking-widest ${reservationState.color}`}>
-                  {reservationState.label}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.duration')}</label>
-                <div className="w-full bg-muted-cream border-l-4 border-midnight-ink p-4 min-h-[60px] flex items-center font-bold text-ink/70">
-                  {duration}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.dailyRate')}</label>
-                <input 
-                  type="number" 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow font-bold disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  value={dailyRate}
-                  onChange={(e) => setDailyRate(Number(e.target.value))}
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.totalPrice')}</label>
-                <div className="w-full bg-muted-mint p-4 min-h-[60px] flex items-center justify-center font-black text-2xl text-ink industrial-shadow border-[1.5px] border-form-border">
-                  {totalPrice.toFixed(2)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Client Profile */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <User className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.clientProfile')}</h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="sm:col-span-2 space-y-2 relative">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.client')}</label>
-                <div className="relative">
-                  <input 
-                    className="w-full bg-white p-4 min-h-[60px] industrial-shadow uppercase disabled:bg-slate-100 disabled:cursor-not-allowed"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    onFocus={() => isEditMode && setClientListActive(true)}
-                    onBlur={() => setTimeout(() => setClientListActive(false), 200)}
-                    placeholder={t('addReservation.clientSearchPlaceholder')}
-                    disabled={!isEditMode}
-                  />
-                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-ink/40" />
-                  {clientListActive && isEditMode && (
-                    <div className="combobox-list active">
-                      {['Johnathan Doe', 'Jane Smith', 'Michael Scott', 'Alexander Pierce'].map(client => (
-                        <div key={client} className="combobox-item" onClick={() => setClientName(client)}>{client}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.phone')}</label>
-                <input 
-                  type="tel" 
-                  className={`w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.phone ? 'border-2 border-red-500' : ''}`}
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  disabled={!isEditMode}
-                />
-                {errors.phone && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.phone}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.idCard')}</label>
-                <input 
-                  className={`w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.id ? 'border-2 border-red-500' : ''}`}
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  disabled={!isEditMode}
-                />
-                {errors.id && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.id}</p>}
-              </div>
-
-              <div className="sm:col-span-2 space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.drivingLicense')}</label>
-                <input 
-                  className={`w-full bg-white p-4 min-h-[60px] industrial-shadow disabled:bg-slate-100 disabled:cursor-not-allowed ${errors.license ? 'border-2 border-red-500' : ''}`}
-                  value={clientLicense}
-                  onChange={(e) => setClientLicense(e.target.value)}
-                  disabled={!isEditMode}
-                />
-                {errors.license && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.license}</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Financial Alignment */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <CreditCard className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.financialAlignment')}</h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.prepayment')}</label>
-                <input 
-                  type="number" 
-                  className="w-full p-4 text-xl font-bold bg-white disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  value={prepayment}
-                  onChange={(e) => setPrepayment(Number(e.target.value))}
-                  placeholder="0.00"
-                  disabled={!isEditMode}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.balanceDue')}</label>
-                <div className="py-4 text-2xl font-black text-primary px-4 border-[1.5px] border-transparent">
-                  ${balanceDue.toFixed(2)}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.depositType')}</label>
-                <select 
-                  className="w-full p-4 bg-white text-lg disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  value={depositType}
-                  onChange={(e) => {
-                    const newType = e.target.value;
-                    setDepositType(newType);
-                    if (newType === 'None') {
-                      setDepositAmount(0);
-                    }
-                  }}
-                  disabled={!isEditMode}
-                >
-                  <option value="None">{t('addReservation.depositNone', 'None')}</option>
-                  <option value="Cash">{t('addReservation.depositCash', 'Cash')}</option>
-                  <option value="Cheque">{t('addReservation.depositCheque', 'Cheque')}</option>
-                </select>
-              </div>
-
-              <div className={`space-y-2 transition-opacity ${depositType === 'None' || !isEditMode ? 'opacity-50' : 'opacity-100'}`}>
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.depositAmt')}</label>
-                <input 
-                  type="number" 
-                  className="w-full p-4 bg-white text-lg disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  disabled={depositType === 'None' || !isEditMode}
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(Number(e.target.value))}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Logistics Tracking */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <Monitor className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.logisticsTracking')}</h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { label: t('addReservation.odometerOut'), val: odometerOut, setter: setOdometerOut, placeholder: 'KM' },
-                { label: t('addReservation.odometerIn'), val: odometerIn, setter: setOdometerIn, placeholder: 'KM' },
-                { label: t('addReservation.fuelLevelOut'), val: fuelOut, setter: setFuelOut, placeholder: '%' },
-                { label: t('addReservation.fuelLevelIn'), val: fuelIn, setter: setFuelIn, placeholder: '%' },
-              ].map((field) => (
-                <div key={field.label} className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{field.label}</label>
-                  <input 
-                    className="w-full p-4 bg-white text-lg disabled:bg-slate-100 disabled:cursor-not-allowed"
-                    value={field.val}
-                    onChange={(e) => field.setter(e.target.value)}
-                    placeholder={field.placeholder}
-                    disabled={!isEditMode}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 5: Details & Condition */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <ClipboardList className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">{t('addReservation.detailsCondition')}</h3>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.cleanedBefore')}</label>
-                <select 
-                  className="w-full bg-white p-4 min-h-[60px] industrial-shadow text-lg disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  value={cleanedBefore}
-                  onChange={(e) => setCleanedBefore(e.target.value)}
-                  disabled={!isEditMode}
-                >
-                  <option value="yes">{t('common.yes')}</option>
-                  <option value="no">{t('common.no')}</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.includedItems')}</label>
-                {isEditMode && (
-                  <button 
-                    onClick={() => setIsAddingItem(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-midnight-ink text-white font-bold text-xs uppercase tracking-widest industrial-shadow hover:bg-ink transition-all"
-                  >
-                    <Plus className="w-4 h-4" /> {t('addReservation.addItem')}
-                  </button>
-                )}
-              </div>
-
-              <AnimatePresence>
-                {isAddingItem && isEditMode && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex gap-2 flex-wrap"
-                  >
-                    <input 
-                      className="flex-1 p-3 text-sm uppercase industrial-shadow"
-                      value={newItemName}
-                      onChange={(e) => setNewItemName(e.target.value)}
-                      placeholder={t('addReservation.itemNamePlaceholder')}
-                      autoFocus
-                    />
-                    <button 
-                      onClick={handleAddItem}
-                      className="px-4 py-3 bg-primary text-white font-bold text-xs uppercase tracking-widest industrial-shadow flex items-center justify-center min-w-[50px]"
-                    >
-                      <Check className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => setIsAddingItem(false)}
-                      className="px-4 py-3 bg-slate-200 text-ink font-bold text-xs uppercase tracking-widest flex items-center justify-center"
-                    >
-                      {t('common.cancel')}
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {includedItems.map((item: string) => (
-                  <label key={item} className="flex items-center gap-3 cursor-pointer bg-white p-4 industrial-shadow border-[1.5px] border-form-border">
-                    <input 
-                      type="checkbox" 
-                      defaultChecked 
-                      className="w-6 h-6 border-2 border-midnight-ink text-primary focus:ring-0 rounded-none disabled:bg-slate-100 disabled:cursor-not-allowed" 
-                      disabled={!isEditMode}
-                    />
-                    <span className="text-sm font-bold uppercase">{item}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('addReservation.conditionFeedback')}</label>
-                <div className={`flex gap-2 text-midnight-ink transition-opacity ${!isEditMode ? 'opacity-60 pointer-events-none' : 'opacity-100'}`}>
-                  {[1, 2, 3, 4, 5].map((val) => (
-                    <button 
-                      key={val}
-                      onClick={() => isEditMode && setRating(val)}
-                      className={`transition-all ${rating >= val ? 'fill-midnight-ink' : ''}`}
-                    >
-                      <Star 
-                        className={`w-10 h-10 ${rating >= val ? 'fill-current' : 'fill-none'}`} 
-                        strokeWidth={1}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('common.notes')}</label>
-                <textarea 
-                  className="w-full bg-white p-4 min-h-[100px] industrial-shadow resize-none overflow-hidden disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  value={notes}
-                  onChange={(e) => {
-                    setNotes(e.target.value);
-                    if (notesRef.current) {
-                      notesRef.current.style.height = 'auto';
-                      notesRef.current.style.height = notesRef.current.scrollHeight + 'px';
-                    }
-                  }}
-                  ref={notesRef}
-                  placeholder={t('addReservation.notesPlaceholder')}
-                  disabled={!isEditMode}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 6: Documentation */}
-          <div className="p-4 sm:p-10 space-y-8 border-t border-muted-cream">
-            <div className="section-header-rule">
-              <div className="section-header-content">
-                <Upload className="w-6 h-6 text-midnight-ink" />
-                <h3 className="text-lg font-black text-midnight-ink uppercase tracking-[0.2em]">Documentation</h3>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-6 text-midnight-ink uppercase">
-              <div className="relative">
-                <input 
-                  type="file" 
-                  id="edit-contract-upload" 
-                  className="hidden" 
-                  onChange={handleFileUpload}
-                  disabled={!isEditMode}
-                />
-                <label 
-                  htmlFor="edit-contract-upload"
-                  className={`flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-sm uppercase tracking-[0.2em] industrial-shadow transition-all cursor-pointer ${!isEditMode || isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted-mint'}`}
-                >
-                  {isUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
-                  {isUploading ? t('addReservation.uploading') : t('editReservation.updateDocSuccess')}
-                </label>
-              </div>
-
-              {uploadedDocUrl && (
-                <div className="flex items-center gap-2 p-4 bg-primary/10 text-primary border border-primary/20">
-                  <FileText className="w-5 h-5" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-midnight-ink">{t('editReservation.newDocReady')}</span>
-                </div>
-              )}
-
-              <button 
-                disabled={!isEditMode}
-                className={`flex items-center gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-sm uppercase tracking-[0.2em] industrial-shadow transition-all ${!isEditMode ? 'opacity-50 cursor-not-allowed' : 'hover:bg-muted-mint'}`}
-              >
-                <Monitor className="w-6 h-6" /> {t('addReservation.imagesToPdf')}
-              </button>
-            </div>
-          </div>
+          <ReservationForm 
+            t={t}
+            availableCars={availableCars}
+            selectedCarId={selectedCarId}
+            setSelectedCarId={setSelectedCarId}
+            setCarBrand={setCarBrand}
+            setCarModel={setCarModel}
+            setLicensePlate={setLicensePlate}
+            setDailyRate={setDailyRate}
+            setOdometerOut={setOdometerOut}
+            setFuelOut={setFuelOut}
+            pickupDate={pickupDate}
+            setPickupDate={setPickupDate}
+            returnDate={returnDate}
+            setReturnDate={setReturnDate}
+            extendedReturnDate={extendedReturnDate}
+            setExtendedReturnDate={setExtendedReturnDate}
+            validateDates={validateDates}
+            reservationState={reservationState}
+            duration={duration}
+            dailyRate={dailyRate}
+            totalPrice={totalPrice}
+            clientName={clientName}
+            setClientName={setClientName}
+            setClientListActive={setClientListActive}
+            clientListActive={clientListActive}
+            allCustomers={allCustomers}
+            isClientModified={isClientModified}
+            handleAddNewClient={handleAddNewClient}
+            clientPhone={clientPhone}
+            setClientPhone={setClientPhone}
+            clientId={clientId}
+            setClientId={setClientId}
+            clientLicense={clientLicense}
+            setClientLicense={setClientLicense}
+            errors={errors}
+            rating={rating}
+            setRating={setRating}
+            notes={notes}
+            setNotes={setNotes}
+            notesRef={notesRef}
+            prepayment={prepayment}
+            setPrepayment={setPrepayment}
+            balanceDue={balanceDue}
+            depositType={depositType}
+            setDepositType={setDepositType}
+            depositAmount={depositAmount}
+            setDepositAmount={setDepositAmount}
+            odometerOut={odometerOut}
+            odometerIn={odometerIn}
+            setOdometerIn={setOdometerIn}
+            fuelOut={fuelOut}
+            fuelIn={fuelIn}
+            setFuelIn={setFuelIn}
+            cleanedBefore={cleanedBefore}
+            setCleanedBefore={setCleanedBefore}
+            isAddingItem={isAddingItem}
+            setIsAddingItem={setIsAddingItem}
+            newItemName={newItemName}
+            setNewItemName={setNewItemName}
+            handleAddItem={handleAddItem}
+            includedItems={includedItems}
+            handleFileUpload={handleFileUpload}
+            handleCreateContract={handleCreateContract}
+            isUploading={isUploading}
+            isGeneratingContract={isGeneratingContract}
+            disabled={!isEditMode}
+          />
 
           {/* Footer Card */}
-          <div className="px-6 py-8 sm:px-10 bg-midnight-ink flex flex-col gap-8 shrink-0">
-            <div className="flex flex-wrap gap-x-12 gap-y-6 items-center text-white border-l-4 border-primary pl-8 py-2">
+          <div className="px-6 py-8 sm:px-10 bg-slate-50 flex flex-col gap-8 shrink-0 border-t border-black">
+            <div className="flex flex-wrap gap-x-12 gap-y-6 items-center border-l-4 border-primary pl-8 py-2">
               <div>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">{t('addReservation.totalPrice')}</p>
-                <p className="text-2xl sm:text-3xl font-black">${totalPrice.toFixed(2)}</p>
+                <p className="text-[10px] font-bold text-ink/60 uppercase tracking-[0.2em]">{t('addReservation.totalPrice')}</p>
+                <p className="text-2xl sm:text-3xl font-black text-ink">${totalPrice.toFixed(2)}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">{t('addReservation.balanceDue')}</p>
+                <p className="text-[10px] font-bold text-ink/60 uppercase tracking-[0.2em]">{t('addReservation.balanceDue')}</p>
                 <p className="text-2xl sm:text-3xl font-black text-primary">${balanceDue.toFixed(2)}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 w-full">
-              <button 
+              <Button1 
                 onClick={handleDelete}
-                className="px-4 py-5 text-red-500 font-bold uppercase tracking-[0.2em] border border-red-500/30 hover:bg-red-500/10 transition-colors min-h-[60px]"
+                className="!bg-red-600 !border-red-600 hover:!bg-red-700 hover:!border-red-700"
+                icon={<Trash2 className="w-5 h-5" />}
               >
-                <Trash2 className="w-4 h-4 inline mr-2" /> {t('editReservation.delete')}
-              </button>
-              <button 
+                {t('common.delete')}
+              </Button1>
+              <Button1 
                 onClick={onClose}
-                className="px-4 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
+                className="!bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"
               >
                 {t('common.cancel')}
-              </button>
-              <button 
+              </Button1>
+              <Button1 
                 onClick={handleComplete}
-                className="px-4 py-5 bg-slate-700 text-white font-bold uppercase tracking-[0.2em] hover:bg-slate-600 transition-colors min-h-[60px]"
+                className="!bg-[#475569] !border-[#475569] hover:!bg-[#334155] hover:!border-[#334155]"
+                icon={<CheckCircle className="w-5 h-5" />}
               >
-                <CheckCircle className="w-4 h-4 inline mr-2" /> {t('editReservation.complete')}
-              </button>
-              <button 
+                {t('addReservation.archive', 'Archive')}
+              </Button1>
+              <Button1 
                 disabled={!isFormValid || !isEditMode || isSubmitting}
                 onClick={handleConfirm}
-                className={`px-4 py-5 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow transition-all min-h-[60px] flex items-center justify-center gap-2 ${(!isFormValid || !isEditMode || isSubmitting) ? 'opacity-50 pointer-events-none' : 'active:scale-[0.98]'}`}
+                className="!bg-primary !border-primary hover:!bg-primary/90 hover:!border-primary/90"
+                icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
               >
-                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isSubmitting ? t('addReservation.recording') : t('editReservation.save')}
-              </button>
+                {isSubmitting ? t('addReservation.recording') : t('common.save')}
+              </Button1>
             </div>
           </div>
         </div>

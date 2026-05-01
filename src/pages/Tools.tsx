@@ -16,17 +16,17 @@ export default function Tools() {
 
   return (
     <Layout title={t('tools.title')}>
-      <div className="min-h-full bg-muted-mint pb-12">
+      <div className="min-h-full bg-white pb-12">
         <main className="w-full">
           <div className="py-12">
-            <div className="max-w-[1440px] mx-auto px-margin text-center">
+            <div className="max-w-[1440px] mx-auto px-margin v-section-gap text-center">
               {/* Tool Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               {tools.map((tool) => (
                 <button 
                   key={tool.key}
                   onClick={() => setSelectedTool(tool.key)}
-                  className="group block bg-white p-8 border border-border-tint hover:border-primary transition-all duration-300 shadow-[0_4px_20px_rgba(19,27,46,0.04)] hover:shadow-[0_8px_30px_rgba(19,27,46,0.08)] industrial-shadow text-center cursor-pointer w-full"
+                  className="group block bg-white p-8 border border-slate-200 hover:border-primary transition-all duration-300 shadow-sm hover:shadow-md text-center cursor-pointer w-full"
                 >
                   <div className="flex flex-col items-center gap-4">
                     <tool.icon className={`${tool.color} w-12 h-12 group-hover:scale-110 transition-transform duration-300`} />

@@ -39,6 +39,12 @@
   --spacing-unit: 4px;
   --spacing-gutter: 1.5rem;
   --spacing-margin: 2rem;
+
+  /* Vertical Rhythm Variables */
+  --spacing-title-gap: 1.5rem;   /* 24px - mb-6 */
+  --spacing-heading-gap: 1rem;    /* 16px - mb-4 */
+  --spacing-section-gap: 2.5rem;  /* 40px - gap-10 / space-y-10 */
+  --spacing-section-gap-sm: 1.5rem; /* 24px - gap-6 / space-y-6 */
 }
 
 @layer base {
@@ -47,7 +53,7 @@
   }
 
   body {
-    @apply bg-muted-mint text-midnight font-sans antialiased;
+    @apply bg-white text-midnight font-sans antialiased;
     font-size: var(--text-fluid-base);
     line-height: 1.6;
     letter-spacing: 0.01em;
@@ -79,7 +85,7 @@
   }
 
   input, select, textarea {
-    @apply text-base text-midnight border-[1.5px] border-form-border focus:outline-none focus:border-primary focus:ring-0 transition-colors py-3 px-4;
+    @apply text-base text-ink border border-black focus:outline-none focus:border-primary focus:ring-0 transition-colors py-3 px-4;
   }
 }
 
@@ -104,6 +110,17 @@
     box-shadow: 4px 4px 0px rgba(15, 23, 42, 0.1);
   }
 
+  /* Vertical Rhythm Utilities */
+  .v-title-gap {
+    margin-bottom: var(--spacing-title-gap);
+  }
+  .v-heading-gap {
+    margin-bottom: var(--spacing-heading-gap);
+  }
+  .v-section-gap {
+    @apply flex flex-col gap-[var(--spacing-section-gap-sm)] lg:gap-[var(--spacing-section-gap)];
+  }
+
   .standard-row-text {
     @apply font-sans text-fluid-base font-semibold text-midnight;
   }
@@ -113,21 +130,21 @@
   }
 
   .combobox-list {
-    @apply absolute top-full inset-x-0 z-50 bg-white border-[1.5px] border-form-border border-t-0;
+    @apply absolute top-full inset-x-0 z-50 bg-white border border-black border-t-0;
     box-shadow: 4px 4px 0px rgba(15, 23, 42, 0.1);
   }
 
   .combobox-item {
-    @apply px-4 py-3 cursor-pointer text-sm font-semibold uppercase hover:bg-muted-mint transition-colors;
+    @apply px-4 py-3 cursor-pointer text-sm font-semibold uppercase hover:bg-ink/5 transition-colors;
   }
 
   .section-header-rule {
-    @apply relative flex items-center w-full after:flex-1 after:h-[1px] after:bg-slate-200 before:flex-1 before:h-[1px] before:bg-slate-200;
+    @apply relative flex items-center w-full after:flex-1 after:h-[3px] after:bg-black before:flex-1 before:h-[3px] before:bg-black;
   }
 
   .section-header-content {
-    @apply bg-warm-accent px-6 py-2.5 flex items-center gap-3 z-10;
-    box-shadow: 2px 2px 0px rgba(15, 23, 42, 0.05);
+    @apply bg-warm-accent px-6 py-2.5 flex items-center gap-3 z-10 border-2 border-black;
+    box-shadow: 4px 4px 0px rgba(15, 23, 42, 0.1);
   }
 
   .filter-input {

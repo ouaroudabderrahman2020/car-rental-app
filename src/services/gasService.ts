@@ -101,5 +101,32 @@ export const gasService = {
       console.error('GAS Export Error:', error);
       return { success: false, error: 'Export failed due to connection issues.' };
     }
+  },
+
+  /**
+   * Generates a contract from a template via GAS
+   */
+  async generateContract(reservationData: any) {
+    if (!GAS_URL) {
+      return { success: false, error: 'GAS_URL not configured.' };
+    }
+
+    try {
+      await fetch(GAS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        body: JSON.stringify({
+          action: 'generate_contract',
+          reservation: reservationData
+        })
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Contract Generation Error:', error);
+      return { success: false, error: 'Contract generation failed.' };
+    }
   }
 };

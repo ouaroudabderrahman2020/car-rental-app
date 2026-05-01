@@ -52,7 +52,7 @@ export default function ClientDetailModal({ isOpen, onClose, client, reservation
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-muted-cream w-full max-w-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-2 border-midnight-ink flex flex-col max-h-[90vh]"
+            className="relative bg-white w-full max-w-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-2 border-midnight-ink flex flex-col max-h-[90vh]"
           >
             {/* Header */}
             <div className="px-6 py-4 bg-white border-b-2 border-midnight-ink flex items-center justify-between">
@@ -63,7 +63,7 @@ export default function ClientDetailModal({ isOpen, onClose, client, reservation
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setIsEditing(!isEditing)}
-                  className="p-2 hover:bg-muted-mint transition-colors border border-transparent hover:border-midnight-ink/10 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ink/70"
+                  className="p-2 hover:bg-ink/5 transition-colors border border-transparent hover:border-midnight-ink/10 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ink/70"
                 >
                   <Edit2 className="w-4 h-4" />
                   {t('crm.modal.edit')}
@@ -210,7 +210,7 @@ export default function ClientDetailModal({ isOpen, onClose, client, reservation
               <div className="flex gap-4">
                 <button 
                   onClick={onClose}
-                  className="px-6 py-3 border-2 border-midnight-ink font-bold text-xs uppercase tracking-widest hover:bg-muted-mint transition-all"
+                  className="px-6 py-3 border-2 border-midnight-ink font-bold text-xs uppercase tracking-widest hover:bg-ink/5 transition-all"
                 >
                   {t('crm.modal.close')}
                 </button>

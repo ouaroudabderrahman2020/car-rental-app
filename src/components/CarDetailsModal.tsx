@@ -414,7 +414,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carDetails.imageUpload')}</label>
-                <div className={`w-full aspect-video border-2 border-dashed border-form-border bg-muted-cream flex flex-col items-center justify-center transition-colors ${isEditMode ? 'cursor-pointer hover:bg-muted-mint' : 'cursor-default'}`}>
+                <div className={`w-full aspect-video border-2 border-dashed border-form-border bg-white flex flex-col items-center justify-center transition-colors ${isEditMode ? 'cursor-pointer hover:bg-ink/5' : 'cursor-default'}`}>
                   <Camera className="w-12 h-12 text-midnight-ink/40" />
                   <p className="mt-2 text-xs font-bold uppercase tracking-widest text-midnight-ink/60">{t('carDetails.imageHint')}</p>
                 </div>
@@ -424,7 +424,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                   <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carDetails.docUpload')}</label>
                   <button 
                     disabled={!isEditMode}
-                    className={`w-full flex items-center justify-between gap-3 px-8 py-5 bg-muted-cream border-2 border-midnight-ink font-black text-xs uppercase tracking-[0.2em] industrial-shadow transition-all ${isEditMode ? 'hover:bg-muted-mint' : 'opacity-70 cursor-default'}`}
+                    className={`w-full flex items-center justify-between gap-3 px-8 py-5 bg-white border-2 border-midnight-ink font-black text-xs uppercase tracking-[0.2em] industrial-shadow transition-all ${isEditMode ? 'hover:bg-ink/5' : 'opacity-70 cursor-default'}`}
                   >
                     <span>{t('carDetails.docLabel')}</span>
                     <Upload className="w-5 h-5" />
@@ -494,7 +494,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mb-4 p-4 bg-muted-mint border-1.5 border-primary industrial-shadow overflow-hidden"
+                      className="mb-4 p-4 bg-white border-1.5 border-primary industrial-shadow overflow-hidden"
                     >
                       <div className="flex gap-2">
                         <input 
@@ -588,7 +588,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead className="hidden md:table-header-group">
-                    <tr className="bg-muted-cream text-left">
+                    <tr className="bg-white text-left">
                       <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carDetails.intervalType')}</th>
                       <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carDetails.intervalValue')}</th>
                       <th className="p-3 text-[10px] font-black uppercase tracking-widest border border-form-border">{t('carDetails.lastCompleted')}</th>

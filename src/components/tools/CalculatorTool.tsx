@@ -33,12 +33,12 @@ export default function Calculator() {
     setLastResult(null);
   };
 
-  const btnClass = "h-16 bg-white industrial-shadow font-black text-xl hover:bg-muted-mint active:scale-[0.98] transition-all border-1.5 border-midnight-ink/10";
+  const btnClass = "h-16 bg-white industrial-shadow font-black text-xl hover:bg-ink/5 active:scale-[0.98] transition-all border-1.5 border-midnight-ink/10";
   const opClass = "h-16 bg-midnight-ink text-white industrial-shadow font-black text-xl hover:bg-primary active:scale-[0.98] transition-all";
 
   return (
     <div className="w-full max-w-sm mx-auto p-4 space-y-6">
-      <div className="bg-muted-cream p-6 border-b-4 border-midnight-ink industrial-shadow text-right">
+      <div className="bg-white p-6 border-b-4 border-midnight-ink industrial-shadow text-right">
         <div className="text-xs text-midnight-ink/40 h-4 font-bold uppercase tracking-widest">{equation}</div>
         <div className="text-4xl font-black text-midnight-ink truncate">{display}</div>
       </div>

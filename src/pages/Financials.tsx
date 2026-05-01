@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
+import { SectionHeader } from '../components/SectionHeader';
 
 export default function Financials() {
   const { t, i18n } = useTranslation();
@@ -73,7 +74,7 @@ export default function Financials() {
 
   return (
     <Layout title={t('financials.title')}>
-      <div className="w-full bg-muted-cream min-h-screen">
+      <div className="w-full bg-white min-h-screen">
         <main className="w-full">
           <div className="py-12">
             <div className="max-w-[1440px] mx-auto px-margin">
@@ -83,21 +84,22 @@ export default function Financials() {
                 <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('financials.calculating')}</p>
               </div>
             ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                  <div className="bg-white p-8 border border-border-tint shadow-[0_4px_20px_rgba(19,27,46,0.04)] industrial-shadow">
+              <div className="v-section-gap">
+                <SectionHeader title={t('financials.overview', 'Financial Overview')} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="bg-white p-8 border border-slate-200 shadow-sm transition-all hover:shadow-md">
                     <p className="text-fluid-sm font-bold text-slate-blue mb-2 uppercase tracking-widest">{t('financials.totalIncome')}</p>
                     <h2 className="text-3xl md:text-4xl text-midnight font-bold mb-2">{formatCurrency(stats.totalIncome)}</h2>
                     <p className="text-primary font-bold text-fluid-base">{t('financials.refCompleted')}</p>
                   </div>
 
-                  <div className="bg-white p-8 border border-border-tint shadow-[0_4px_20px_rgba(19,27,46,0.04)] industrial-shadow">
+                  <div className="bg-white p-8 border border-slate-200 shadow-sm transition-all hover:shadow-md">
                     <p className="text-fluid-sm font-bold text-slate-blue mb-2 uppercase tracking-widest">{t('financials.lastMonth')}</p>
                     <h2 className="text-3xl md:text-4xl text-midnight font-bold mb-2">{formatCurrency(stats.lastMonthIncome)}</h2>
                     <p className="text-slate-blue font-semibold text-fluid-base">{stats.lastMonthName}</p>
                   </div>
 
-                  <div className="bg-white p-8 border border-border-tint shadow-[0_4px_20px_rgba(19,27,46,0.04)] industrial-shadow">
+                  <div className="bg-white p-8 border border-slate-200 shadow-sm transition-all hover:shadow-md">
                     <p className="text-fluid-sm font-bold text-slate-blue mb-2 uppercase tracking-widest">{t('financials.currentMonth')}</p>
                     <h2 className="text-3xl md:text-4xl text-midnight font-bold mb-2">{formatCurrency(stats.currentMonthIncome)}</h2>
                     <p className="text-primary italic font-bold text-fluid-base">{stats.currentMonthName} ({t('financials.inProgress')})</p>
@@ -105,14 +107,14 @@ export default function Financials() {
                 </div>
 
                 <section className="max-w-3xl">
-                  <h3 className="text-2xl font-bold text-midnight mb-4">{t('financials.policyTitle')}</h3>
-                  <div className="bg-white p-6 border border-border-tint industrial-shadow">
-                    <p className="text-midnight/70 leading-relaxed">
+                  <SectionHeader title={t('financials.policyTitle')} className="mb-4" />
+                  <div className="bg-white p-8 border border-slate-200 shadow-sm">
+                    <p className="text-midnight/70 leading-relaxed mb-0">
                       {t('financials.policyText')}
                     </p>
                   </div>
                 </section>
-              </>
+              </div>
             )}
           </div>
         </div>

@@ -35,11 +35,17 @@ export interface Reservation {
   status: ReservationStatus;
   total_price: number;
   prepayment: number;
+  deposit_type?: string;
+  deposit_amount?: number;
   odometer_out?: number;
   odometer_in?: number;
   fuel_level_out?: number;
   fuel_level_in?: number;
+  extended_return_date?: string;
+  cleaned_before?: string;
+  included_items?: string[];
   notes?: string;
+  rating?: number;
   created_at: string;
   car?: Car;
 }

@@ -49,7 +49,7 @@ export default function CalendarTool() {
     <div className="p-8 flex flex-col items-center justify-center space-y-4">
       <div className="text-8xl font-black text-midnight-ink">{currentDate.getDate()}</div>
       <div className="text-2xl font-bold text-primary uppercase tracking-[0.2em]">{currentDate.toLocaleDateString(i18n.language, { weekday: 'long' })}</div>
-      <div className="w-full max-w-md bg-muted-cream p-4 border-l-4 border-midnight-ink text-sm font-medium">
+      <div className="w-full max-w-md bg-white p-4 border-l-4 border-midnight-ink text-sm font-medium">
         {t('common.noData')}
       </div>
     </div>
@@ -76,7 +76,7 @@ export default function CalendarTool() {
         {days.map((day, idx) => (
           <div 
             key={idx} 
-            className={`aspect-square flex items-center justify-center text-sm font-bold border border-midnight-ink/5 transition-all ${day ? 'hover:bg-muted-mint cursor-pointer' : 'bg-transparent'} ${day === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear() ? 'bg-primary text-white shadow-inner' : ''}`}
+            className={`aspect-square flex items-center justify-center text-sm font-bold border border-midnight-ink/5 transition-all ${day ? 'hover:bg-ink/5 cursor-pointer' : 'bg-transparent'} ${day === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear() ? 'bg-primary text-white shadow-inner' : ''}`}
           >
             {day}
           </div>
