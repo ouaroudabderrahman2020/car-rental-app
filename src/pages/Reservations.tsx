@@ -233,59 +233,6 @@ export default function Reservations() {
         </div>
       </section>
 
-      {/* Section: Recently Completed */}
-      <section className="bg-white py-lg pb-12">
-        <div className="max-w-[1440px] mx-auto px-margin v-section-gap">
-          <SectionHeader 
-            title={t('reservations.completed')}
-            badge={<a className="px-4 py-1 bg-midnight text-white text-fluid-sm font-bold uppercase tracking-widest hover:brightness-125 transition-colors flex items-center gap-2 whitespace-nowrap" href="/archive">
-              {t('reservations.history')}
-              <ArrowRight className="w-3 h-3" />
-            </a>}
-          />
-          <div className="bg-white border border-slate-200 shadow-sm overflow-hidden">
-            <table className="w-full text-left border-collapse responsive-table">
-              <thead>
-                <tr className="bg-slate-800 text-white font-sans text-[10px] md:text-xs uppercase tracking-widest border-b border-slate-800">
-                  <th className="py-5 px-6 font-black text-center">{t('reservations.reservationId')}</th>
-                  <th className="py-5 px-6 font-black text-center">{t('reservations.customerName')}</th>
-                  <th className="py-5 px-6 font-black text-center">{t('archive.table.car')}</th>
-                  <th className="py-5 px-6 font-black text-center">{t('archive.table.duration')}</th>
-                  <th className="py-5 px-6 font-black text-center">{t('reservations.totalAmount')}</th>
-                </tr>
-              </thead>
-              <tbody className="font-sans text-midnight leading-[1.6]">
-                {recentlyCompleted.map((row) => (
-                  <tr key={row.id} className="border-b border-slate-100/50 hover:bg-white transition-all">
-                    <td onClick={() => handleOpenDetails(row)} className="py-6 px-6 font-bold text-midnight border-e border-slate-100 text-center cursor-pointer hover:text-primary transition-colors" data-label={t('reservations.reservationId')}>{row.id_short}</td>
-                    <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('reservations.customerName')}>
-                      <div className="flex flex-col items-center">
-                        <div className="font-semibold cursor-pointer hover:text-primary transition-colors">{row.client}</div>
-                        <div className={`text-fluid-sm font-bold uppercase tracking-tighter ${row.clientType === t('common.clientTypes.repeat') ? 'text-primary' : 'text-midnight/40'}`}>
-                          {row.clientType}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.car')}>
-                      <div className="flex flex-col items-center">
-                        <div className="font-semibold cursor-pointer hover:text-primary transition-colors">{row.carName}</div>
-                        <div className="text-fluid-sm text-midnight">{t('fleet.mileageDriven')}: {row.mileage}</div>
-                      </div>
-                    </td>
-                    <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.duration')}>
-                      <div className="flex flex-col items-center">
-                        <div className="font-semibold text-accent-blue">{row.durationString}</div>
-                        <div className="text-fluid-sm text-midnight">{row.hours}</div>
-                      </div>
-                    </td>
-                    <td className="py-6 px-6 text-center font-bold text-midnight" data-label={t('reservations.totalAmount')}>{row.price}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
       </div>
     </div>
   </Layout>
