@@ -11,21 +11,6 @@ export async function callGasAction(action: string, payload: any) {
   }
 
   try {
-    const response = await fetch(GAS_WEB_APP_URL, {
-      method: 'POST',
-      mode: 'no-cors', // GAS Web Apps often require no-cors or redirect handling
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ action, payload }),
-    });
-
-    // Note: with 'no-cors', we can't read the response body directly in some environments.
-    // However, if the GAS script is set to allow CORS or we use a different approach, we can.
-    // For AI Studio apps, we'll try standard fetch first.
-    
-    // If we need the result (like Drive URLs), standard fetch with proper CORS is better.
-    // Re-trying with standard fetch:
     const corsResponse = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       headers: {
@@ -38,9 +23,47 @@ export async function callGasAction(action: string, payload: any) {
       throw new Error(`GAS Error: ${corsResponse.statusText}`);
     }
 
-    return await corsResponse.json();
+    const result = await corsResponse.json();
+    return result;
   } catch (err) {
     console.error('GAS call failed:', err);
-    throw err;
+    return { status: 'error', message: err instanceof Error ? err.message : String(err) };
   }
 }
+
+/**
+ * Legacy wrapper for components expecting gasService patterns
+ */
+export const gasService = {
+  async uploadBase64(fileData: { base64Data: string; fileName: string; contentType: string; category?: string; entityIdentifier?: string }) {
+    return callGasAction('upload_to_drive', {
+      base64Data: fileData.base64Data,
+      fileName: fileData.fileName,
+      contentType: fileData.contentType,
+      category: fileData.category,
+      entityIdentifier: fileData.entityIdentifier
+    });
+  },
+
+  async exportData(sheetName: string, rows: any[][]) {
+    return callGasAction('sync_to_sheet', {
+      reservations: rows.map(row => ({
+        id: row[0],
+        customer_name: row[1],
+        car: { brand: row[2], model: '' }, // Shim for existing export pattern
+        start_date: row[3],
+        end_date: row[4],
+        total_price: row[5],
+        status: row[6]
+      }))
+    });
+  },
+
+  async generateContract(filename: string, placeholders: any) {
+    return callGasAction('generate_contract', {
+      reservation: { id: filename, ...placeholders },
+      customer: { name: placeholders.customer_name, phone: placeholders.customer_phone },
+      car: { brand: placeholders.car_brand, model: placeholders.car_model, plate: placeholders.license_plate }
+    });
+  }
+};

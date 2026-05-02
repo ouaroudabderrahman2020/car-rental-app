@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  X, Check, Loader2, Monitor
+  Check, Loader2, Monitor, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { useStatus } from '../contexts/StatusContext';
 import Button1 from './Button1';
 import CarForm, { MaintenanceInterval, EssentialItem } from './CarForm';
 import ImageToPdf from './tools/ImageToPdf';
+import BaseModal from './BaseModal';
 
 interface AddCarModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface AddCarModalProps {
 export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
   const { t } = useTranslation();
   const { setStatus } = useStatus();
+  // ... rest of the state ...
   // Form State
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -174,24 +176,16 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 backdrop-blur-sm p-4 sm:p-10 overflow-y-auto no-scrollbar">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white w-full max-w-5xl industrial-shadow flex flex-col relative my-auto max-h-[95vh] overflow-y-auto no-scrollbar"
-      >
-        {/* Header */}
-        <div className="px-6 py-6 sm:px-10 sm:py-8 bg-midnight-ink flex justify-between items-center shrink-0">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">{t('carForm.title')}</h2>
-            <p className="text-white/80 text-sm sm:text-base">{t('carForm.subtitle')}</p>
-          </div>
-          <button onClick={onClose} className="p-2 text-white hover:bg-white/10 transition-colors">
-            <X className="w-6 h-6" />
-          </button>
+    <BaseModal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title={t('carForm.title')}
+    >
+      <div className="bg-white w-full">
+        {/* Subtitle / Header info moved inside content if needed, but BaseModal has title */}
+        <div className="px-6 py-4 sm:px-10 bg-slate-50 border-b border-black">
+           <p className="text-ink/60 text-sm sm:text-base font-bold uppercase tracking-widest">{t('carForm.subtitle')}</p>
         </div>
 
         {/* Content */}
@@ -224,54 +218,49 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
           disabled={isSubmitting}
         />
 
-          {/* Footer */}
-          <div className="px-6 py-8 sm:px-10 bg-slate-50 border-t border-black flex flex-col sm:flex-row gap-4 shrink-0">
-            <Button1 
-              onClick={onClose}
-              className="sm:flex-1 !bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"
-            >
-              {t('common.cancel')}
-            </Button1>
-            <Button1 
-              disabled={isSubmitting}
-              onClick={handleConfirm}
-              className="sm:flex-[2]"
-              icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-            >
-              {isSubmitting ? t('carForm.processing') : t('carForm.confirm')}
-            </Button1>
-        </div>
-      </motion.div>
-
-      {/* Image to PDF Tool Overlay */}
-      <AnimatePresence>
-        {showPdfTool && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[75] flex items-center justify-center bg-midnight-ink/90 backdrop-blur-md p-4 sm:p-20 overflow-y-auto no-scrollbar"
+        {/* Footer */}
+        <div className="px-6 py-8 sm:px-10 bg-slate-50 border-t border-black flex flex-col sm:flex-row gap-4 shrink-0">
+          <Button1 
+            onClick={onClose}
+            className="sm:flex-1 !bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"
           >
-            <div className="bg-white w-full max-w-4xl p-8 sm:p-12 industrial-shadow relative my-auto">
-              <button 
-                onClick={() => setShowPdfTool(false)}
-                className="absolute top-4 right-4 p-2 text-ink/40 hover:text-red-500 transition-colors"
-              >
-                <X size={32} />
-              </button>
-              
-              <div className="mb-12 border-b-4 border-midnight-ink pb-4">
-                <h3 className="text-3xl font-black uppercase tracking-tighter text-midnight-ink flex items-center gap-4">
-                  <Monitor className="w-10 h-10 text-primary" />
-                  {t('tools.imageToPdf')}
-                </h3>
-              </div>
+            {t('common.cancel')}
+          </Button1>
+          <Button1 
+            disabled={isSubmitting}
+            onClick={handleConfirm}
+            className="sm:flex-[2]"
+            icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+          >
+            {isSubmitting ? t('carForm.processing') : t('carForm.confirm')}
+          </Button1>
+        </div>
 
-              <ImageToPdf onAssign={handlePdfToolAssign} />
+        {/* Image to PDF Tool Overlay moved inside or handled via context, but for now keeping it here as a portal/overlay */}
+        <AnimatePresence>
+          {showPdfTool && (
+            <div className="fixed inset-0 z-[75] flex items-center justify-center bg-midnight-ink/90 backdrop-blur-md p-4 sm:p-20 overflow-y-auto no-scrollbar">
+              <div className="bg-white w-full max-w-4xl p-8 sm:p-12 industrial-shadow relative my-auto">
+                <button 
+                  onClick={() => setShowPdfTool(false)}
+                  className="absolute top-4 right-4 p-2 text-ink/40 hover:text-red-500 transition-colors"
+                >
+                  <X size={32} />
+                </button>
+                
+                <div className="mb-12 border-b-4 border-midnight-ink pb-4">
+                  <h3 className="text-3xl font-black uppercase tracking-tighter text-midnight-ink flex items-center gap-4">
+                    <Monitor className="w-10 h-10 text-primary" />
+                    {t('tools.imageToPdf')}
+                  </h3>
+                </div>
+
+                <ImageToPdf onAssign={handlePdfToolAssign} />
+              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </BaseModal>
   );
 }

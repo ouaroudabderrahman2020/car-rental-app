@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { SectionHeader } from '../components/SectionHeader';
-import ReservationDetailsModal from '../components/ReservationDetailsModal';
-import AddReservationModal from '../components/AddReservationModal';
+import ReservationModal from '../components/ReservationModal';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
 import { useStatus } from '../contexts/StatusContext';
@@ -13,10 +12,10 @@ export default function Archive() {
   const { t, i18n } = useTranslation();
   const { setStatus } = useStatus();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
   const [initialData, setInitialData] = useState<any>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [archiveData, setArchiveData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,6 +65,7 @@ export default function Archive() {
 
   const handleOpenDetails = (res: any) => {
     setSelectedReservation(res);
+    setModalMode('edit');
     setIsModalOpen(true);
   };
 
@@ -84,8 +84,8 @@ export default function Archive() {
       rating: res.rating,
       notes: res.notes
     });
-    setIsAddModalOpen(true);
-    setIsModalOpen(false);
+    setModalMode('add');
+    setIsModalOpen(true);
   };
 
   const filteredData = archiveData.filter(res => {
@@ -103,24 +103,17 @@ export default function Archive() {
   return (
     <Layout title={t('archive.title')}>
       <div className="w-full bg-white min-h-full pb-10">
-        <AddReservationModal 
-          isOpen={isAddModalOpen} 
-          onClose={() => {
-            setIsAddModalOpen(false);
-            setInitialData(null);
-            fetchArchive();
-          }} 
-          initialData={initialData}
-        />
-
-        <ReservationDetailsModal 
+        <ReservationModal 
           isOpen={isModalOpen} 
           onClose={() => {
             setIsModalOpen(false);
+            setInitialData(null);
+            setSelectedReservation(null);
             fetchArchive();
           }} 
-          onRebook={() => handleRebook(selectedReservation)}
+          mode={modalMode}
           reservationData={selectedReservation}
+          initialData={initialData}
         />
 
         <div className="py-lg">

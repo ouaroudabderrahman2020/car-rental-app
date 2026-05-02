@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Check, Edit, Lock, Loader2, Monitor, Trash2 
+  Check, Edit, Lock, Loader2, Monitor, Trash2, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import { Car } from '../types';
 import CarForm, { MaintenanceInterval, EssentialItem } from './CarForm';
 import Button1 from './Button1';
 import ImageToPdf from './tools/ImageToPdf';
+import BaseModal from './BaseModal';
 
 interface CarDetailsModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface CarDetailsModalProps {
 export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetailsModalProps) {
   const { t } = useTranslation();
   const { setStatus: setGlobalStatus } = useStatus();
+  // ... rest of the component state/logic ...
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -208,33 +210,25 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 backdrop-blur-sm p-4 sm:p-10 overflow-y-auto no-scrollbar">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white w-full max-w-5xl industrial-shadow flex flex-col relative my-auto max-h-[95vh] overflow-y-auto no-scrollbar"
-      >
-        {/* Header */}
-        <div className="px-6 py-6 sm:px-10 sm:py-8 bg-midnight-ink flex justify-between items-center shrink-0">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-white uppercase tracking-tight">{t('carDetails.title')}</h2>
-            <p className="text-white/80 text-sm sm:text-base">{t('carDetails.subtitle')}</p>
-          </div>
+    <BaseModal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title={t('carDetails.title')}
+    >
+      <div className="bg-white w-full">
+        {/* Header toolbar */}
+        <div className="px-6 py-4 sm:px-10 bg-midnight-ink flex flex-wrap justify-between items-center shrink-0 border-b border-black">
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setIsEditMode(!isEditMode)}
-              className={`flex items-center gap-2 px-4 py-2 text-white font-bold text-xs uppercase tracking-widest industrial-shadow transition-all ${isEditMode ? 'bg-midnight-ink' : 'bg-primary'}`}
-            >
-              {isEditMode ? <Lock className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-              <span>{isEditMode ? t('carDetails.lockSave') : t('carDetails.editProfile')}</span>
-            </button>
-            <button onClick={onClose} className="p-2 text-white hover:bg-white/10 transition-colors">
-              <X className="w-6 h-6" />
-            </button>
+            <span className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">{t('carDetails.subtitle')}</span>
           </div>
+          <button 
+            onClick={() => setIsEditMode(!isEditMode)}
+            className={`flex items-center gap-2 px-6 py-2.5 text-white font-bold text-xs uppercase tracking-widest industrial-shadow transition-all ${isEditMode ? 'bg-slate-700' : 'bg-primary'}`}
+          >
+            {isEditMode ? <Lock className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
+            <span>{isEditMode ? t('carDetails.lockSave') : t('carDetails.editProfile')}</span>
+          </button>
         </div>
 
         {/* Content */}
@@ -268,66 +262,61 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
           disabled={!isEditMode || isSubmitting}
         />
 
-          {/* Footer */}
-          <div className="px-6 py-8 sm:px-10 bg-slate-50 border-t border-black flex flex-col sm:flex-row gap-4 shrink-0">
-            <Button1 
-              onClick={onClose}
-              className="sm:flex-1 !bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"
-            >
-              {isEditMode ? t('common.cancel') : t('common.close')}
-            </Button1>
-            {isEditMode && (
-              <Button1 
-                onClick={handleRemoveCar}
-                disabled={isSubmitting}
-                className="sm:flex-1 !bg-red-600 !border-red-600 hover:!bg-red-700 hover:!border-red-700"
-                icon={<Trash2 className="w-5 h-5" />}
-              >
-                {t('carDetails.removeCar')}
-              </Button1>
-            )}
-            {isEditMode && (
-              <Button1 
-                disabled={isSubmitting}
-                onClick={handleConfirm}
-                className="sm:flex-[2]"
-                icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-              >
-                {isSubmitting ? t('carForm.processing') : t('carDetails.lockSave')}
-              </Button1>
-            )}
-          </div>
-      </motion.div>
-
-      {/* Image to PDF Tool Overlay */}
-      <AnimatePresence>
-        {showPdfTool && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[75] flex items-center justify-center bg-midnight-ink/90 backdrop-blur-md p-4 sm:p-20 overflow-y-auto no-scrollbar"
+        {/* Footer */}
+        <div className="px-6 py-8 sm:px-10 bg-slate-50 border-t border-black flex flex-col sm:flex-row gap-4 shrink-0">
+          <Button1 
+            onClick={onClose}
+            className="sm:flex-1 !bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"
           >
-            <div className="bg-white w-full max-w-4xl p-8 sm:p-12 industrial-shadow relative my-auto">
-              <button 
-                onClick={() => setShowPdfTool(false)}
-                className="absolute top-4 right-4 p-2 text-ink/40 hover:text-red-500 transition-colors"
-              >
-                <X size={32} />
-              </button>
-              
-              <div className="mb-12 border-b-4 border-midnight-ink pb-4">
-                <h3 className="text-3xl font-black uppercase tracking-tighter text-midnight-ink flex items-center gap-4">
-                  <Monitor className="w-10 h-10 text-primary" />
-                  {t('tools.imageToPdf')}
-                </h3>
-              </div>
+            {isEditMode ? t('common.cancel') : t('common.close')}
+          </Button1>
+          {isEditMode && (
+            <Button1 
+              onClick={handleRemoveCar}
+              disabled={isSubmitting}
+              className="sm:flex-1 !bg-red-600 !border-red-600 hover:!bg-red-700 hover:!border-red-700"
+              icon={<Trash2 className="w-5 h-5" />}
+            >
+              {t('carDetails.removeCar')}
+            </Button1>
+          )}
+          {isEditMode && (
+            <Button1 
+              disabled={isSubmitting}
+              onClick={handleConfirm}
+              className="sm:flex-[2]"
+              icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+            >
+              {isSubmitting ? t('carForm.processing') : t('carDetails.lockSave')}
+            </Button1>
+          )}
+        </div>
 
-              <ImageToPdf onAssign={handlePdfToolAssign} />
+        {/* PDF Tool Overlay */}
+        <AnimatePresence>
+          {showPdfTool && (
+            <div className="fixed inset-0 z-[75] flex items-center justify-center bg-midnight-ink/90 backdrop-blur-md p-4 sm:p-20 overflow-y-auto no-scrollbar">
+              <div className="bg-white w-full max-w-4xl p-8 sm:p-12 industrial-shadow relative my-auto">
+                <button 
+                  onClick={() => setShowPdfTool(false)}
+                  className="absolute top-4 right-4 p-2 text-ink/40 hover:text-red-500 transition-colors"
+                >
+                  <X size={32} />
+                </button>
+                
+                <div className="mb-12 border-b-4 border-midnight-ink pb-4">
+                  <h3 className="text-3xl font-black uppercase tracking-tighter text-midnight-ink flex items-center gap-4">
+                    <Monitor className="w-10 h-10 text-primary" />
+                    {t('tools.imageToPdf')}
+                  </h3>
+                </div>
+
+                <ImageToPdf onAssign={handlePdfToolAssign} />
+              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </BaseModal>
   );
 }

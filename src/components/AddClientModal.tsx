@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
-import Modal1 from './Modal1';
+import BaseModal from './BaseModal';
 import Button1 from './Button1';
 import ClientForm from './ClientForm';
 
@@ -83,7 +83,7 @@ export default function AddClientModal({ isOpen, onClose, onConfirm }: AddClient
   };
 
   return (
-    <Modal1 isOpen={isOpen} onClose={onClose} toolName={t('clientForm.addTitle', 'Add New Client')}>
+    <BaseModal isOpen={isOpen} onClose={onClose} title={t('clientForm.addTitle', 'Add New Client')}>
       <div className="max-h-[70vh] overflow-y-auto">
         <ClientForm 
           name={name} setName={setName}
@@ -107,6 +107,6 @@ export default function AddClientModal({ isOpen, onClose, onConfirm }: AddClient
           {isSubmitting ? t('common.saving', 'Saving...') : t('common.confirm', 'Confirm')}
         </Button1>
       </div>
-    </Modal1>
+    </BaseModal>
   );
 }

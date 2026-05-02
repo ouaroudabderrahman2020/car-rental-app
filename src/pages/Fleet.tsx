@@ -1,4 +1,4 @@
-import { Plus, Car as CarIcon, Loader2, Download } from 'lucide-react';
+import { Plus, Car as CarIcon, Loader2, Download, FileSpreadsheet } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
@@ -7,9 +7,10 @@ import { SectionHeader } from '../components/SectionHeader';
 import CarDetailsModal from '../components/CarDetailsModal';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
-import { gasService } from '../services/gasService';
+import { gasService } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
 import { Car } from '../types';
+import { exportToCSV } from '../lib/utils';
 
 interface FormattedCar extends Car {
   name: string;
@@ -65,25 +66,41 @@ export default function Fleet() {
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = async (mode: 'sheets' | 'csv') => {
     setIsExporting(true);
     setStatus(t('tools.imageToPdfTools.processing'), 'processing', 0);
-    const rows = fleetData.map(car => [
+    
+    const headers = [
+      t('fleet.form.brand'), 
+      t('fleet.form.plate'), 
+      t('carDetails.rate'), 
+      t('carDetails.status'), 
+      t('carDetails.odometer'), 
+      t('common.maintenance')
+    ];
+    
+    const rows = filteredFleet.map(car => [
       car.name,
       car.plate,
       car.daily_rate,
       car.status,
       car.odometer,
-      car.needsMaintenance ? 'Yes' : 'No'
+      car.needsMaintenance ? t('common.yes') : t('common.no')
     ]);
-    const { success, error } = await gasService.exportData('Fleet', rows);
 
-    if (!success) {
-      setStatus(t('common.exportError'), 'error');
-      alert(`${t('common.exportError')}: ${error}`);
-    } else {
+    if (mode === 'csv') {
+      exportToCSV('Fleet_Export', [headers, ...rows]);
       setStatus(t('common.exportSuccess'), 'success');
       alert(t('common.exportSuccess'));
+    } else {
+      const { status } = await gasService.exportData('Fleet', rows);
+      if (status !== 'success') {
+        setStatus(t('common.exportError'), 'error');
+        alert(t('common.exportError'));
+      } else {
+        setStatus(t('common.exportSuccess'), 'success');
+        alert(t('common.exportSuccess'));
+      }
     }
     setIsExporting(false);
   };
@@ -160,14 +177,22 @@ export default function Fleet() {
                     </select>
                   </div>
                   <div className="flex items-center gap-4 w-full sm:w-auto">
-                  <button 
-                    onClick={handleExport}
-                    disabled={isExporting}
-                    className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
-                  >
-                    {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
-                  </button>
+                    <button 
+                      onClick={() => handleExport('csv')}
+                      disabled={isExporting}
+                      className="px-6 py-2.5 bg-slate-100 text-ink font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:bg-slate-200 active:scale-[0.98] transition-all flex items-center gap-2 border border-slate-200 disabled:opacity-50"
+                      title={t('common.exportCSV', 'Export to CSV')}
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleExport('sheets')}
+                      disabled={isExporting}
+                      className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
+                    >
+                      {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                      {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
+                    </button>
                   <button 
                     onClick={() => setIsAddModalOpen(true)}
                     className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"

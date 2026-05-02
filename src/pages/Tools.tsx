@@ -1,9 +1,12 @@
-import { Calculator, Calendar, FileType } from 'lucide-react';
+import { Calculator, Calendar, FileType, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
-import Modal1 from '../components/Modal1';
+import BaseModal from '../components/BaseModal';
 import FormSection from '../components/FormSection';
+import CalculatorTool from '../components/tools/CalculatorTool';
+import CalendarTool from '../components/tools/CalendarTool';
+import ImageToPdf from '../components/tools/ImageToPdf';
 
 export default function Tools() {
   const { t } = useTranslation();
@@ -14,6 +17,20 @@ export default function Tools() {
     { name: t('tools.calendar'), key: 'Calendar', icon: Calendar, color: 'text-primary' },
     { name: t('tools.imageToPdf'), key: 'Image to PDF', icon: FileType, color: 'text-primary' },
   ];
+
+  const renderTool = () => {
+    switch (selectedTool) {
+      case 'Calculator': return <CalculatorTool />;
+      case 'Calendar': return <CalendarTool />;
+      case 'Image to PDF': return <ImageToPdf />;
+      default: return null;
+    }
+  };
+
+  const getToolTitle = () => {
+    const tool = tools.find(t => t.key === selectedTool);
+    return tool ? tool.name : '';
+  };
 
   return (
     <Layout title={t('tools.title')}>
@@ -42,11 +59,25 @@ export default function Tools() {
           </div>
       </main>
 
-      <Modal1 
+      <BaseModal 
         isOpen={!!selectedTool} 
         onClose={() => setSelectedTool(null)} 
-        toolName={selectedTool || ''} 
-      />
+        title={getToolTitle()}
+        footer={
+          <div className="px-6 py-6 sm:px-8 bg-white border-t border-midnight-ink/10 flex justify-end shrink-0">
+            <button 
+              onClick={() => setSelectedTool(null)}
+              className="px-10 py-4 bg-midnight-ink text-white font-black uppercase tracking-[0.2em] industrial-shadow hover:bg-primary transition-all active:scale-[0.98]"
+            >
+              {t('common.close', 'Close')}
+            </button>
+          </div>
+        }
+      >
+        <div className="p-4 sm:p-10 min-h-[500px]">
+          {renderTool()}
+        </div>
+      </BaseModal>
     </div>
   </Layout>
 );

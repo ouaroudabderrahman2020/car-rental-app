@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowRight, Loader2, Download, Search } from 'lucide-react';
+import { Plus, ArrowRight, Loader2, Download, Search, FileSpreadsheet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { SectionHeader } from '../components/SectionHeader';
-import AddReservationModal from '../components/AddReservationModal';
-import EditReservationModal from '../components/EditReservationModal';
-import ReservationDetailsModal from '../components/ReservationDetailsModal';
+import ReservationModal from '../components/ReservationModal';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
-import { gasService } from '../services/gasService';
+import { gasService } from '../lib/gas';
 import { Reservation } from '../types';
+import { exportToCSV } from '../lib/utils';
 
 interface FormattedReservation extends Reservation {
   id_short: string;
@@ -29,8 +28,8 @@ interface FormattedReservation extends Reservation {
 
 export default function Reservations() {
   const { t, i18n } = useTranslation();
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<FormattedReservation | null>(null);
   const [initialData, setInitialData] = useState<any>(null);
@@ -93,9 +92,20 @@ export default function Reservations() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleExport = async () => {
+  const handleExport = async (mode: 'sheets' | 'csv') => {
     setIsExporting(true);
-    const allData = [...activeReservations];
+    const allData = [...filteredActive];
+    const headers = [
+      t('reservations.reservationId'),
+      t('reservations.customerName'),
+      t('reservations.car'),
+      t('fleet.form.plate'),
+      t('reservations.startDate'),
+      t('reservations.endDate'),
+      t('common.status'),
+      t('reservations.totalAmount')
+    ];
+
     const rows = allData.map(res => [
       res.id_short,
       res.client,
@@ -106,12 +116,17 @@ export default function Reservations() {
       res.state,
       res.price
     ]);
-    const { success, error } = await gasService.exportData('Reservations_Full_Export', rows);
 
-    if (!success) {
-      alert(`${t('common.exportError')}: ${error}`);
-    } else {
+    if (mode === 'csv') {
+      exportToCSV('Reservations_Export', [headers, ...rows]);
       alert(t('common.exportSuccess'));
+    } else {
+      const { status } = await gasService.exportData('Reservations', rows);
+      if (status !== 'success') {
+        alert(t('common.exportError'));
+      } else {
+        alert(t('common.exportSuccess'));
+      }
     }
     setIsExporting(false);
   };
@@ -122,12 +137,14 @@ export default function Reservations() {
 
   const handleOpenEdit = (res: FormattedReservation) => {
     setSelectedReservation(res);
-    setIsEditModalOpen(true);
+    setModalMode('edit');
+    setIsModalOpen(true);
   };
 
   const handleOpenDetails = (res: FormattedReservation) => {
     setSelectedReservation(res);
-    setIsDetailsModalOpen(true);
+    setModalMode('edit');
+    setIsModalOpen(true);
   };
 
   const handleRebook = (res: FormattedReservation) => {
@@ -145,45 +162,25 @@ export default function Reservations() {
       rating: res.rating,
       notes: res.notes
     });
-    setIsAddModalOpen(true);
-    setIsDetailsModalOpen(false);
+    setModalMode('add');
+    setIsModalOpen(true);
   };
 
   return (
     <Layout title={t('nav.reservations')}>
       <div className="w-full bg-white">
-        <AddReservationModal 
-          isOpen={isAddModalOpen} 
+        <ReservationModal 
+          isOpen={isModalOpen} 
+          mode={modalMode}
           onClose={() => {
-            setIsAddModalOpen(false);
+            setIsModalOpen(false);
             setInitialData(null);
+            setSelectedReservation(null);
             fetchReservations();
           }} 
+          reservationData={selectedReservation}
           initialData={initialData}
         />
-
-        {selectedReservation && (
-          <EditReservationModal
-            isOpen={isEditModalOpen}
-            onClose={() => {
-              setIsEditModalOpen(false);
-              fetchReservations();
-            }}
-            reservationData={selectedReservation}
-          />
-        )}
-
-        {selectedReservation && (
-          <ReservationDetailsModal
-            isOpen={isDetailsModalOpen}
-            onClose={() => {
-              setIsDetailsModalOpen(false);
-              fetchReservations();
-            }}
-            onRebook={() => handleRebook(selectedReservation)}
-            reservationData={selectedReservation}
-          />
-        )}
 
         <div className="v-section-gap">
           {/* Section: Active Reservations */}
@@ -222,7 +219,15 @@ export default function Reservations() {
                     </div>
                     <div className="flex items-center gap-4 w-full sm:w-auto">
                       <button 
-                        onClick={handleExport}
+                        onClick={() => handleExport('csv')}
+                        disabled={isExporting}
+                        className="px-6 py-2.5 bg-slate-100 text-ink font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:bg-slate-200 active:scale-[0.98] transition-all flex items-center gap-2 border border-slate-200 disabled:opacity-50"
+                        title={t('common.exportCSV', 'Export to CSV')}
+                      >
+                        <FileSpreadsheet className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleExport('sheets')}
                         disabled={isExporting}
                         className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
                       >
@@ -230,7 +235,10 @@ export default function Reservations() {
                         {isExporting ? t('common.loading') : t('common.export', 'EXPORT TO SHEETS')}
                       </button>
                       <button 
-                        onClick={() => setIsAddModalOpen(true)}
+                        onClick={() => {
+                          setModalMode('add');
+                          setIsModalOpen(true);
+                        }}
                         className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
                       >
                         <Plus className="w-4 h-4" /> {t('reservations.newReservation')}
