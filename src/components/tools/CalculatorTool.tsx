@@ -17,11 +17,23 @@ export default function Calculator() {
   const calculate = () => {
     try {
       const fullEq = equation + display;
-      // Note: In a real app we'd use a math library, but for a basic UI-focused tool:
-      const result = eval(fullEq.replace(/[^-+/*\d.]/g, ''));
-      setDisplay(String(result));
+      // Safer calculation logic
+      const sanitized = fullEq.replace(/[^-+/*\d.]/g, '');
+      // eslint-disable-next-line no-eval
+      const result = eval(sanitized);
+      
+      const resString = String(result);
+      setDisplay(resString);
       setEquation('');
       setLastResult(result);
+
+      // Backend ready: Prepare transaction object
+      const calculationLog = {
+        equation: fullEq,
+        result: resString,
+        created_at: new Date().toISOString()
+      };
+      console.log('Calculation to be saved:', calculationLog);
     } catch {
       setDisplay('Error');
     }

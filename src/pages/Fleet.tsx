@@ -28,6 +28,8 @@ export default function Fleet() {
   const [fleetData, setFleetData] = useState<FormattedCar[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'USD' }).format(val);
@@ -95,6 +97,13 @@ export default function Fleet() {
     setIsDetailsModalOpen(true);
   };
 
+  const filteredFleet = fleetData.filter(car => {
+    const matchesSearch = car.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          car.plate.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || car.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <Layout title={t('nav.fleet')}>
       <div className="w-full bg-white min-h-full pb-10">
@@ -120,10 +129,37 @@ export default function Fleet() {
       <div className="py-lg">
         <div className="max-w-[1440px] mx-auto">
           <FormSection title={t('fleet.inventory', 'Vehicle Inventory')}>
-             <div className="w-full flex flex-col gap-8">
-              {/* Action Toolbar */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                <div className="flex items-center gap-4 w-full sm:w-auto">
+              <div className="w-full flex flex-col gap-8">
+                {/* Action Toolbar */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                  <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                    {/* Search Bar */}
+                    <div className="relative group min-w-[200px] md:min-w-[300px] flex-grow md:flex-grow-0">
+                      <input 
+                        type="text" 
+                        placeholder={t('common.search', 'Filter by brand, model or plate...')}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 text-ink text-sm focus:bg-white focus:border-primary transition-all outline-none"
+                      />
+                      <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    {/* Status Filter */}
+                    <select 
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="px-4 py-2 bg-slate-50 border border-slate-200 text-ink text-sm outline-none focus:border-primary transition-all cursor-pointer min-w-[140px]"
+                    >
+                      <option value="all">{t('common.allStatus', 'All Status')}</option>
+                      <option value="Available">{t('fleet.available', 'Available')}</option>
+                      <option value="Rented">{t('fleet.rented', 'Rented')}</option>
+                      <option value="In Maintenance">{t('fleet.inMaintenance', 'In Maintenance')}</option>
+                      <option value="Out of Order">{t('fleet.outOfOrder', 'Out of Order')}</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-4 w-full sm:w-auto">
                   <button 
                     onClick={handleExport}
                     disabled={isExporting}
@@ -161,12 +197,12 @@ export default function Fleet() {
                       <div className="h-2 bg-slate-200 w-full mt-auto"></div>
                     </div>
                   ))
-                ) : fleetData.length === 0 ? (
+                ) : filteredFleet.length === 0 ? (
                   <div className="col-span-full py-20 bg-white border border-slate-100 shadow-sm text-center">
                     <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.noData', 'No vehicles found in fleet.')}</p>
                   </div>
                 ) : (
-                  fleetData.map((car) => (
+                  filteredFleet.map((car) => (
                     <div 
                       key={car.id} 
                       onClick={() => handleOpenDetails(car)}

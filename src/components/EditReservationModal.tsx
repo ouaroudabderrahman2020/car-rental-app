@@ -103,20 +103,29 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
 
   useEffect(() => {
     if (reservationData) {
-      setCarBrand(reservationData.carBrand || '');
-      setCarModel(reservationData.car || '');
-      setClientName(reservationData.client || '');
-      // Update other fields as needed when reservationData changes
-      setLicensePlate(reservationData.carPlate || '');
-      setPickupDate(reservationData.start_date?.slice(0, 16) || '');
-      setReturnDate(reservationData.end_date?.slice(0, 16) || '');
-      setDailyRate(reservationData.daily_rate || 0);
+      setCarBrand(reservationData.carBrand || reservationData.car?.brand || '');
+      setCarModel(reservationData.carName?.split(' ')[1] || reservationData.car?.model || '');
+      setClientName(reservationData.client || reservationData.customer_name || '');
+      setLicensePlate(reservationData.carPlate || reservationData.car?.plate || '');
+      setPickupDate(reservationData.start_date?.slice(0, 16) || reservationData.pickupDate || '');
+      setReturnDate(reservationData.end_date?.slice(0, 16) || reservationData.returnDate || '');
+      setExtendedReturnDate(reservationData.extended_return_date?.slice(0, 16) || '');
+      setDailyRate(reservationData.daily_rate || reservationData.car?.daily_rate || 0);
       setClientPhone(reservationData.customer_phone || '');
       setPrepayment(reservationData.prepayment || 0);
       setTotalPrice(reservationData.total_price || 0);
       setSelectedCarId(reservationData.car_id || null);
       setOdometerOut(reservationData.odometer_out?.toString() || '');
+      setOdometerIn(reservationData.odometer_in?.toString() || '');
       setFuelOut(reservationData.fuel_level_out?.toString() || '');
+      setFuelIn(reservationData.fuel_level_in?.toString() || '');
+      setDepositType(reservationData.deposit_type || '');
+      setDepositAmount(reservationData.deposit_amount || 0);
+      setCleanedBefore(reservationData.cleaned_before || 'yes');
+      setIncludedItems(reservationData.included_items || []);
+      setNotes(reservationData.notes || '');
+      setRating(reservationData.rating || 0);
+      setClientId(reservationData.customer_id || '');
     }
   }, [reservationData]);
 
@@ -559,6 +568,7 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
             setNewItemName={setNewItemName}
             handleAddItem={handleAddItem}
             includedItems={includedItems}
+            setIncludedItems={setIncludedItems}
             handleFileUpload={handleFileUpload}
             handleCreateContract={handleCreateContract}
             isUploading={isUploading}

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
 import { useStatus } from '../contexts/StatusContext';
+import { useReservations } from '../hooks/useReservations';
 import FormSection from './FormSection';
 import ReservationForm from './ReservationForm';
 
@@ -16,9 +17,10 @@ interface ReservationDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   reservationData: any; // Using any for expanded data
+  onRebook?: () => void;
 }
 
-export default function ReservationDetailsModal({ isOpen, onClose, reservationData }: ReservationDetailsModalProps) {
+export default function ReservationDetailsModal({ isOpen, onClose, reservationData, onRebook }: ReservationDetailsModalProps) {
   const { t } = useTranslation();
   const { setStatus } = useStatus();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -70,22 +72,34 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
   const [balanceDue, setBalanceDue] = useState(0);
 
   const notesRef = useRef<HTMLTextAreaElement>(null);
+  const { updateReservation, deleteReservation, loading: hookLoading } = useReservations();
 
   useEffect(() => {
     if (reservationData) {
-      setCarBrand(reservationData.carBrand || '');
-      setCarModel(reservationData.car || '');
-      setClientName(reservationData.client || '');
+      setCarBrand(reservationData.carBrand || reservationData.car?.brand || '');
+      setCarModel(reservationData.carName?.split(' ')[1] || reservationData.car || reservationData.car?.model || '');
+      setClientName(reservationData.client || reservationData.customer_name || '');
       setSelectedCarId(reservationData.car_id || null);
+      setLicensePlate(reservationData.carPlate || reservationData.car?.plate || '');
       setPickupDate(reservationData.start_date?.slice(0, 16) || reservationData.pickupDate || '');
       setReturnDate(reservationData.end_date?.slice(0, 16) || reservationData.returnDate || '');
+      setExtendedReturnDate(reservationData.extended_return_date?.slice(0, 16) || '');
       setDailyRate(reservationData.daily_rate || reservationData.rate || 0);
       setClientPhone(reservationData.customer_phone || reservationData.phone || '');
+      setClientId(reservationData.customer_id || '');
       setPrepayment(reservationData.prepayment || 0);
+      setDepositType(reservationData.deposit_type || 'Cash');
+      setDepositAmount(reservationData.deposit_amount || 0);
       setOdometerOut(reservationData.odometer_out?.toString() || reservationData.odometerOut || '');
+      setOdometerIn(reservationData.odometer_in?.toString() || '');
       setFuelOut(reservationData.fuel_level_out?.toString() || reservationData.fuelOut || '');
+      setFuelIn(reservationData.fuel_level_in?.toString() || '');
+      setCleanedBefore(reservationData.cleaned_before || 'yes');
+      setIncludedItems(reservationData.included_items || []);
+      setNotes(reservationData.notes || '');
+      setRating(reservationData.rating || 0);
     }
-  }, [reservationData]);
+  }, [reservationData, isOpen]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -274,12 +288,13 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
     };
 
     try {
-      const { error } = await supabase
-        .from('reservations')
-        .update(reservationUpdateData)
-        .eq('id', reservationData.id);
+      const { error } = await updateReservation(
+        reservationData.id,
+        reservationUpdateData,
+        reservationData.car_id
+      );
 
-      if (error) throw error;
+      if (error) throw new Error(error);
 
       await triggerGasSideEffects({
         ...reservationUpdateData,
@@ -300,20 +315,39 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
     }
   };
 
-  const isClientModified = false;
-  const handleAddNewClient = () => {};
+  const handleAddNewClient = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([{
+          name: clientName,
+          phone: clientPhone,
+          id_card_number: clientId,
+          license_number: clientLicense,
+          trust_rank: rating || 3
+        }])
+        .select();
+      
+      if (error) throw error;
+      if (data) {
+        setAllCustomers([...allCustomers, data[0]]);
+        alert(t('common.clientAdded', 'New client profile created'));
+      }
+    } catch (error: any) {
+      alert(`Error creating client: ${error.message}`);
+    }
+  };
+
+  const isClientModified = isEditMode && clientName.trim() !== '' && !allCustomers.some(c => c.name === clientName);
 
   const handleDelete = async () => {
     if (!reservationData?.id) return;
     if (confirm(t('reservationDetails.deleteConfirm'))) {
       setIsDeleting(true);
       try {
-        const { error } = await supabase
-          .from('reservations')
-          .delete()
-          .eq('id', reservationData.id);
+        const { error } = await deleteReservation(reservationData.id, reservationData.car_id);
         
-        if (error) throw error;
+        if (error) throw new Error(error);
         alert(t('editReservation.updateSuccess'));
         onClose();
       } catch (error: any) {
@@ -329,12 +363,9 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
     if (!reservationData?.id) return;
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('reservations')
-        .update({ status: 'Confirmed' })
-        .eq('id', reservationData.id);
+      const { error } = await updateReservation(reservationData.id, { status: 'Confirmed' }, reservationData.car_id);
       
-      if (error) throw error;
+      if (error) throw new Error(error);
       alert(t('reservationDetails.reactivateSuccess'));
       onClose();
     } catch (error: any) {
@@ -362,6 +393,17 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
         .eq('id', reservationData.id);
       
       if (error) throw error;
+
+      // Sync with GAS
+      await triggerGasSideEffects({
+        ...reservationData,
+        ...reservationDataToUpdate,
+        customer_name: clientName,
+        customer_phone: clientPhone,
+        car_brand: carBrand,
+        car_model: carModel,
+        license_plate: licensePlate
+      });
 
       // Sync car status
       if (selectedCarId) {
@@ -484,6 +526,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
             setNewItemName={setNewItemName}
             handleAddItem={handleAddItem}
             includedItems={includedItems}
+            setIncludedItems={setIncludedItems}
             handleFileUpload={handleFileUpload}
             handleCreateContract={handleCreateContract}
             isUploading={isUploading}
@@ -536,7 +579,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 {t('addReservation.archive', 'Archive')}
               </button>
               <button 
-                onClick={() => { alert(t('reservationDetails.rebookSuccess')); onClose(); }}
+                onClick={onRebook}
                 className="px-4 py-5 bg-slate-700 text-white font-bold uppercase tracking-[0.2em] hover:bg-slate-600 transition-colors min-h-[60px]"
               >
                 <ArrowRight className="w-4 h-4 inline mr-2" /> {t('reservationDetails.rebook')}

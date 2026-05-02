@@ -40,6 +40,12 @@ interface CarFormProps {
   seats: string; setSeats: (v: string) => void;
   damageNotes: string; setDamageNotes: (v: string) => void;
   
+  // Paperwork
+  registrationExpiry: string; setRegistrationExpiry: (v: string) => void;
+  insuranceExpiry: string; setInsuranceExpiry: (v: string) => void;
+  techInspectionExpiry: string; setTechInspectionExpiry: (v: string) => void;
+  taxRenewalExpiry: string; setTaxRenewalExpiry: (v: string) => void;
+  
   // Essentials
   essentials: EssentialItem[];
   setEssentials: (val: EssentialItem[]) => void;
@@ -76,6 +82,10 @@ const CarForm: React.FC<CarFormProps> = ({
   gpsSim, setGpsSim,
   seats, setSeats,
   damageNotes, setDamageNotes,
+  registrationExpiry, setRegistrationExpiry,
+  insuranceExpiry, setInsuranceExpiry,
+  techInspectionExpiry, setTechInspectionExpiry,
+  taxRenewalExpiry, setTaxRenewalExpiry,
   essentials, setEssentials,
   isAddingEssential, setIsAddingEssential,
   newEssentialText, setNewEssentialText,
@@ -369,18 +379,18 @@ const CarForm: React.FC<CarFormProps> = ({
             <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.paperwork')}</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                { key: 'registrationCard', label: t('carForm.registrationCard') },
-                { key: 'insuranceExpir', label: t('carForm.insuranceExpir') },
-                { key: 'techInspection', label: t('carForm.techInspection') },
-                { key: 'taxRenewal', label: t('carForm.taxRenewal') }
+                { key: 'registrationExpiry', label: t('carForm.registrationCard'), val: registrationExpiry, setter: setRegistrationExpiry },
+                { key: 'insuranceExpiry', label: t('carForm.insuranceExpir'), val: insuranceExpiry, setter: setInsuranceExpiry },
+                { key: 'techInspectionExpiry', label: t('carForm.techInspection'), val: techInspectionExpiry, setter: setTechInspectionExpiry },
+                { key: 'taxRenewalExpiry', label: t('carForm.taxRenewal'), val: taxRenewalExpiry, setter: setTaxRenewalExpiry }
               ].map(doc => (
                 <Field1
-                  key={doc.key}
-                  label={doc.label}
-                  type="date"
-                  value=""
-                  onChange={() => {}}
-                  disabled={disabled}
+                   key={doc.key}
+                   label={doc.label}
+                   type="date"
+                   value={doc.val}
+                   onChange={(e) => doc.setter(e.target.value)}
+                   disabled={disabled}
                 />
               ))}
             </div>

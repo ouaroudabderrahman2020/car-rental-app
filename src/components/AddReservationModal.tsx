@@ -16,13 +16,15 @@ import Button1 from './Button1';
 import Field1 from './Field1';
 import FormSection from './FormSection';
 import ReservationForm from './ReservationForm';
+import ImageToPdf from './tools/ImageToPdf';
 
 interface AddReservationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialData?: any;
 }
 
-export default function AddReservationModal({ isOpen, onClose }: AddReservationModalProps) {
+export default function AddReservationModal({ isOpen, onClose, initialData }: AddReservationModalProps) {
   const { t } = useTranslation();
   const { setStatus } = useStatus();
   // Form State
@@ -44,10 +46,45 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
   const [odometerIn, setOdometerIn] = useState('');
   const [fuelOut, setFuelOut] = useState('');
   const [fuelIn, setFuelIn] = useState('');
-  const [cleanedBefore, setCleanedBefore] = useState('');
+  const [cleanedBefore, setCleanedBefore] = useState('yes');
   const [includedItems, setIncludedItems] = useState<string[]>([]);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemName, setNewItemName] = useState('');
+
+  // Hydrate initialData
+  useEffect(() => {
+    if (initialData && isOpen) {
+      setCarBrand(initialData.carBrand || initialData.car?.brand || '');
+      setCarModel(initialData.carModel || initialData.car?.model || '');
+      setLicensePlate(initialData.carPlate || initialData.car?.plate || '');
+      setClientName(initialData.customer_name || '');
+      setClientPhone(initialData.customer_phone || '');
+      setSelectedCarId(initialData.car_id || null);
+      setDailyRate(initialData.daily_rate || initialData.car?.daily_rate || '');
+      setPrepayment(initialData.prepayment || '');
+      setDepositType(initialData.deposit_type || '');
+      setDepositAmount(initialData.deposit_amount || '');
+      setRating(initialData.rating || 0);
+      setNotes(initialData.notes || '');
+    } else if (isOpen) {
+      // Clear if not rebooking
+      setCarBrand('');
+      setCarModel('');
+      setLicensePlate('');
+      setClientName('');
+      setClientPhone('');
+      setSelectedCarId(null);
+      setDailyRate('');
+      setPrepayment('');
+      setDepositType('');
+      setDepositAmount('');
+      setRating(0);
+      setNotes('');
+      setPickupDate('');
+      setReturnDate('');
+      setExtendedReturnDate('');
+    }
+  }, [initialData, isOpen]);
 
   // Initial items translation
   useEffect(() => {
@@ -77,9 +114,38 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
   const [clientListActive, setClientListActive] = useState(false);
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [isAddingNewClient, setIsAddingNewClient] = useState(false);
+  const [showPdfTool, setShowPdfTool] = useState(false);
 
   // Validation State
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const handlePdfToolAssign = async (pdfResults: any[]) => {
+    if (pdfResults.length === 0) return;
+    
+    setStatus(t('common.processing', 'Processing documents...'), 'processing', 0);
+    try {
+      // For now, we'll take the first PDF if multiple were generated in separate mode
+      // or the single merged PDF.
+      const result = pdfResults[0];
+      
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Data = (reader.result as string).split(',')[1];
+        setPendingFile({
+          base64Data,
+          fileName: result.name,
+          contentType: 'application/pdf'
+        });
+        setUploadedDocUrl(result.name);
+        setStatus(t('common.success'), 'success');
+        setShowPdfTool(false);
+      };
+      reader.readAsDataURL(result.blob);
+    } catch (err) {
+      console.error('Error assigning PDF tool result:', err);
+      setStatus(t('common.error'), 'error');
+    }
+  };
 
   // Removed auto-fill for pickupDate to ensure modal starts empty
 
@@ -419,6 +485,18 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
       const { error } = await createReservation(reservationData);
       if (error) throw new Error(error);
 
+      // Sync car status and odometer if archiving directly
+      if (selectedCarId) {
+        await supabase
+          .from('cars')
+          .update({ 
+            status: 'Available',
+            odometer: parseInt(odometerIn) || undefined,
+            starting_fuel_level: parseInt(fuelIn) || undefined
+          })
+          .eq('id', selectedCarId);
+      }
+
       // 2. Trigger GAS Side Effects simultaneously
       await triggerGasSideEffects({
         ...reservationData,
@@ -542,9 +620,11 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
             setNewItemName={setNewItemName}
             handleAddItem={handleAddItem}
             includedItems={includedItems}
+            setIncludedItems={setIncludedItems}
             handleFileUpload={handleFileUpload}
             handleCreateContract={handleCreateContract}
             isUploading={isUploading}
+            onOpenPdfTool={() => setShowPdfTool(true)}
             isGeneratingContract={isGeneratingContract}
           />
 
@@ -587,6 +667,36 @@ export default function AddReservationModal({ isOpen, onClose }: AddReservationM
           </div>
         </div>
       </motion.div>
+      
+      {/* Image to PDF Tool Overlay */}
+      <AnimatePresence>
+        {showPdfTool && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-midnight-ink/90 backdrop-blur-md p-4 sm:p-20 overflow-y-auto"
+          >
+            <div className="bg-white w-full max-w-4xl p-8 sm:p-12 industrial-shadow relative my-auto">
+              <button 
+                onClick={() => setShowPdfTool(false)}
+                className="absolute top-4 right-4 p-2 text-ink/40 hover:text-red-500 transition-colors"
+              >
+                <X size={32} />
+              </button>
+              
+              <div className="mb-12 border-b-4 border-midnight-ink pb-4">
+                <h3 className="text-3xl font-black uppercase tracking-tighter text-midnight-ink flex items-center gap-4">
+                  <Monitor className="w-10 h-10 text-primary" />
+                  {t('tools.imageToPdf')}
+                </h3>
+              </div>
+
+              <ImageToPdf onAssign={handlePdfToolAssign} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

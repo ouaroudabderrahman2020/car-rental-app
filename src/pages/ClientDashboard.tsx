@@ -84,20 +84,41 @@ export default function ClientDashboard() {
   );
 
   const handleUpdateClient = async (updatedClient: Customer) => {
+    setStatus(t('common.saving'), 'processing', 0);
     try {
       const { error } = await supabase
         .from('customers')
-        .update(updatedClient)
+        .update({
+          name: updatedClient.name,
+          national_id: updatedClient.national_id,
+          id_card_number: updatedClient.national_id,
+          dob: updatedClient.dob,
+          nationality: updatedClient.nationality,
+          license_number: updatedClient.license_number,
+          license_expiry: updatedClient.license_expiry,
+          license_issue: updatedClient.license_issue,
+          phone: updatedClient.phone,
+          email: updatedClient.email,
+          address: updatedClient.address,
+          trust_rank: updatedClient.trust_rank,
+          notes: updatedClient.notes,
+          is_blacklisted: updatedClient.is_blacklisted,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', updatedClient.id);
       
       if (error) throw error;
+      setStatus(t('common.success'), 'success');
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Update error:', err);
+      setStatus(t('common.error'), 'error');
+      alert(`${t('common.error')}: ${err.message || ''}`);
     }
   };
 
   const handleDeleteClient = async (id: string) => {
+    setStatus(t('common.deleting', 'Deleting...'), 'processing', 0);
     try {
       const { error } = await supabase
         .from('customers')
@@ -105,9 +126,12 @@ export default function ClientDashboard() {
         .eq('id', id);
       
       if (error) throw error;
+      setStatus(t('common.success'), 'success');
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete error:', err);
+      setStatus(t('common.error'), 'error');
+      alert(`${t('common.error')}: ${err.message || ''}`);
     }
   };
 
@@ -268,6 +292,9 @@ export default function ClientDashboard() {
           isOpen={isDetailsModalOpen}
           onClose={() => setIsDetailsModalOpen(false)}
           client={selectedClient}
+          reservations={reservations}
+          onUpdate={handleUpdateClient}
+          onDelete={handleDeleteClient}
         />
         <AddClientModal
           isOpen={isAddModalOpen}

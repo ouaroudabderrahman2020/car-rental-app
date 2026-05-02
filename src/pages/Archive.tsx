@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { SectionHeader } from '../components/SectionHeader';
 import ReservationDetailsModal from '../components/ReservationDetailsModal';
+import AddReservationModal from '../components/AddReservationModal';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
 import { useStatus } from '../contexts/StatusContext';
@@ -14,8 +15,11 @@ export default function Archive() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<any>(null);
+  const [initialData, setInitialData] = useState<any>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [archiveData, setArchiveData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchArchive = async () => {
     setLoading(true);
@@ -24,9 +28,12 @@ export default function Archive() {
         .from('reservations')
         .select(`
           *,
-          cars (
+          car:cars (
             brand,
-            model
+            model,
+            plate,
+            odometer,
+            daily_rate
           )
         `)
         .in('status', ['Completed', 'Cancelled'])
@@ -35,17 +42,7 @@ export default function Archive() {
       if (error) throw error;
 
       if (data) {
-        const formatted = data.map(r => ({
-          id: r.id.slice(0, 8).toUpperCase(),
-          client: r.customer_name,
-          clientType: t('common.clientTypes.regular'),
-          car: r.cars ? `${r.cars.brand} ${r.cars.model}` : t('common.noData'),
-          mileage: 'N/A',
-          duration: `${new Date(r.start_date).toLocaleDateString(i18n.language)} - ${new Date(r.end_date).toLocaleDateString(i18n.language)}`,
-          hours: 'N/A',
-          price: `$${parseFloat(r.total_price).toFixed(2)}`
-        }));
-        setArchiveData(formatted);
+        setArchiveData(data);
       }
     } catch (error) {
       console.error('Error fetching archive:', error);
@@ -72,17 +69,57 @@ export default function Archive() {
     setIsModalOpen(true);
   };
 
-  const totalRevenue = archiveData.reduce((acc, curr) => acc + parseFloat(curr.price.replace('$', '')), 0);
+  const handleRebook = (res: any) => {
+    setInitialData({
+      car_id: res.car_id,
+      customer_name: res.customer_name,
+      customer_phone: res.customer_phone,
+      carBrand: res.car?.brand,
+      carModel: res.car?.model,
+      carPlate: res.car?.plate,
+      daily_rate: res.daily_rate || res.car?.daily_rate,
+      prepayment: 0,
+      deposit_type: res.deposit_type,
+      deposit_amount: res.deposit_amount,
+      rating: res.rating,
+      notes: res.notes
+    });
+    setIsAddModalOpen(true);
+    setIsModalOpen(false);
+  };
+
+  const filteredData = archiveData.filter(res => {
+    const searchStr = searchQuery.toLowerCase();
+    const matchesSearch = 
+      res.customer_name.toLowerCase().includes(searchStr) ||
+      (res.car?.brand + ' ' + res.car?.model).toLowerCase().includes(searchStr) ||
+      res.id.toLowerCase().includes(searchStr) ||
+      (res.car?.plate || '').toLowerCase().includes(searchStr);
+    return matchesSearch;
+  });
+
+  const totalRevenue = archiveData.reduce((acc, curr) => acc + (parseFloat(curr.total_price) || 0), 0);
 
   return (
     <Layout title={t('archive.title')}>
       <div className="w-full bg-white min-h-full pb-10">
+        <AddReservationModal 
+          isOpen={isAddModalOpen} 
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setInitialData(null);
+            fetchArchive();
+          }} 
+          initialData={initialData}
+        />
+
         <ReservationDetailsModal 
           isOpen={isModalOpen} 
           onClose={() => {
             setIsModalOpen(false);
             fetchArchive();
           }} 
+          onRebook={() => handleRebook(selectedReservation)}
           reservationData={selectedReservation}
         />
 
@@ -91,7 +128,7 @@ export default function Archive() {
             <FormSection title={t('archive.overview', 'Archive Overview')}>
               <div className="w-full flex flex-col gap-8">
                 {/* Action Toolbar */}
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                   <button 
                     onClick={handleSync}
                     disabled={isSyncing}
@@ -100,6 +137,17 @@ export default function Archive() {
                     <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                     <span>{isSyncing ? t('archive.syncing') : t('archive.refresh')}</span>
                   </button>
+
+                  <div className="relative group min-w-[200px] md:min-w-[300px]">
+                    <input 
+                      type="text" 
+                      placeholder={t('common.search')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 text-ink text-sm focus:bg-white focus:border-primary transition-all outline-none"
+                    />
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary transition-colors" />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
@@ -124,7 +172,7 @@ export default function Archive() {
                 <div className="w-full flex flex-col gap-6">
                   <div className="flex justify-between items-center">
                     <span className="px-3 py-1 bg-ink text-white text-xs font-bold uppercase tracking-widest">
-                      {archiveData.length} {t('reservations.entries')}
+                      {filteredData.length} {t('reservations.entries')}
                     </span>
                   </div>
 
@@ -149,37 +197,41 @@ export default function Archive() {
                               </div>
                             </td>
                           </tr>
-                        ) : archiveData.length === 0 ? (
+                        ) : filteredData.length === 0 ? (
                           <tr>
                             <td colSpan={5} className="py-12 text-center text-midnight/40 font-bold uppercase tracking-widest">
                               {t('common.noData')}
                             </td>
                           </tr>
                         ) : (
-                          archiveData.map((row) => (
+                          filteredData.map((row) => (
                             <tr key={row.id} className="border-b border-slate-100/50 hover:bg-white transition-all">
-                              <td onClick={() => handleOpenDetails(row)} className="py-6 px-6 font-bold text-ink border-e border-slate-100 text-center cursor-pointer hover:text-primary transition-colors" data-label={t('archive.table.id')}>{row.id}</td>
+                              <td onClick={() => handleOpenDetails(row)} className="py-6 px-6 font-bold text-ink border-e border-slate-100 text-center cursor-pointer hover:text-primary transition-colors font-mono tracking-tighter" data-label={t('archive.table.id')}>{row.id.slice(0, 8).toUpperCase()}</td>
                               <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.client')}>
                                 <div className="flex flex-col items-center">
-                                  <div className="font-semibold cursor-pointer hover:text-primary transition-colors">{row.client}</div>
-                                  <div className={`text-[11px] font-bold uppercase tracking-tighter ${row.clientType === t('common.clientTypes.repeat') ? 'text-primary' : 'text-ink/40'}`}>
-                                    {row.clientType}
+                                  <div className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleOpenDetails(row)}>{row.customer_name}</div>
+                                  <div className={`text-[11px] font-bold uppercase tracking-tighter text-ink/40`}>
+                                    {t('common.clientTypes.regular')}
                                   </div>
                                 </div>
                               </td>
                               <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.car')}>
                                 <div className="flex flex-col items-center">
-                                  <div className="font-semibold cursor-pointer hover:text-primary transition-colors">{row.car}</div>
-                                  <div className="text-xs text-ink">{t('fleet.mileageDriven')}: {row.mileage}</div>
+                                  <div className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleOpenDetails(row)}>{row.car ? `${row.car.brand} ${row.car.model}` : t('common.noData')}</div>
+                                  <div className="text-xs text-ink font-mono tracking-tighter">{row.car?.plate || '—'}</div>
                                 </div>
                               </td>
                               <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.duration')}>
                                 <div className="flex flex-col items-center">
-                                  <div className="font-semibold text-accent-blue">{row.duration}</div>
-                                  <div className="text-xs text-ink">{row.hours}</div>
+                                  <div className="font-semibold text-accent-blue font-mono tracking-tighter text-xs">
+                                    {new Date(row.start_date).toLocaleDateString(i18n.language)} - {new Date(row.end_date).toLocaleDateString(i18n.language)}
+                                  </div>
+                                  <div className="text-[10px] text-ink/50 uppercase tracking-widest font-bold">
+                                    {row.odometer_in ? `${row.odometer_in - (row.odometer_out || 0)} KM` : '—'}
+                                  </div>
                                 </div>
                               </td>
-                              <td className="py-6 px-6 text-center font-bold text-ink" data-label={t('archive.table.total')}>{row.price}</td>
+                              <td className="py-6 px-6 text-center font-bold text-ink font-mono tracking-tighter" data-label={t('archive.table.total')}>${parseFloat(row.total_price || 0).toFixed(2)}</td>
                             </tr>
                           ))
                         )}

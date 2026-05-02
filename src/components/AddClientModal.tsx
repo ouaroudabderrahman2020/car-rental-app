@@ -26,13 +26,22 @@ export default function AddClientModal({ isOpen, onClose, onConfirm }: AddClient
   const [rating, setRating] = useState('5');
   const [notes, setNotes] = useState('');
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async () => {
+    if (!name || !phone) {
+      alert(t('common.requiredFields', 'Name and Phone are required.'));
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const { data, error } = await supabase
         .from('customers')
         .insert([{
           name,
           national_id: nationalId,
+          id_card_number: nationalId, // mapping both for compatibility
           dob,
           nationality,
           license_number: licenseNumber,
@@ -41,8 +50,10 @@ export default function AddClientModal({ isOpen, onClose, onConfirm }: AddClient
           phone,
           email,
           address,
-          trust_rank: parseInt(rating),
-          notes
+          trust_rank: parseInt(rating) || 5,
+          notes,
+          is_blacklisted: false,
+          created_at: new Date().toISOString()
         }])
         .select();
 
@@ -50,30 +61,51 @@ export default function AddClientModal({ isOpen, onClose, onConfirm }: AddClient
       
       onConfirm(data![0]);
       onClose();
-    } catch (err) {
+      // Reset fields
+      setName('');
+      setNationalId('');
+      setDob('');
+      setNationality('');
+      setLicenseNumber('');
+      setLicenseExpiry('');
+      setLicenseIssue('');
+      setPhone('');
+      setEmail('');
+      setAddress('');
+      setRating('5');
+      setNotes('');
+    } catch (err: any) {
       console.error('Error adding client:', err);
+      alert(`${t('common.error', 'An error occurred')}: ${err.message || ''}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <Modal1 isOpen={isOpen} onClose={onClose} toolName={t('clientForm.addTitle', 'Add New Client')}>
-      <ClientForm 
-        name={name} setName={setName}
-        nationalId={nationalId} setNationalId={setNationalId}
-        dob={dob} setDob={setDob}
-        nationality={nationality} setNationality={setNationality}
-        licenseNumber={licenseNumber} setLicenseNumber={setLicenseNumber}
-        licenseExpiry={licenseExpiry} setLicenseExpiry={setLicenseExpiry}
-        licenseIssue={licenseIssue} setLicenseIssue={setLicenseIssue}
-        phone={phone} setPhone={setPhone}
-        email={email} setEmail={setEmail}
-        address={address} setAddress={setAddress}
-        rating={rating} setRating={setRating}
-        notes={notes} setNotes={setNotes}
-      />
+      <div className="max-h-[70vh] overflow-y-auto">
+        <ClientForm 
+          name={name} setName={setName}
+          nationalId={nationalId} setNationalId={setNationalId}
+          dob={dob} setDob={setDob}
+          nationality={nationality} setNationality={setNationality}
+          licenseNumber={licenseNumber} setLicenseNumber={setLicenseNumber}
+          licenseExpiry={licenseExpiry} setLicenseExpiry={setLicenseExpiry}
+          licenseIssue={licenseIssue} setLicenseIssue={setLicenseIssue}
+          phone={phone} setPhone={setPhone}
+          email={email} setEmail={setEmail}
+          address={address} setAddress={setAddress}
+          rating={rating} setRating={setRating}
+          notes={notes} setNotes={setNotes}
+          disabled={isSubmitting}
+        />
+      </div>
       <div className="flex gap-4 p-6 border-t border-slate-200">
-        <Button1 onClick={onClose} className="bg-slate-100 text-slate-800">{t('common.cancel', 'Cancel')}</Button1>
-        <Button1 onClick={handleSubmit}>{t('common.confirm', 'Confirm')}</Button1>
+        <Button1 onClick={onClose} className="bg-slate-100 text-slate-800" disabled={isSubmitting}>{t('common.cancel', 'Cancel')}</Button1>
+        <Button1 onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? t('common.saving', 'Saving...') : t('common.confirm', 'Confirm')}
+        </Button1>
       </div>
     </Modal1>
   );

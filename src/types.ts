@@ -19,6 +19,10 @@ export interface Car {
   damage_notes?: string;
   image_url?: string;
   documentation_url?: string;
+  registration_expiry?: string;
+  insurance_expiry?: string;
+  tech_inspection_expiry?: string;
+  tax_renewal_expiry?: string;
   created_at: string;
   updated_at: string;
   essentials?: any[];
@@ -59,6 +63,7 @@ export interface Customer {
   id_card_number: string;
   trust_rank: number; // 1-5
   is_blacklisted: boolean;
+  license_issue?: string;
   created_at: string;
   email?: string;
   address?: string;

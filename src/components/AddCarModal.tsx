@@ -32,6 +32,10 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
   const [seats, setSeats] = useState('');
   const [startingFuelLevel, setStartingFuelLevel] = useState('100');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registrationExpiry, setRegistrationExpiry] = useState('');
+  const [insuranceExpiry, setInsuranceExpiry] = useState('');
+  const [techInspectionExpiry, setTechInspectionExpiry] = useState('');
+  const [taxRenewalExpiry, setTaxRenewalExpiry] = useState('');
 
   // Validation State
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -85,6 +89,10 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
           gps_sim: gpsSim,
           seats: parseInt(seats) || 5,
           damage_notes: damageNotes,
+          registration_expiry: registrationExpiry || null,
+          insurance_expiry: insuranceExpiry || null,
+          tech_inspection_expiry: techInspectionExpiry || null,
+          tax_renewal_expiry: taxRenewalExpiry || null,
           image_url: 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800',
           essentials: essentials,
           intervals: intervals
@@ -141,6 +149,10 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
           gpsSim={gpsSim} setGpsSim={setGpsSim}
           seats={seats} setSeats={setSeats}
           damageNotes={damageNotes} setDamageNotes={setDamageNotes}
+          registrationExpiry={registrationExpiry} setRegistrationExpiry={setRegistrationExpiry}
+          insuranceExpiry={insuranceExpiry} setInsuranceExpiry={setInsuranceExpiry}
+          techInspectionExpiry={techInspectionExpiry} setTechInspectionExpiry={setTechInspectionExpiry}
+          taxRenewalExpiry={taxRenewalExpiry} setTaxRenewalExpiry={setTaxRenewalExpiry}
           essentials={essentials} setEssentials={setEssentials}
           isAddingEssential={isAddingEssential} setIsAddingEssential={setIsAddingEssential}
           newEssentialText={newEssentialText} setNewEssentialText={setNewEssentialText}

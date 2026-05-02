@@ -141,7 +141,7 @@ export default function Layout({ children, title }: LayoutProps) {
             <MenuButton 
               isOpen={isMenuOpen}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`p-2 transition-colors ${
+              className={`p-2 transition-colors border border-black ${
                 isMenuOpen ? 'text-ink bg-ink/5' : 'text-ink bg-white/80 backdrop-blur-sm shadow-sm hover:bg-ink/5'
               }`}
               iconClassName="w-6 h-6"
@@ -241,7 +241,7 @@ export default function Layout({ children, title }: LayoutProps) {
                 <MenuButton 
                   isOpen={isMenuOpen}
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="lg:hidden p-2 hover:bg-ink/5 transition-colors z-[110] text-ink"
+                  className="lg:hidden p-2 hover:bg-ink/5 transition-colors z-[110] text-ink border border-black"
                   iconClassName="w-6 h-6"
                 />
               )}

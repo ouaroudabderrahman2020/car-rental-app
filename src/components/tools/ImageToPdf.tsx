@@ -1,23 +1,30 @@
-import React, { useState, useRef } from 'react';
-import { Upload, X, FileText, Download, RotateCcw, Link as LinkIcon, Image as ImageIcon, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, X, FileText, Download, RotateCcw, Link as LinkIcon, Image as ImageIcon, Check, Loader2 } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '../../lib/supabase';
+import { Reservation } from '../../types';
 
 interface ConversionResult {
   id: string;
   name: string;
   blob: Blob;
-  previewUrl: string; // Since we convert images to PDF, the image itself is a good preview
+  previewUrl: string;
 }
 
-export default function ImageToPdf() {
+interface ImageToPdfProps {
+  onAssign?: (pdfs: ConversionResult[]) => void;
+}
+
+export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
   const { t } = useTranslation();
   const [images, setImages] = useState<{ id: string, name: string, url: string, file: File }[]>([]);
   const [mode, setMode] = useState<'single' | 'separate'>('single');
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<ConversionResult[]>([]);
   const [selectedResultIds, setSelectedResultIds] = useState<string[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,10 +159,19 @@ export default function ImageToPdf() {
     setMode('single');
   };
 
-  const assignToReservation = () => {
+  const assignToReservation = async () => {
     const targets = results.filter(r => selectedResultIds.includes(r.id));
-    if (targets.length === 0) return;
-    alert(`Logic to assign ${targets.length} selected PDF(s) to a reservation.`);
+    if (targets.length === 0 || !onAssign) return;
+
+    setIsAssigning(true);
+    try {
+      await onAssign(targets);
+      setSelectedResultIds([]);
+    } catch (err) {
+      console.error('Error assigning document:', err);
+    } finally {
+      setIsAssigning(false);
+    }
   };
 
   return (
@@ -279,26 +295,32 @@ export default function ImageToPdf() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 border-t-4 border-midnight-ink pt-8">
-            <button 
-              onClick={reset}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 border-2 border-midnight-ink font-black uppercase text-xs tracking-widest hover:bg-ink/5 transition-all"
-            >
-              <RotateCcw className="w-4 h-4" /> {t('tools.imageToPdfTools.reset')}
-            </button>
-            <button 
-              onClick={assignToReservation}
-              disabled={selectedResultIds.length === 0}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 border-2 border-midnight-ink font-black uppercase text-xs tracking-widest hover:bg-warm-accent transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <LinkIcon className="w-4 h-4" /> {t('reservationDetails.lockSave')}
-            </button>
-            <button 
-              onClick={handleDownload}
-              disabled={selectedResultIds.length === 0}
-              className="flex-[2] flex items-center justify-center gap-2 px-6 py-4 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:grayscale disabled:cursor-not-allowed"
-            >
-              <Download className="w-5 h-5" /> {t('tools.imageToPdfTools.downloadSelected')} ({selectedResultIds.length})
-            </button>
+            {onAssign ? (
+              <button 
+                onClick={assignToReservation}
+                disabled={selectedResultIds.length === 0 || isAssigning}
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:grayscale disabled:cursor-not-allowed"
+              >
+                {isAssigning ? <Loader2 className="w-5 h-5 animate-spin" /> : <LinkIcon className="w-5 h-5" />}
+                {t('common.assign', 'Assign Documents')} ({selectedResultIds.length})
+              </button>
+            ) : (
+              <>
+                <button 
+                  onClick={reset}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-4 border-2 border-midnight-ink font-black uppercase text-xs tracking-widest hover:bg-ink/5 transition-all"
+                >
+                  <RotateCcw className="w-4 h-4" /> {t('tools.imageToPdfTools.reset')}
+                </button>
+                <button 
+                  onClick={handleDownload}
+                  disabled={selectedResultIds.length === 0}
+                  className="flex-[2] flex items-center justify-center gap-2 px-6 py-4 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:grayscale disabled:cursor-not-allowed"
+                >
+                  <Download className="w-5 h-5" /> {t('tools.imageToPdfTools.downloadSelected')} ({selectedResultIds.length})
+                </button>
+              </>
+            )}
           </div>
         </>
       )}

@@ -34,11 +34,15 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
   const [seats, setSeats] = useState(carData?.seats?.toString() || '5');
   const [startingFuelLevel, setStartingFuelLevel] = useState(carData?.starting_fuel_level?.toString() || '100');
 
+  const [registrationExpiry, setRegistrationExpiry] = useState(carData?.registration_expiry || '');
+  const [insuranceExpiry, setInsuranceExpiry] = useState(carData?.insurance_expiry || '');
+  const [techInspectionExpiry, setTechInspectionExpiry] = useState(carData?.tech_inspection_expiry || '');
+  const [taxRenewalExpiry, setTaxRenewalExpiry] = useState(carData?.tax_renewal_expiry || '');
+
   // Dynamic Lists State
   const [isAddingEssential, setIsAddingEssential] = useState(false);
   const [newEssentialText, setNewEssentialText] = useState('');
   const [essentials, setEssentials] = useState<EssentialItem[]>([]);
-
   const [intervals, setIntervals] = useState<MaintenanceInterval[]>([]);
 
   useEffect(() => {
@@ -56,42 +60,23 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
       setGpsSim(carData.gps_sim || '');
       setSeats(carData.seats?.toString() || '5');
       setStartingFuelLevel(carData.starting_fuel_level?.toString() || '100');
+      setRegistrationExpiry(carData.registration_expiry || '');
+      setInsuranceExpiry(carData.insurance_expiry || '');
+      setTechInspectionExpiry(carData.tech_inspection_expiry || '');
+      setTaxRenewalExpiry(carData.tax_renewal_expiry || '');
+      setEssentials(carData.essentials || [
+        { id: '1', name: 'Safety Vest', checked: true },
+        { id: '2', name: 'Warning Triangle', checked: true },
+        { id: '3', name: 'Fire Extinguisher', checked: true },
+        { id: '4', name: 'Spare Tire', checked: true },
+        { id: '5', name: 'Lifting Jack', checked: true },
+        { id: '6', name: 'First Aid Kit', checked: true },
+      ]);
+      setIntervals(carData.intervals || [
+        { id: '1', type: 'Engine Oil', value: '', lastCompleted: '' }
+      ]);
     }
-  }, [carData]);
-
-  const fetchEssentials = async () => {
-    if (!carData?.id) return;
-    const { data } = await supabase
-      .from('essentials')
-      .select('id, name, is_included')
-      .eq('car_id', carData.id);
-    if (data) {
-      setEssentials(data.map(e => ({ id: e.id, name: e.name, checked: e.is_included })));
-    }
-  };
-
-  const fetchMaintenance = async () => {
-    if (!carData?.id) return;
-    const { data } = await supabase
-      .from('maintenance_intervals')
-      .select('*')
-      .eq('car_id', carData.id);
-    if (data) {
-      setIntervals(data.map(m => ({
-        id: m.id,
-        type: m.interval_type,
-        value: m.interval_value || '',
-        lastCompleted: m.last_completed_date || ''
-      })));
-    }
-  };
-
-  useEffect(() => {
-    if (isOpen && carData?.id) {
-      fetchEssentials();
-      fetchMaintenance();
-    }
-  }, [isOpen, carData]);
+  }, [carData, isOpen]);
 
   const handleConfirm = async () => {
     if (!carData?.id) return;
@@ -112,46 +97,25 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
           starting_fuel_level: parseInt(startingFuelLevel) || 100,
           gps_sim: gpsSim,
           seats: parseInt(seats) || 5,
-          damage_notes: damageNotes
+          damage_notes: damageNotes,
+          registration_expiry: registrationExpiry || null,
+          insurance_expiry: insuranceExpiry || null,
+          tech_inspection_expiry: techInspectionExpiry || null,
+          tax_renewal_expiry: taxRenewalExpiry || null,
+          essentials,
+          intervals,
+          updated_at: new Date().toISOString()
         })
         .eq('id', carData.id);
 
       if (error) throw error;
-
-      // Update Essentials (this is a simple sync for demo purposes)
-      // Delete existing and re-insert checked ones
-      await supabase.from('essentials').delete().eq('car_id', carData.id);
-      const selectedEssentials = essentials
-        .filter(e => e.checked)
-        .map(e => ({
-          car_id: carData.id,
-          name: e.name,
-          is_included: true
-        }));
-      if (selectedEssentials.length > 0) {
-        await supabase.from('essentials').insert(selectedEssentials);
-      }
-
-      // Update maintenance
-      await supabase.from('maintenance_intervals').delete().eq('car_id', carData.id);
-      const maintenanceData = intervals
-        .filter(i => i.value || i.lastCompleted)
-        .map(i => ({
-          car_id: carData.id,
-          interval_type: i.type,
-          interval_value: i.value,
-          last_completed_date: i.lastCompleted || null
-        }));
-      if (maintenanceData.length > 0) {
-        await supabase.from('maintenance_intervals').insert(maintenanceData);
-      }
 
       alert(t('carDetails.updateSuccess'));
       setIsEditMode(false);
       onClose();
     } catch (error: any) {
       console.error('Update error:', error);
-      alert(t('carDetails.updateError'));
+      alert(`${t('carDetails.updateError')}: ${error.message || ''}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -217,6 +181,10 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
           gpsSim={gpsSim} setGpsSim={setGpsSim}
           seats={seats} setSeats={setSeats}
           damageNotes={damageNotes} setDamageNotes={setDamageNotes}
+          registrationExpiry={registrationExpiry} setRegistrationExpiry={setRegistrationExpiry}
+          insuranceExpiry={insuranceExpiry} setInsuranceExpiry={setInsuranceExpiry}
+          techInspectionExpiry={techInspectionExpiry} setTechInspectionExpiry={setTechInspectionExpiry}
+          taxRenewalExpiry={taxRenewalExpiry} setTaxRenewalExpiry={setTaxRenewalExpiry}
           essentials={essentials} setEssentials={setEssentials}
           isAddingEssential={isAddingEssential} setIsAddingEssential={setIsAddingEssential}
           newEssentialText={newEssentialText} setNewEssentialText={setNewEssentialText}

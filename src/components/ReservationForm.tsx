@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, Star, Plus, Check, Loader2, FileText, Monitor, Upload 
 } from 'lucide-react';
@@ -69,9 +70,11 @@ interface ReservationFormProps {
   setNewItemName: (val: string) => void;
   handleAddItem: () => void;
   includedItems: string[];
+  setIncludedItems: (items: string[]) => void;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleCreateContract: () => void;
   isUploading: boolean;
+  onOpenPdfTool?: () => void;
   isGeneratingContract?: boolean;
   disabled?: boolean;
 }
@@ -138,12 +141,15 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
   setNewItemName,
   handleAddItem,
   includedItems,
+  setIncludedItems,
   handleFileUpload,
   handleCreateContract,
   isUploading,
+  onOpenPdfTool,
   isGeneratingContract = false,
   disabled = false
 }) => {
+  const navigate = useNavigate();
   return (
     <>
       {/* Section 1: Car & Schedule */}
@@ -510,7 +516,14 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
                 <label key={item} className={`flex items-center gap-3 bg-white p-4 border border-black ${disabled ? 'cursor-default' : 'cursor-pointer'}`}>
                   <input 
                     type="checkbox" 
-                    defaultChecked 
+                    checked={includedItems.includes(item)}
+                    onChange={() => {
+                      if (includedItems.includes(item)) {
+                        setIncludedItems(includedItems.filter(i => i !== item));
+                      } else {
+                        setIncludedItems([...includedItems, item]);
+                      }
+                    }}
                     className="w-6 h-6 border-2 border-black text-primary focus:ring-0 rounded-none bg-white font-bold disabled:opacity-50" 
                     disabled={disabled}
                   />
@@ -536,7 +549,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
             </Button1>
 
             <Button1 
-              onClick={() => alert('Opening PDF Tool...')}
+              onClick={onOpenPdfTool || (() => navigate('/tools'))}
               icon={<Monitor className="w-5 h-5" />}
               type="button"
               disabled={disabled}
