@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Plus, ArrowRight, Loader2, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
-import { SectionHeader } from '../components/SectionHeader';
 import ReservationModal from '../components/ReservationModal';
-import FormSection from '../components/FormSection';
+import { PageHeader } from '../components/PageHeader';
+/* removed FormSection import */
 import { supabase } from '../lib/supabase';
 import { Reservation, FormattedReservation } from '../types';
 import { RESERVATION_STATUSES } from '../constants';
@@ -112,8 +112,23 @@ export default function Reservations() {
   };
 
   return (
-    <Layout title={t('nav.reservations')}>
+    <Layout>
       <div className="w-full bg-white">
+        <PageHeader 
+          title={t('nav.reservations')}
+          actions={
+            <button 
+              onClick={() => {
+                setModalMode('add');
+                setIsModalOpen(true);
+              }}
+              className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> {t('reservations.newReservation')}
+            </button>
+          }
+          className="p-6 md:p-10 border-b border-slate-200"
+        />
         <ReservationModal 
           isOpen={isModalOpen} 
           mode={modalMode}
@@ -131,7 +146,12 @@ export default function Reservations() {
           {/* Section: Active Reservations */}
           <div className="py-lg bg-white">
             <div className="max-w-[1440px] mx-auto">
-              <FormSection title={t('reservations.activeTitle')}>
+              <div className="relative border-2 border-black bg-[#E8EBF7] rounded-[5px] p-6 mb-8">
+              <div className="absolute top-0 -translate-y-1/2 left-4 p-1.5 bg-white border-2 border-black rounded-[4px] z-10 flex items-center justify-center min-w-[32px]">
+                <span className="text-[10px] font-black uppercase tracking-widest text-black leading-none text-center">
+                  {t('reservations.activeTitle')}
+                </span>
+              </div>
                 <div className="w-full flex flex-col gap-6">
                   {/* Action Toolbar */}
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -163,17 +183,6 @@ export default function Reservations() {
                           </option>
                         ))}
                       </select>
-                    </div>
-                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                      <button 
-                        onClick={() => {
-                          setModalMode('add');
-                          setIsModalOpen(true);
-                        }}
-                        className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
-                      >
-                        <Plus className="w-4 h-4" /> {t('reservations.newReservation')}
-                      </button>
                     </div>
                   </div>
 
@@ -231,13 +240,12 @@ export default function Reservations() {
                     </table>
                   </div>
                 </div>
-              </FormSection>
+              </div>
             </div>
           </div>
         </div>
-
       </div>
     </Layout>
-);
+  );
 }
 

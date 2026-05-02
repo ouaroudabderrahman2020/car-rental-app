@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import BaseModal from '../components/BaseModal';
+import { PageHeader } from '../components/PageHeader';
 import FormSection from '../components/FormSection';
 import CalculatorTool from '../components/tools/CalculatorTool';
 import CalendarTool from '../components/tools/CalendarTool';
@@ -33,8 +34,12 @@ export default function Tools() {
   };
 
   return (
-    <Layout title={t('tools.title')}>
+    <Layout>
       <div className="min-h-full bg-white pb-12">
+        <PageHeader 
+          title={t('tools.title')}
+          className="p-6 md:p-10 border-b border-slate-200"
+        />
         <main className="w-full">
           <div className="py-12">
             <div className="max-w-[1440px] mx-auto v-section-gap">

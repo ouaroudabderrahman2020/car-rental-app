@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Customer, Reservation } from '../types';
 import Layout from '../components/Layout';
-import { SectionHeader } from '../components/SectionHeader';
 import ClientModal from '../components/ClientModal';
+import { PageHeader } from '../components/PageHeader';
 import FormSection from '../components/FormSection';
 import { useStatus } from '../contexts/StatusContext';
 
@@ -98,8 +98,18 @@ export default function ClientDashboard() {
   };
 
   return (
-    <Layout title={t('crm.title')}>
+    <Layout>
       <div className="min-h-screen bg-white pb-20">
+        <PageHeader 
+          title={t('crm.title')}
+          actions={
+            <button onClick={handleAddClient} className="bg-midnight-ink text-white py-4 px-8 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-widest text-fluid-sm shrink-0">
+              <Plus className="w-5 h-5" />
+              {t('common.add')}
+            </button>
+          }
+          className="p-6 md:p-10 border-b border-slate-200"
+        />
         {/* Main Content */}
         <div className="max-w-[1440px] mx-auto v-section-gap">
           <FormSection title={t('crm.table.title', 'Client Directory')}>
@@ -115,11 +125,6 @@ export default function ClientDashboard() {
                     className="w-full bg-slate-50 border border-slate-200 p-3 ps-12 font-bold text-ink focus:border-primary transition-all shadow-sm text-sm"
                   />
                 </div>
-
-                <button onClick={handleAddClient} className="bg-midnight-ink text-white py-4 px-8 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-widest text-fluid-sm shrink-0">
-                  <Plus className="w-5 h-5" />
-                  {t('common.add')}
-                </button>
               </div>
               
               {/* Filtered Clients Card Grid */}

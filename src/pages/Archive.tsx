@@ -2,8 +2,8 @@ import { RefreshCw, Search, ArrowRight, Loader2, Download } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
-import { SectionHeader } from '../components/SectionHeader';
 import ReservationModal from '../components/ReservationModal';
+import { PageHeader } from '../components/PageHeader';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
 import { useStatus } from '../contexts/StatusContext';
@@ -139,8 +139,32 @@ export default function Archive() {
   const totalRevenue = archiveData.reduce((acc, curr) => acc + (parseFloat(curr.total_price) || 0), 0);
 
   return (
-    <Layout title={t('archive.title')}>
+    <Layout>
       <div className="w-full bg-white min-h-full pb-10">
+        <PageHeader 
+          title={t('archive.title')}
+          actions={
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={handleSync}
+                disabled={isSyncing}
+                className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 group disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? t('archive.syncing') : t('archive.refresh')}</span>
+              </button>
+              <button 
+                onClick={handleExport}
+                disabled={isExporting}
+                className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
+              </button>
+            </div>
+          }
+          className="p-6 md:p-10 border-b border-slate-200"
+        />
         <ReservationModal 
           isOpen={isModalOpen} 
           onClose={() => {
@@ -160,24 +184,6 @@ export default function Archive() {
               <div className="w-full flex flex-col gap-8">
                 {/* Action Toolbar */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                  <div className="flex items-center gap-4">
-                    <button 
-                      onClick={handleSync}
-                      disabled={isSyncing}
-                      className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 group disabled:opacity-50"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                      <span>{isSyncing ? t('archive.syncing') : t('archive.refresh')}</span>
-                    </button>
-                    <button 
-                      onClick={handleExport}
-                      disabled={isExporting}
-                      className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                      {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
-                    </button>
-                  </div>
 
                   <div className="relative group min-w-[200px] md:min-w-[300px]">
                     <input 
