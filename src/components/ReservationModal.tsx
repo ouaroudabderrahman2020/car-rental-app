@@ -16,8 +16,9 @@ import { fileToBase64 } from '../lib/utils';
 
 import BaseModal from './BaseModal';
 import Button1 from './Button1';
-import ReservationForm from './ReservationForm';
 import ImageToPdf from './tools/ImageToPdf';
+import Field1 from './Field1';
+import FormSection from './FormSection';
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -80,6 +81,26 @@ export default function ReservationModal({
   const [showPdfTool, setShowPdfTool] = useState(false);
   const [clientListActive, setClientListActive] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const handlePdfToolAssign = async (pdfResults: any[]) => {
+    if (pdfResults.length === 0) return;
+    try {
+      const result = pdfResults[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Data = (reader.result as string).split(',')[1];
+        setPendingFile({
+          base64Data,
+          fileName: result.name,
+          contentType: 'application/pdf'
+        });
+        setShowPdfTool(false);
+      };
+      reader.readAsDataURL(result.blob);
+    } catch (err) {
+      console.error('Error assigning PDF tool result:', err);
+    }
+  };
 
   const navigate = useNavigate();
   const notesRef = useRef<HTMLTextAreaElement>(null);
@@ -171,8 +192,8 @@ export default function ReservationModal({
     if (!isOpen) return;
     const fetchData = async () => {
       const [{ data: cars }, { data: customers }] = await Promise.all([
-        supabase.from('cars').select('*').neq('status', 'Decommissioned'),
-        supabase.from('customers').select('*')
+        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, starting_fuel_level').neq('status', 'Decommissioned'),
+        supabase.from('customers').select('id, name, phone, id_card_number, license_number, trust_rank')
       ]);
       if (cars) setAvailableCars(cars);
       if (customers) setAllCustomers(customers);
@@ -281,7 +302,10 @@ export default function ReservationModal({
 
   const handleFormSubmit = async (statusOverride?: 'Completed' | 'Confirmed') => {
     const dateError = validateDates();
-    if (dateError) { alert(dateError); return; }
+    if (dateError) { 
+      setStatus(dateError, 'error'); 
+      return; 
+    }
 
     const newErrors: { [key: string]: string } = {};
     if (!selectedCarId) newErrors.selectedCarId = 'required';
@@ -346,8 +370,7 @@ export default function ReservationModal({
       setStatus(t('common.success'), 'success');
       onClose();
     } catch (err: any) {
-      setStatus(t('common.error'), 'error');
-      alert(`Error: ${err.message}`);
+      setStatus(`Error: ${err.message}`, 'error');
     }
   };
 
@@ -382,9 +405,9 @@ export default function ReservationModal({
     const result = await gasService.generateContract(filename, resData);
 
     if (result.success) {
-      alert(t('reservations.form.contractSuccess', 'Contract generated successfully in Drive!'));
+      setStatus(t('reservations.form.contractSuccess', 'Contract generated successfully in Drive!'), 'success');
     } else {
-      alert(`${t('common.error')}: ${result.error}`);
+      setStatus(`${t('common.error')}: ${result.error}`, 'error');
     }
     setIsGeneratingContract(false);
   };
@@ -413,10 +436,10 @@ export default function ReservationModal({
       if (error) throw error;
       if (data) {
         setAllCustomers([...allCustomers, data[0]]);
-        alert(t('common.clientAdded', 'New client profile created'));
+        setStatus(t('common.clientAdded', 'New client profile created'), 'success');
       }
     } catch (error: any) {
-      alert(`Error creating client: ${error.message}`);
+      setStatus(`Error creating client: ${error.message}`, 'error');
     }
   };
 
@@ -443,77 +466,440 @@ export default function ReservationModal({
           </div>
         )}
 
-        <ReservationForm 
-          t={t}
-          availableCars={availableCars}
-          selectedCarId={selectedCarId}
-          setSelectedCarId={setSelectedCarId}
-          setCarBrand={setCarBrand}
-          setCarModel={setCarModel}
-          setLicensePlate={setLicensePlate}
-          setDailyRate={setDailyRate}
-          setOdometerOut={setOdometerOut}
-          setFuelOut={setFuelOut}
-          pickupDate={pickupDate}
-          setPickupDate={setPickupDate}
-          returnDate={returnDate}
-          setReturnDate={setReturnDate}
-          extendedReturnDate={extendedReturnDate}
-          setExtendedReturnDate={setExtendedReturnDate}
-          validateDates={validateDates}
-          reservationState={reservationState}
-          duration={duration}
-          dailyRate={dailyRate}
-          totalPrice={totalPrice}
-          clientName={clientName}
-          setClientName={setClientName}
-          setClientListActive={setClientListActive}
-          clientListActive={clientListActive}
-          allCustomers={allCustomers}
-          isClientModified={isClientModified}
-          handleAddNewClient={handleAddNewClient}
-          clientPhone={clientPhone}
-          setClientPhone={setClientPhone}
-          clientId={clientId}
-          setClientId={setClientId}
-          clientLicense={clientLicense}
-          setClientLicense={setClientLicense}
-          errors={errors}
-          rating={rating}
-          setRating={setRating}
-          notes={notes}
-          setNotes={setNotes}
-          notesRef={notesRef}
-          prepayment={prepayment}
-          setPrepayment={setPrepayment}
-          balanceDue={balanceDue}
-          depositType={depositType}
-          setDepositType={setDepositType}
-          depositAmount={depositAmount}
-          setDepositAmount={setDepositAmount}
-          odometerOut={odometerOut}
-          odometerIn={odometerIn}
-          setOdometerIn={setOdometerIn}
-          fuelOut={fuelOut}
-          fuelIn={fuelIn}
-          setFuelIn={setFuelIn}
-          cleanedBefore={cleanedBefore}
-          setCleanedBefore={setCleanedBefore}
-          isAddingItem={isAddingItem}
-          setIsAddingItem={setIsAddingItem}
-          newItemName={newItemName}
-          setNewItemName={setNewItemName}
-          handleAddItem={handleAddItem}
-          includedItems={includedItems}
-          setIncludedItems={setIncludedItems}
-          handleFileUpload={handleFileUpload}
-          handleCreateContract={handleCreateContract}
-          isUploading={isUploading}
-          isGeneratingContract={isGeneratingContract}
-          onOpenPdfTool={() => setShowPdfTool(true)}
-          disabled={isEdit && isEditLocked}
-        />
+        {/* Section 1: Car & Schedule */}
+        <div className="p-4 sm:p-10">
+          <FormSection title={t('reservations.form.carSchedule')} style={{ zIndex: 70 }}>
+            <Field1 
+              label={t('reservations.form.carSelection', 'Car Selection')}
+              as="select"
+              value={selectedCarId || ''}
+              onChange={(e) => {
+                const carId = e.target.value;
+                const car = availableCars.find(c => c.id === carId);
+                if (car) {
+                  setCarBrand(car.brand);
+                  setCarModel(car.model);
+                  setLicensePlate(car.plate);
+                  setDailyRate(car.daily_rate);
+                  setSelectedCarId(car.id);
+                  setOdometerOut(car.odometer.toString());
+                  setFuelOut(car.starting_fuel_level?.toString() || '100');
+                } else {
+                  setSelectedCarId(null);
+                }
+              }}
+              error={errors.selectedCarId ? t('common.required', 'Required') : ''}
+              className="flex-1 min-w-[200px] max-w-[280px]"
+              disabled={isEdit && isEditLocked}
+              required
+            >
+              <option value="">{t('reservations.form.selectCar', 'Select a Car')}</option>
+              {availableCars.map(car => (
+                <option key={car.id} value={car.id}>
+                  {car.brand}, {car.model}, {car.plate} ({car.status})
+                </option>
+              ))}
+            </Field1>
 
+            <Field1 
+              label={t('reservations.form.pickupDate')}
+              type="datetime-local"
+              value={pickupDate}
+              onChange={(e) => setPickupDate(e.target.value)}
+              error={errors.pickupDate ? t('common.required', 'Required') : ''}
+              className="flex-1 min-w-[200px] max-w-[280px]"
+              disabled={isEdit && isEditLocked}
+              required
+            />
+
+            <div className="flex-1 min-w-[200px] max-w-[280px] space-y-0">
+              <Field1 
+                label={t('reservations.form.returnDate')}
+                type="datetime-local"
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+                error={errors.returnDate ? t('common.required', 'Required') : ''}
+                disabled={isEdit && isEditLocked}
+                required
+              />
+              {validateDates() && returnDate && pickupDate && new Date(returnDate) <= new Date(pickupDate) && (
+                <p className="text-[10px] text-red-500 font-bold uppercase mt-1 px-2">{validateDates()}</p>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-[200px] max-w-[280px] space-y-0">
+              <Field1 
+                label={t('reservations.form.extendedReturn')}
+                type="datetime-local"
+                value={extendedReturnDate}
+                onChange={(e) => setExtendedReturnDate(e.target.value)}
+                disabled={isEdit && isEditLocked}
+              />
+              {validateDates() && extendedReturnDate && returnDate && new Date(extendedReturnDate) <= new Date(returnDate) && (
+                <p className="text-[10px] text-red-500 font-bold uppercase mt-1 px-2">{validateDates()}</p>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-[200px] max-w-[280px] space-y-2">
+              <label className="text-[0.75rem] text-black font-bold relative top-[0.5rem] ml-[7px] px-[3px] bg-white w-fit z-10 uppercase tracking-wider">{t('reservations.form.state')}</label>
+              <div className="w-full bg-white p-[11px_10px] min-h-[46px] flex items-center font-bold border-2 border-black rounded-[5px]" style={{ borderInlineStartWidth: '6px', borderInlineStartColor: reservationState.borderColor }}>
+                <span className={`px-3 py-1 text-xs font-black uppercase tracking-widest border border-black ${reservationState.color}`}>
+                  {reservationState.label}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-[200px] max-w-[280px] space-y-2">
+              <label className="text-[0.75rem] text-black font-bold relative top-[0.5rem] ml-[7px] px-[3px] bg-white w-fit z-10 uppercase tracking-wider">{t('reservations.form.duration')}</label>
+              <div className="w-full bg-white p-[11px_10px] min-h-[46px] flex items-center font-bold border-2 border-black rounded-[5px] border-s-4 border-s-midnight-ink text-ink/70">
+                {duration}
+              </div>
+            </div>
+
+            <Field1 
+              label={t('reservations.form.dailyRate')}
+              type="number"
+              value={dailyRate}
+              onChange={(e) => setDailyRate(Number(e.target.value))}
+              className="flex-1 min-w-[200px] max-w-[280px]"
+              disabled={isEdit && isEditLocked}
+            />
+
+            <div className="flex-1 min-w-[200px] max-w-[280px] space-y-2">
+              <label className="text-[0.75rem] text-black font-bold relative top-[0.5rem] ml-[7px] px-[3px] bg-white w-fit z-10 uppercase tracking-wider">{t('reservations.form.totalPriceCalc')}</label>
+              <div className="w-full bg-white p-[11px_10px] min-h-[50px] flex items-center justify-center font-black text-2xl text-ink border-2 border-black rounded-[5px]">
+                {totalPrice.toFixed(2)}
+              </div>
+            </div>
+          </FormSection>
+        </div>
+
+        {/* Section 2: Client Profile */}
+        <div className="p-4 sm:p-10">
+          <FormSection title={t('reservations.form.clientProfile')} style={{ zIndex: 60 }}>
+            <div className="flex-1 min-w-[200px] max-w-[280px] space-y-2 relative" style={{ zIndex: 50 }}>
+              <div className="flex justify-between items-end relative z-20">
+                <div className="w-full">
+                  <Field1 
+                    label={t('reservations.form.fullName')}
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    onFocus={() => !(isEdit && isEditLocked) && setClientListActive(true)}
+                    onBlur={() => setTimeout(() => setClientListActive(false), 200)}
+                    placeholder={t('reservations.form.clientPlaceholder')}
+                    error={errors.clientName ? t('common.required', 'Required') : ''}
+                    disabled={isEdit && isEditLocked}
+                    required
+                  />
+                </div>
+                {isClientModified && !(isEdit && isEditLocked) && (
+                  <button 
+                    onClick={handleAddNewClient}
+                    className="absolute right-0 top-[6px] px-3 py-1 bg-primary text-white text-[10px] font-bold uppercase tracking-widest border border-black hover:bg-ink transition-colors flex items-center gap-1 z-20"
+                  >
+                    <Plus className="w-3 h-3" /> {t('common.add', 'Add')}
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                {!(isEdit && isEditLocked) && <Search className="absolute end-4 top-[-30px] text-ink/40 pointer-events-none" />}
+                {clientListActive && !(isEdit && isEditLocked) && (
+                  <div className="combobox-list active overflow-y-auto max-h-48 border border-black mt-[-2px]">
+                    {allCustomers.filter(c => c.name.toLowerCase().includes(clientName.toLowerCase())).map(customer => (
+                      <div key={customer.id} className="combobox-item border-b border-black last:border-b-0" onClick={() => {
+                        setClientName(customer.name);
+                        setClientPhone(customer.phone);
+                        setClientId(customer.id_card_number);
+                        setClientLicense(customer.license_number);
+                        setRating(customer.trust_rank);
+                        setClientListActive(false);
+                      }}>
+                        {customer.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Field1 
+              label={t('reservations.form.phoneNumber')}
+              type="tel"
+              value={clientPhone}
+              onChange={(e) => setClientPhone(e.target.value)}
+              className="flex-1 min-w-[200px] max-w-[280px]"
+              disabled={isEdit && isEditLocked}
+              style={{ zIndex: 40 }}
+            />
+
+            <Field1 
+              label={t('reservations.form.idCardNumber')}
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="flex-1 min-w-[200px] max-w-[280px]"
+              disabled={isEdit && isEditLocked}
+              style={{ zIndex: 30 }}
+            />
+
+            <div className="flex-1 min-w-[200px] max-w-[280px]" style={{ zIndex: 20 }}>
+              <Field1 
+                label={t('reservations.form.licenseNumber')}
+                value={clientLicense}
+                onChange={(e) => setClientLicense(e.target.value)}
+                disabled={isEdit && isEditLocked}
+              />
+            </div>
+          </FormSection>
+        </div>
+
+        {/* Section 3: Financial Alignment */}
+        <div className="p-4 sm:p-10">
+          <FormSection title={t('reservations.form.financialAlignment')} style={{ zIndex: 50 }}>
+            <Field1 
+              label={t('reservations.form.prepayment')}
+              type="number"
+              value={prepayment}
+              onChange={(e) => setPrepayment(Number(e.target.value))}
+              placeholder="0.00"
+              className="flex-1 min-w-[200px] max-w-[280px]"
+              disabled={isEdit && isEditLocked}
+            />
+
+            <div className="flex-1 min-w-[200px] max-w-[280px] space-y-2">
+              <label className="text-[0.75rem] text-black font-bold relative top-[0.5rem] ml-[7px] px-[3px] bg-white w-fit z-10 uppercase tracking-wider">{t('reservations.form.balanceDue')}</label>
+              <div className="p-[11px_10px] text-2xl font-black text-primary border-2 border-black rounded-[5px] bg-white">
+                ${balanceDue.toFixed(2)}
+              </div>
+            </div>
+
+            <Field1 
+              label={t('reservations.form.depositType')}
+              as="select"
+              value={depositType}
+              onChange={(e) => setDepositType(e.target.value)}
+              className="flex-1 min-w-[200px] max-w-[280px]"
+              disabled={isEdit && isEditLocked}
+            >
+              <option value="">{t('common.select', 'Select...')}</option>
+              <option value="None">{t('common.noData')}</option>
+              <option value="Cash">{t('reservations.form.cash')}</option>
+              <option value="Cheque">{t('reservations.form.cheque')}</option>
+            </Field1>
+
+            <Field1 
+              label={t('reservations.form.depositAmount')}
+              type="number"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(Number(e.target.value))}
+              placeholder="0.00"
+              disabled={depositType === 'None' || (isEdit && isEditLocked)}
+              className={`flex-1 min-w-[200px] max-w-[280px] ${depositType === 'None' || (isEdit && isEditLocked) ? 'opacity-50' : ''}`}
+            />
+          </FormSection>
+        </div>
+
+        {/* Section 4: Logistics Tracking */}
+        <div className="p-4 sm:p-10">
+          <FormSection title={t('reservations.form.logisticsTracking')} style={{ zIndex: 40 }}>
+            {[
+              { label: t('reservations.form.odometerOut'), val: odometerOut, setter: setOdometerOut, placeholder: 'KM' },
+              { label: t('reservations.form.odometerIn'), val: odometerIn, setter: setOdometerIn, placeholder: 'KM' },
+              { label: t('reservations.form.fuelOut'), val: fuelOut, setter: setFuelOut, placeholder: '%' },
+              { label: t('reservations.form.fuelIn'), val: fuelIn, setter: setFuelIn, placeholder: '%' },
+            ].map((field) => (
+              <Field1 
+                key={field.label}
+                label={field.label}
+                type="number"
+                value={field.val}
+                onChange={(e) => field.setter(e.target.value)}
+                placeholder={field.placeholder}
+                className="flex-1 min-w-[200px] max-w-[280px]"
+                disabled={isEdit && isEditLocked}
+              />
+            ))}
+          </FormSection>
+        </div>
+
+        {/* Section 5: Ranking and Feedback */}
+        <div className="p-4 sm:p-10">
+          <FormSection title={t('reservations.form.rankingFeedback', 'Ranking and Feedback')} style={{ zIndex: 30 }}>
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink border border-black">{t('reservations.form.clientRanking', 'Client Ranking')}</label>
+              <div className={`flex gap-2 text-midnight-ink ${isEdit && isEditLocked ? 'opacity-50 pointer-events-none' : ''}`}>
+                {[1, 2, 3, 4, 5].map((val) => (
+                  <button 
+                    key={val}
+                    onClick={() => setRating(val)}
+                    type="button"
+                    className={`transition-all ${rating >= val ? 'fill-midnight-ink' : ''}`}
+                  >
+                    <Star 
+                      className={`w-10 h-10 ${rating >= val ? 'fill-current' : 'fill-none'}`} 
+                      strokeWidth={1}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-[300px]">
+              <label className="text-[0.75rem] text-black font-bold relative top-[0.5rem] ml-[7px] px-[3px] bg-white w-fit z-10 uppercase tracking-wider">{t('reservations.form.notes')}</label>
+              <textarea 
+                className="w-full bg-white p-[11px_10px] min-h-[100px] border-2 border-black rounded-[5px] resize-none overflow-hidden font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                value={notes}
+                onChange={(e) => {
+                  setNotes(e.target.value);
+                  if (notesRef.current) {
+                    notesRef.current.style.height = 'auto';
+                    notesRef.current.style.height = notesRef.current.scrollHeight + 'px';
+                  }
+                }}
+                ref={notesRef}
+                placeholder={t('reservations.form.notesPlaceholder')}
+                disabled={isEdit && isEditLocked}
+              />
+            </div>
+          </FormSection>
+        </div>
+
+        {/* Section 6: Additional Service */}
+        <div className="p-4 sm:p-10">
+          <FormSection title={t('reservations.form.additionalService', 'Service and Condition')} style={{ zIndex: 20 }}>
+            <Field1 
+              label={t('reservations.form.cleanedBefore')}
+              as="select"
+              value={cleanedBefore}
+              onChange={(e) => setCleanedBefore(e.target.value)}
+              className="w-full"
+              disabled={isEdit && isEditLocked}
+            >
+              <option value="">{t('common.select', 'Select...')}</option>
+              <option value="yes">{t('common.yes')}</option>
+              <option value="no">{t('common.no')}</option>
+            </Field1>
+
+            <div className="w-full space-y-6">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink border border-black">{t('reservations.form.includedItems')}</label>
+                {!(isEdit && isEditLocked) && (
+                  <button 
+                    onClick={() => setIsAddingItem(true)}
+                    type="button"
+                    className="flex items-center gap-2 px-4 py-2 bg-midnight-ink text-white font-bold text-xs uppercase tracking-widest border border-black hover:bg-ink transition-all"
+                  >
+                    <Plus className="w-4 h-4" /> {t('reservations.form.addItem')}
+                  </button>
+                )}
+              </div>
+
+              <AnimatePresence>
+                {isAddingItem && !(isEdit && isEditLocked) && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex gap-2 flex-wrap"
+                  >
+                    <input 
+                      className="flex-1 p-3 text-sm uppercase border border-black"
+                      value={newItemName}
+                      onChange={(e) => setNewItemName(e.target.value)}
+                      placeholder={t('reservations.form.newItemPlaceholder')}
+                      autoFocus
+                    />
+                    <button 
+                      onClick={handleAddItem}
+                      type="button"
+                      className="px-4 py-3 bg-primary text-white font-bold text-xs uppercase tracking-widest border border-black flex items-center justify-center min-w-[50px]"
+                    >
+                      <Check className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => setIsAddingItem(false)}
+                      type="button"
+                      className="px-4 py-3 bg-slate-200 text-ink font-bold text-xs uppercase tracking-widest border border-black flex items-center justify-center"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {includedItems.map((item) => (
+                  <label key={item} className={`flex items-center gap-3 bg-white p-4 border border-black ${isEdit && isEditLocked ? 'cursor-default' : 'cursor-pointer'}`}>
+                    <input 
+                      type="checkbox" 
+                      checked={includedItems.includes(item)}
+                      onChange={() => {
+                        if (includedItems.includes(item)) {
+                          setIncludedItems(includedItems.filter(i => i !== item));
+                        } else {
+                          setIncludedItems([...includedItems, item]);
+                        }
+                      }}
+                      className="w-6 h-6 border-2 border-black text-primary focus:ring-0 rounded-none bg-white font-bold disabled:opacity-50" 
+                      disabled={isEdit && isEditLocked}
+                    />
+                    <span className="text-sm font-bold uppercase">{item}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </FormSection>
+        </div>
+
+        {/* Section 7: Documentation */}
+        <div className="p-4 sm:p-10">
+          <FormSection title={t('reservations.form.documentation')} style={{ zIndex: 10 }}>
+            <div className="flex flex-wrap gap-6 w-full">
+              <Button1 
+                onClick={handleCreateContract}
+                disabled={isGeneratingContract || (isEdit && isEditLocked)}
+                icon={isGeneratingContract ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5" />}
+                type="button"
+              >
+                {isGeneratingContract ? t('reservations.form.generating', 'Generating...') : t('reservations.form.createContract', 'Create Contract')}
+              </Button1>
+
+              <Button1 
+                onClick={() => setShowPdfTool(true)}
+                icon={<Monitor className="w-5 h-5" />}
+                type="button"
+                disabled={isEdit && isEditLocked}
+              >
+                {t('reservations.form.openPdfTool', 'Open PDF Tool')}
+              </Button1>
+
+              <div className="relative">
+                <input 
+                  type="file" 
+                  id="contract-upload" 
+                  className="hidden" 
+                  onChange={handleFileUpload}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  disabled={isEdit && isEditLocked}
+                />
+                <Button1 
+                  onClick={() => document.getElementById('contract-upload')?.click()}
+                  disabled={isUploading || (isEdit && isEditLocked)}
+                  icon={isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                  type="button"
+                >
+                  {isUploading ? t('reservations.form.uploading') : t('reservations.form.uploadPdf', 'Upload PDF')}
+                </Button1>
+              </div>
+            </div>
+            {/* The Pdf Tool itself */}
+            <AnimatePresence>
+                {showPdfTool && (
+                    <BaseModal isOpen={showPdfTool} onClose={() => setShowPdfTool(false)} title="PDF Tool">
+                        <ImageToPdf onAssign={handlePdfToolAssign} />
+                    </BaseModal>
+                )}
+            </AnimatePresence>
+          </FormSection>
+        </div>
         <div className="px-6 py-8 sm:px-10 bg-slate-50 flex flex-col gap-8 shrink-0 border-t border-black">
           <div className="flex flex-wrap gap-x-12 gap-y-6 items-center border-l-4 border-primary pl-8 py-2">
             <div>

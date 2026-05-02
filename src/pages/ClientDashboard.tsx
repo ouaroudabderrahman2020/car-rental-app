@@ -77,11 +77,13 @@ export default function ClientDashboard() {
     });
   }, [clients, reservations]);
 
-  const filteredClients = enrichedClients.filter(client => 
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.phone.includes(searchTerm)
-  );
+  const filteredClients = useMemo(() => {
+    return enrichedClients.filter(client => 
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.phone.includes(searchTerm)
+    );
+  }, [enrichedClients, searchTerm]);
 
   const handleOpenDetails = (client: Customer) => {
     setSelectedClient(client);

@@ -1,4 +1,4 @@
-import { RefreshCw, Search, ArrowRight, Loader2 } from 'lucide-react';
+import { RefreshCw, Search, ArrowRight, Loader2, Download } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
@@ -7,6 +7,7 @@ import ReservationModal from '../components/ReservationModal';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
 import { useStatus } from '../contexts/StatusContext';
+import { gasService } from '../lib/gas';
 
 export default function Archive() {
   const { t, i18n } = useTranslation();
@@ -18,6 +19,7 @@ export default function Archive() {
   const [initialData, setInitialData] = useState<any>(null);
   const [archiveData, setArchiveData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchArchive = async () => {
@@ -61,6 +63,42 @@ export default function Archive() {
       setIsSyncing(false);
       setStatus(t('common.success'), 'success');
     });
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    setStatus(t('common.loading', 'EXPORTING...'), 'processing', 0);
+    
+    // Convert to headers + rows
+    const headers = [
+      t('reservations.reservationId'),
+      t('reservations.customerName'),
+      t('reservations.car'),
+      t('fleet.form.plate'),
+      t('reservations.startDate'),
+      t('reservations.endDate'),
+      t('common.status'),
+      t('reservations.totalAmount')
+    ];
+    
+    const rows = filteredData.map(res => [
+      res.id.slice(0,8),
+      res.customer_name,
+      res.car?.brand ? `${res.car.brand} ${res.car.model}` : t('common.unknown'),
+      res.car?.plate || t('common.unknown'),
+      new Date(res.start_date).toLocaleDateString(i18n.language),
+      new Date(res.end_date).toLocaleDateString(i18n.language),
+      t(`reservations.${res.status.toLowerCase().replace(' ', '_')}`, res.status),
+      res.total_price
+    ]);
+
+    const { status } = await gasService.exportData('Archive', rows);
+    if (status !== 'success') {
+      setStatus(t('common.exportError'), 'error');
+    } else {
+      setStatus(t('common.exportSuccess'), 'success');
+    }
+    setIsExporting(false);
   };
 
   const handleOpenDetails = (res: any) => {
@@ -122,14 +160,24 @@ export default function Archive() {
               <div className="w-full flex flex-col gap-8">
                 {/* Action Toolbar */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                  <button 
-                    onClick={handleSync}
-                    disabled={isSyncing}
-                    className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 group"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                    <span>{isSyncing ? t('archive.syncing') : t('archive.refresh')}</span>
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={handleSync}
+                      disabled={isSyncing}
+                      className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 group disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>{isSyncing ? t('archive.syncing') : t('archive.refresh')}</span>
+                    </button>
+                    <button 
+                      onClick={handleExport}
+                      disabled={isExporting}
+                      className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                      {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
+                    </button>
+                  </div>
 
                   <div className="relative group min-w-[200px] md:min-w-[300px]">
                     <input 

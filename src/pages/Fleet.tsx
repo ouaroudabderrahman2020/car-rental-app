@@ -1,15 +1,14 @@
-import { Plus, Car as CarIcon, Loader2, Download, FileSpreadsheet } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Plus, Car as CarIcon, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import CarModal from '../components/CarModal';
 import { SectionHeader } from '../components/SectionHeader';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
-import { gasService } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
 import { Car, FormattedCar } from '../types';
-import { exportToCSV } from '../lib/utils';
+import { CAR_STATUSES } from '../constants';
 
 export default function Fleet() {
   const { t, i18n } = useTranslation();
@@ -19,7 +18,6 @@ export default function Fleet() {
   const [selectedCar, setSelectedCar] = useState<FormattedCar | null>(null);
   const [fleetData, setFleetData] = useState<FormattedCar[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -32,7 +30,7 @@ export default function Fleet() {
     try {
       const { data, error } = await supabase
         .from('cars')
-        .select('*')
+        .select('id, brand, model, plate, color, fuel_type, transmission, odometer, daily_rate, status, starting_fuel_level, gps_sim, seats, damage_notes, image_url, documentation_url, registration_expiry, insurance_expiry, tech_inspection_expiry, tax_renewal_expiry, created_at, updated_at, essentials, intervals')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -57,45 +55,6 @@ export default function Fleet() {
     }
   };
 
-  const handleExport = async (mode: 'sheets' | 'csv') => {
-    setIsExporting(true);
-    setStatus(t('tools.imageToPdfTools.processing'), 'processing', 0);
-    
-    const headers = [
-      t('fleet.form.brand'), 
-      t('fleet.form.plate'), 
-      t('carDetails.rate'), 
-      t('carDetails.status'), 
-      t('carDetails.odometer'), 
-      t('common.maintenance')
-    ];
-    
-    const rows = filteredFleet.map(car => [
-      car.name,
-      car.plate,
-      car.daily_rate,
-      car.status,
-      car.odometer,
-      car.needsMaintenance ? t('common.yes') : t('common.no')
-    ]);
-
-    if (mode === 'csv') {
-      exportToCSV('Fleet_Export', [headers, ...rows]);
-      setStatus(t('common.exportSuccess'), 'success');
-      alert(t('common.exportSuccess'));
-    } else {
-      const { status } = await gasService.exportData('Fleet', rows);
-      if (status !== 'success') {
-        setStatus(t('common.exportError'), 'error');
-        alert(t('common.exportError'));
-      } else {
-        setStatus(t('common.exportSuccess'), 'success');
-        alert(t('common.exportSuccess'));
-      }
-    }
-    setIsExporting(false);
-  };
-
   useEffect(() => {
     fetchFleet();
   }, [i18n.language]);
@@ -112,12 +71,14 @@ export default function Fleet() {
     setIsModalOpen(true);
   };
 
-  const filteredFleet = fleetData.filter(car => {
-    const matchesSearch = car.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          car.plate.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || car.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredFleet = useMemo(() => {
+    return fleetData.filter(car => {
+      const matchesSearch = car.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            car.plate.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || car.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [fleetData, searchQuery, statusFilter]);
 
   return (
     <Layout title={t('nav.fleet')}>
@@ -160,29 +121,14 @@ export default function Fleet() {
                       className="px-4 py-2 bg-slate-50 border border-slate-200 text-ink text-sm outline-none focus:border-primary transition-all cursor-pointer min-w-[140px]"
                     >
                       <option value="all">{t('common.allStatus', 'All Status')}</option>
-                      <option value="Available">{t('fleet.available', 'Available')}</option>
-                      <option value="Rented">{t('fleet.rented', 'Rented')}</option>
-                      <option value="In Maintenance">{t('fleet.inMaintenance', 'In Maintenance')}</option>
-                      <option value="Out of Order">{t('fleet.outOfOrder', 'Out of Order')}</option>
+                      {CAR_STATUSES.map(st => (
+                        <option key={st} value={st}>
+                          {t(`fleet.${st.toLowerCase().replace(/\s+/g, '')}`, st)}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <button 
-                      onClick={() => handleExport('csv')}
-                      disabled={isExporting}
-                      className="px-6 py-2.5 bg-slate-100 text-ink font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:bg-slate-200 active:scale-[0.98] transition-all flex items-center gap-2 border border-slate-200 disabled:opacity-50"
-                      title={t('common.exportCSV', 'Export to CSV')}
-                    >
-                      <FileSpreadsheet className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleExport('sheets')}
-                      disabled={isExporting}
-                      className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
-                    >
-                      {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                      {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
-                    </button>
                   <button 
                     onClick={handleAddCar}
                     className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"

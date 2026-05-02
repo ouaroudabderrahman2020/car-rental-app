@@ -34,7 +34,7 @@ export const NavigationOverlay: React.FC<NavigationOverlayProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2, ease: 'easeInOut' }}
-          className="fixed inset-0 z-[100] bg-white flex flex-col px-4 md:px-margin overflow-y-auto"
+          className="fixed inset-0 z-[100] bg-white/50 backdrop-blur-md flex flex-col px-4 md:px-margin overflow-y-auto"
         >
           {/* Top spacer to match header height and keep the button area clear */}
           <div className="flex items-center justify-between h-14 mb-12 shrink-0">

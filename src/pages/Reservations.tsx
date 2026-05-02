@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ArrowRight, Loader2, Download, Search, FileSpreadsheet } from 'lucide-react';
+import { Plus, ArrowRight, Loader2, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { SectionHeader } from '../components/SectionHeader';
 import ReservationModal from '../components/ReservationModal';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
-import { gasService } from '../lib/gas';
 import { Reservation, FormattedReservation } from '../types';
-import { exportToCSV } from '../lib/utils';
+import { RESERVATION_STATUSES } from '../constants';
+import { useStatus } from '../contexts/StatusContext';
 
 export default function Reservations() {
   const { t, i18n } = useTranslation();
+  const { setStatus } = useStatus();
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -19,7 +20,6 @@ export default function Reservations() {
   const [initialData, setInitialData] = useState<any>(null);
   const [activeReservations, setActiveReservations] = useState<FormattedReservation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -75,45 +75,6 @@ export default function Reservations() {
     const matchesStatus = statusFilter === 'all' || res.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
-
-  const handleExport = async (mode: 'sheets' | 'csv') => {
-    setIsExporting(true);
-    const allData = [...filteredActive];
-    const headers = [
-      t('reservations.reservationId'),
-      t('reservations.customerName'),
-      t('reservations.car'),
-      t('fleet.form.plate'),
-      t('reservations.startDate'),
-      t('reservations.endDate'),
-      t('common.status'),
-      t('reservations.totalAmount')
-    ];
-
-    const rows = allData.map(res => [
-      res.id_short,
-      res.client,
-      res.carName,
-      res.carPlate,
-      res.pickup,
-      res.return,
-      res.state,
-      res.price
-    ]);
-
-    if (mode === 'csv') {
-      exportToCSV('Reservations_Export', [headers, ...rows]);
-      alert(t('common.exportSuccess'));
-    } else {
-      const { status } = await gasService.exportData('Reservations', rows);
-      if (status !== 'success') {
-        alert(t('common.exportError'));
-      } else {
-        alert(t('common.exportSuccess'));
-      }
-    }
-    setIsExporting(false);
-  };
 
   useEffect(() => {
     fetchReservations();
@@ -196,28 +157,14 @@ export default function Reservations() {
                         className="px-4 py-2 bg-slate-50 border border-slate-200 text-ink text-sm outline-none focus:border-primary transition-all cursor-pointer"
                       >
                         <option value="all">{t('common.allStatus', 'All Status')}</option>
-                        <option value="Confirmed">{t('reservations.confirmed')}</option>
-                        <option value="In Progress">{t('reservations.in_progress')}</option>
-                        <option value="Overdue">{t('reservations.overdue')}</option>
+                        {RESERVATION_STATUSES.map(st => (
+                          <option key={st} value={st}>
+                            {t(`reservations.${st.toLowerCase().replace(' ', '_')}`, st)}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="flex items-center gap-4 w-full sm:w-auto">
-                      <button 
-                        onClick={() => handleExport('csv')}
-                        disabled={isExporting}
-                        className="px-6 py-2.5 bg-slate-100 text-ink font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:bg-slate-200 active:scale-[0.98] transition-all flex items-center gap-2 border border-slate-200 disabled:opacity-50"
-                        title={t('common.exportCSV', 'Export to CSV')}
-                      >
-                        <FileSpreadsheet className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleExport('sheets')}
-                        disabled={isExporting}
-                        className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
-                      >
-                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                        {isExporting ? t('common.loading') : t('common.export', 'EXPORT TO SHEETS')}
-                      </button>
                       <button 
                         onClick={() => {
                           setModalMode('add');

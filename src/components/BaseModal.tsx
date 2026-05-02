@@ -25,10 +25,14 @@ export default function BaseModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 backdrop-blur-sm p-4 sm:p-10 overflow-y-auto no-scrollbar">
+    <div 
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 backdrop-blur-sm p-4 sm:p-10 overflow-y-auto no-scrollbar"
+      onClick={onClose}
+    >
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
+        onClick={(e) => e.stopPropagation()}
         className={`bg-white w-full ${maxWidth} industrial-shadow flex flex-col relative my-auto max-h-[95vh] overflow-y-auto no-scrollbar`}
       >
         {/* Header */}

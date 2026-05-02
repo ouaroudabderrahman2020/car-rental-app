@@ -3,6 +3,7 @@ import { Upload, X, FileText, Download, RotateCcw, Link as LinkIcon, Image as Im
 import { PDFDocument } from 'pdf-lib';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
+import { useStatus } from '../../contexts/StatusContext';
 import { supabase } from '../../lib/supabase';
 import { Reservation } from '../../types';
 
@@ -19,6 +20,7 @@ interface ImageToPdfProps {
 
 export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
   const { t } = useTranslation();
+  const { setStatus } = useStatus();
   const [images, setImages] = useState<{ id: string, name: string, url: string, file: File }[]>([]);
   const [mode, setMode] = useState<'single' | 'separate'>('single');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -128,7 +130,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
       }
     } catch (error) {
       console.error('PDF Generation failed', error);
-      alert('Error generating PDF. Please ensure all images are JPG or PNG.');
+      setStatus('Error generating PDF. Please ensure all images are JPG or PNG.', 'error');
     } finally {
       setIsProcessing(false);
     }

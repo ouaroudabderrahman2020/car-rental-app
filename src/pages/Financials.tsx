@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Loader2, RefreshCw, Search, DollarSign, TrendingUp, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useStatus } from '../contexts/StatusContext';
 import Layout from '../components/Layout';
 import { SectionHeader } from '../components/SectionHeader';
 import FormSection from '../components/FormSection';
 
 export default function Financials() {
   const { t, i18n } = useTranslation();
+  const { setStatus } = useStatus();
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,7 +80,7 @@ export default function Financials() {
       }
     } catch (error) {
       console.error('Error fetching financials:', error);
-      alert(t('common.error', 'An error occurred while fetching data.'));
+      setStatus(t('common.error', 'An error occurred while fetching data.'), 'error');
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -93,15 +95,17 @@ export default function Financials() {
     fetchFinancials(true);
   };
 
-  const filteredTransactions = transactions.filter(tx => {
-    const search = searchQuery.toLowerCase();
-    return (
-      tx.customer_name?.toLowerCase().includes(search) ||
-      tx.id.toLowerCase().includes(search) ||
-      (tx.car?.brand + ' ' + tx.car?.model).toLowerCase().includes(search) ||
-      tx.car?.plate?.toLowerCase().includes(search)
-    );
-  });
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx => {
+      const search = searchQuery.toLowerCase();
+      return (
+        tx.customer_name?.toLowerCase().includes(search) ||
+        tx.id.toLowerCase().includes(search) ||
+        (tx.car?.brand + ' ' + tx.car?.model).toLowerCase().includes(search) ||
+        tx.car?.plate?.toLowerCase().includes(search)
+      );
+    });
+  }, [transactions, searchQuery]);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'USD' }).format(val);

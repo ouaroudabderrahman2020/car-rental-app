@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { User, Phone, CreditCard, Calendar, Shield, History, Trash2, X, Check, Edit2, Mail, MapPin, Globe, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Customer, Reservation } from '../types';
-import ClientForm from './ClientForm';
 import { useStatus } from '../contexts/StatusContext';
+import Field1 from './Field1';
+import FormSection from './FormSection';
 
 interface ClientModalProps {
   isOpen: boolean;
@@ -75,7 +76,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
 
   const handleSave = async () => {
     if (!name || !phone) {
-      alert(t('common.requiredFields', 'Name and Phone are required.'));
+      setStatus(t('common.requiredFields', 'Name and Phone are required.'), 'error');
       return;
     }
 
@@ -117,8 +118,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       onClose();
     } catch (err: any) {
       console.error('Save error:', err);
-      setStatus(t('common.error'), 'error');
-      alert(`${t('common.error')}: ${err.message || ''}`);
+      setStatus(`${t('common.error')}: ${err.message || ''}`, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -142,8 +142,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       onClose();
     } catch (err: any) {
       console.error('Delete error:', err);
-      setStatus(t('common.error'), 'error');
-      alert(`${t('common.error')}: ${err.message || ''}`);
+      setStatus(`${t('common.error')}: ${err.message || ''}`, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -199,21 +198,41 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
             <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8">
               {isEditing ? (
                 <div className="space-y-6">
-                  <ClientForm 
-                    name={name} setName={setName}
-                    nationalId={nationalId} setNationalId={setNationalId}
-                    dob={dob} setDob={setDob}
-                    nationality={nationality} setNationality={setNationality}
-                    licenseNumber={licenseNumber} setLicenseNumber={setLicenseNumber}
-                    licenseExpiry={licenseExpiry} setLicenseExpiry={setLicenseExpiry}
-                    licenseIssue={licenseIssue} setLicenseIssue={setLicenseIssue}
-                    phone={phone} setPhone={setPhone}
-                    email={email} setEmail={setEmail}
-                    address={address} setAddress={setAddress}
-                    rating={rating} setRating={setRating}
-                    notes={notes} setNotes={setNotes}
-                    disabled={isSubmitting}
-                  />
+                <div className="space-y-8 bg-white p-6">
+                  <FormSection title={t('clientForm.identity', 'Identity')}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field1 label={t('clientForm.fullName', 'Full Name')} value={name} onChange={(e) => setName(e.target.value)} disabled={isSubmitting} />
+                      <Field1 label={t('clientForm.nationalId', 'National ID / Passport')} value={nationalId} onChange={(e) => setNationalId(e.target.value)} disabled={isSubmitting} />
+                      <Field1 label={t('clientForm.dob', 'Date of Birth')} type="date" value={dob} onChange={(e) => setDob(e.target.value)} disabled={isSubmitting} />
+                      <Field1 label={t('clientForm.nationality', 'Nationality')} value={nationality} onChange={(e) => setNationality(e.target.value)} disabled={isSubmitting} />
+                    </div>
+                  </FormSection>
+
+                  <FormSection title={t('clientForm.credentials', 'Driving Credentials')}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Field1 label={t('clientForm.licenseNumber', 'License Number')} value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} disabled={isSubmitting} />
+                      <Field1 label={t('clientForm.licenseExpiry', 'License Expiry')} type="date" value={licenseExpiry} onChange={(e) => setLicenseExpiry(e.target.value)} disabled={isSubmitting} />
+                      <Field1 label={t('clientForm.licenseIssue', 'License Issue')} type="date" value={licenseIssue} onChange={(e) => setLicenseIssue(e.target.value)} disabled={isSubmitting} />
+                    </div>
+                  </FormSection>
+
+                  <FormSection title={t('clientForm.contact', 'Contact & Verification')}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field1 label={t('clientForm.phone', 'Phone Number')} value={phone} onChange={(e) => setPhone(e.target.value)} disabled={isSubmitting} />
+                      <Field1 label={t('clientForm.email', 'Email Address')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isSubmitting} />
+                      <div className="md:col-span-2">
+                        <Field1 label={t('clientForm.address', 'Physical Address')} value={address} onChange={(e) => setAddress(e.target.value)} disabled={isSubmitting} />
+                      </div>
+                    </div>
+                  </FormSection>
+
+                  <FormSection title={t('clientForm.trust', 'Trust & Rating')}>
+                    <div className="space-y-4">
+                      <Field1 label={t('clientForm.rating', 'Rating (1-5 Stars)')} type="number" min="1" max="5" value={rating} onChange={(e) => setRating(e.target.value)} disabled={isSubmitting} />
+                      <Field1 as="textarea" label={t('clientForm.notes', 'Internal Notes')} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={isSubmitting} />
+                    </div>
+                  </FormSection>
+                </div>
                   {mode === 'edit' && (
                     <div className="flex items-center gap-3 p-6 bg-slate-50 border border-slate-200">
                       <input 
