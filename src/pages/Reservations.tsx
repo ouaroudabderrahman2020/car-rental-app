@@ -6,6 +6,7 @@ import { SectionHeader } from '../components/SectionHeader';
 import AddReservationModal from '../components/AddReservationModal';
 import EditReservationModal from '../components/EditReservationModal';
 import ReservationDetailsModal from '../components/ReservationDetailsModal';
+import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
 import { Reservation } from '../types';
@@ -103,7 +104,18 @@ export default function Reservations() {
   const handleExport = async () => {
     setIsExporting(true);
     const allData = [...activeReservations, ...recentlyCompleted];
-    const { success, error } = await gasService.exportData('reservations', allData);
+    const rows = allData.map(res => [
+      res.id_short,
+      res.client,
+      res.carName,
+      res.carPlate,
+      res.pickup,
+      res.return,
+      res.state,
+      res.price
+    ]);
+    const { success, error } = await gasService.exportData('Reservations_Full_Export', rows);
+
     if (!success) {
       alert(`${t('common.exportError')}: ${error}`);
     } else {
@@ -161,81 +173,94 @@ export default function Reservations() {
 
         <div className="v-section-gap">
           {/* Section: Active Reservations */}
-          <section className="py-lg bg-white">
-            <div className="max-w-[1440px] mx-auto px-margin v-section-gap">
-              {/* Action Toolbar */}
-              <SectionHeader 
-                title={t('reservations.activeTitle')}
-                badge={<span className="px-3 py-1 bg-primary text-white text-fluid-sm font-bold uppercase tracking-widest whitespace-nowrap">{activeReservations.length} {t('reservations.activeCount')}</span>}
-                actions={
-                  <>
-                    <button 
-                      onClick={handleExport}
-                      disabled={isExporting}
-                      className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
-                    >
-                      {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                      {isExporting ? t('common.loading') : t('common.export', 'EXPORT TO SHEETS')}
-                    </button>
-                    <button 
-                      onClick={() => setIsAddModalOpen(true)}
-                      className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" /> {t('reservations.newReservation')}
-                    </button>
-                  </>
-                }
-              />
-
-              <div className="bg-white border border-slate-200 shadow-sm overflow-hidden min-h-[200px] flex items-center justify-center">
-            {loading ? (
-              <div className="py-12 flex flex-col items-center justify-center space-y-4">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.loading')}</p>
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse responsive-table">
-                <thead>
-                  <tr className="bg-slate-800 text-white font-sans text-[10px] md:text-xs uppercase tracking-widest border-b border-slate-800">
-                    <th className="py-5 px-6 font-black text-center">{t('reservations.reservationId')}</th>
-                    <th className="py-5 px-6 font-black text-center">{t('reservations.customerName')}</th>
-                    <th className="py-5 px-6 font-black text-center">{t('reservations.car')}</th>
-                    <th className="py-5 px-6 font-black text-center">{t('reservations.startDate')}</th>
-                    <th className="py-5 px-6 font-black text-center">{t('reservations.endDate')}</th>
-                    <th className="py-5 px-6 font-black text-center">{t('common.status')}</th>
-                    <th className="py-5 px-6 text-center font-black">{t('reservations.totalAmount')}</th>
-                  </tr>
-                </thead>
-                <tbody className="font-sans text-midnight leading-[1.6]">
-                  {activeReservations.map((row) => (
-                    <tr key={row.id} className="border-b hover:bg-white transition-all border-border-tint">
-                      <td 
-                        onClick={() => handleOpenEdit(row)}
-                        className="py-6 px-6 text-center border-e border-border-tint standard-row-text cursor-pointer hover:text-primary transition-colors" 
-                        data-label={t('reservations.reservationId')}
+          <div className="py-lg bg-white">
+            <div className="max-w-[1440px] mx-auto">
+              <FormSection title={t('reservations.activeTitle')}>
+                <div className="w-full flex flex-col gap-6">
+                  {/* Action Toolbar */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <span className="px-3 py-1 bg-primary text-white text-fluid-sm font-bold uppercase tracking-widest whitespace-nowrap">
+                      {activeReservations.length} {t('reservations.activeCount')}
+                    </span>
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <button 
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
                       >
-                        {row.id_short}
-                      </td>
-                      <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.customerName')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenEdit(row)}>{row.client}</span></td>
-                      <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.car')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenEdit(row)}>{row.carName}</span></td>
-                      <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.startDate')}>{row.pickup}</td>
-                      <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.endDate')}>{row.return}</td>
-                      <td className="py-6 px-6 text-center border-e border-border-tint" data-label={t('common.status')}>
-                        <span className={`px-2 py-1 ${row.statusColor} text-fluid-sm font-black uppercase tracking-tighter inline-block`}>{row.state}</span>
-                      </td>
-                      <td className="py-6 px-6 text-center standard-row-text" data-label={t('reservations.totalAmount')}>{row.price}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        {isExporting ? t('common.loading') : t('common.export', 'EXPORT TO SHEETS')}
+                      </button>
+                      <button 
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] rounded-none industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" /> {t('reservations.newReservation')}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 shadow-sm overflow-hidden min-h-[200px]">
+                    <table className="w-full text-left border-collapse responsive-table">
+                      <thead>
+                        <tr className="bg-slate-800 text-white font-sans text-[10px] md:text-xs uppercase tracking-widest border-b border-slate-800">
+                          <th className="py-5 px-6 font-black text-center">{t('reservations.reservationId')}</th>
+                          <th className="py-5 px-6 font-black text-center">{t('reservations.customerName')}</th>
+                          <th className="py-5 px-6 font-black text-center">{t('reservations.car')}</th>
+                          <th className="py-5 px-6 font-black text-center">{t('reservations.startDate')}</th>
+                          <th className="py-5 px-6 font-black text-center">{t('reservations.endDate')}</th>
+                          <th className="py-5 px-6 font-black text-center">{t('common.status')}</th>
+                          <th className="py-5 px-6 text-center font-black">{t('reservations.totalAmount')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="font-sans text-midnight leading-[1.6]">
+                        {loading ? (
+                          <tr>
+                            <td colSpan={7} className="py-12">
+                              <div className="flex flex-col items-center justify-center space-y-4">
+                                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                                <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.loading')}</p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : activeReservations.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="py-12 text-center text-midnight/40 font-bold uppercase tracking-widest">
+                              {t('common.noData')}
+                            </td>
+                          </tr>
+                        ) : (
+                          activeReservations.map((row) => (
+                            <tr key={row.id} className="border-b hover:bg-white transition-all border-border-tint">
+                              <td 
+                                onClick={() => handleOpenEdit(row)}
+                                className="py-6 px-6 text-center border-e border-border-tint standard-row-text cursor-pointer hover:text-primary transition-colors" 
+                                data-label={t('reservations.reservationId')}
+                              >
+                                {row.id_short}
+                              </td>
+                              <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.customerName')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenEdit(row)}>{row.client}</span></td>
+                              <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.car')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenEdit(row)}>{row.carName}</span></td>
+                              <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.startDate')}>{row.pickup}</td>
+                              <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.endDate')}>{row.return}</td>
+                              <td className="py-6 px-6 text-center border-e border-border-tint" data-label={t('common.status')}>
+                                <span className={`px-2 py-1 ${row.statusColor} text-fluid-sm font-black uppercase tracking-tighter inline-block`}>{row.state}</span>
+                              </td>
+                              <td className="py-6 px-6 text-center standard-row-text" data-label={t('reservations.totalAmount')}>{row.price}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </FormSection>
+            </div>
           </div>
         </div>
-      </section>
 
       </div>
-    </div>
-  </Layout>
+    </Layout>
 );
 }
 

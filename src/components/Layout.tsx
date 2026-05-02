@@ -259,9 +259,9 @@ export default function Layout({ children, title }: LayoutProps) {
         />
       </header>
 
-      <main className="flex-1 w-full overflow-x-hidden">
+      <main className="flex-1 w-full overflow-x-hidden px-4 md:px-margin">
         {title && (
-          <div className="max-w-[1440px] mx-auto px-4 md:px-margin pt-6 v-title-gap">
+          <div className="max-w-[1440px] mx-auto pt-6 v-title-gap">
             <h1 className="text-fluid-h1 font-black text-ink uppercase tracking-tight break-words m-0">
               {title}
             </h1>

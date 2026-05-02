@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Search, User, Phone, CreditCard, 
   Car as CarIcon, Calendar, Monitor, ClipboardList, 
-  Upload, Star, Plus, Check, Edit, Lock, Trash2, RotateCcw, ArrowRight, Loader2
+  Upload, Star, Plus, Check, Edit, Lock, Trash2, RotateCcw, ArrowRight, Loader2, CheckCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -180,7 +180,9 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
       deposit_type: depositType
     };
 
-    const result = await gasService.generateContract(reservationDataToGAS);
+    const filename = `Contract_${clientName.replace(/\s+/g, '_')}_${new Date().getTime()}`;
+    const result = await gasService.generateContract(filename, reservationDataToGAS);
+
     if (result.success) {
       alert(t('reservations.form.contractSuccess', 'Contract generated successfully in Drive!'));
     } else {
@@ -219,9 +221,22 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
     setStatus(t('common.syncingExternal'), 'processing', 30);
     
     const tasks = [];
-    tasks.push(gasService.exportData('reservations', [resData]));
+    const rows = [[
+      resData.customer_name,
+      resData.customer_phone,
+      resData.car_brand,
+      resData.car_model,
+      resData.license_plate,
+      resData.start_date,
+      resData.end_date,
+      resData.total_price,
+      resData.status
+    ]];
+    tasks.push(gasService.exportData('Reservations', rows));
     if (pendingFile) tasks.push(gasService.uploadBase64(pendingFile));
-    tasks.push(gasService.generateContract(resData));
+    const filename = `Contract_${resData.customer_name.replace(/\s+/g, '_')}_${new Date().getTime()}`;
+    tasks.push(gasService.generateContract(filename, resData));
+
     
     try {
       await Promise.allSettled(tasks);
@@ -312,6 +327,7 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
 
   const handleReactivate = async () => {
     if (!reservationData?.id) return;
+    setIsSubmitting(true);
     try {
       const { error } = await supabase
         .from('reservations')
@@ -323,6 +339,51 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
       onClose();
     } catch (error: any) {
       alert(t('reservationDetails.reactivateError'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    if (!reservationData?.id) return;
+    setIsSubmitting(true);
+    setStatus(t('common.processingSubmission', 'Processing submission...'), 'processing', 10);
+    try {
+      const reservationDataToUpdate = { 
+        status: 'Completed' as const,
+        odometer_in: parseInt(odometerIn) || null,
+        fuel_level_in: parseInt(fuelIn) || null,
+        end_date: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('reservations')
+        .update(reservationDataToUpdate)
+        .eq('id', reservationData.id);
+      
+      if (error) throw error;
+
+      // Sync car status
+      if (selectedCarId) {
+        await supabase
+          .from('cars')
+          .update({ 
+            status: 'Available',
+            odometer: parseInt(odometerIn) || undefined,
+            starting_fuel_level: parseInt(fuelIn) || undefined
+          })
+          .eq('id', selectedCarId);
+      }
+
+      setStatus(t('common.success'), 'success');
+      alert(t('editReservation.completeConfirm'));
+      onClose();
+    } catch (error: any) {
+      console.error('Completion error:', error);
+      setStatus(t('common.error'), 'error');
+      alert(`${t('common.error')}: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -465,6 +526,14 @@ export default function ReservationDetailsModal({ isOpen, onClose, reservationDa
                 className="px-4 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
               >
                 <RotateCcw className="w-4 h-4 inline mr-2" /> {t('reservationDetails.reactivate')}
+              </button>
+              <button 
+                onClick={handleComplete}
+                disabled={isSubmitting}
+                className="px-4 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-primary/50 bg-primary/20 min-h-[60px] flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                {t('addReservation.archive', 'Archive')}
               </button>
               <button 
                 onClick={() => { alert(t('reservationDetails.rebookSuccess')); onClose(); }}

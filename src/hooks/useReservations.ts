@@ -39,15 +39,17 @@ export function useReservations() {
 
       if (error) throw error;
 
-      // Update car status if starting today
-      const today = new Date().toISOString().split('T')[0];
-      const resStart = new Date(reservation.start_date || '').toISOString().split('T')[0];
-      
-      if (reservation.car_id && resStart <= today) {
-        await supabase
-          .from('cars')
-          .update({ status: 'Rented' })
-          .eq('id', reservation.car_id);
+      // Update car status
+      if (reservation.car_id) {
+        if (reservation.status === 'Completed') {
+          await supabase.from('cars').update({ status: 'Available' }).eq('id', reservation.car_id);
+        } else if (reservation.status === 'Confirmed' || reservation.status === 'In Progress') {
+          const today = new Date().toISOString().split('T')[0];
+          const resStart = new Date(reservation.start_date || '').toISOString().split('T')[0];
+          if (resStart <= today) {
+            await supabase.from('cars').update({ status: 'Rented' }).eq('id', reservation.car_id);
+          }
+        }
       }
 
       return { data, error: null };

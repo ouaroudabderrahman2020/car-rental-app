@@ -85,45 +85,14 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
           gps_sim: gpsSim,
           seats: parseInt(seats) || 5,
           damage_notes: damageNotes,
-          image_url: 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800'
+          image_url: 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800',
+          essentials: essentials,
+          intervals: intervals
         }])
         .select()
         .single();
 
       if (carError) throw carError;
-
-      // Insert selected essentials
-      const selectedEssentials = essentials
-        .filter(e => e.checked)
-        .map(e => ({
-          car_id: carData.id,
-          name: e.name,
-          is_included: true
-        }));
-
-      if (selectedEssentials.length > 0) {
-        const { error: essError } = await supabase
-          .from('essentials')
-          .insert(selectedEssentials);
-        if (essError) throw essError;
-      }
-
-      // Insert maintenance intervals
-      const maintenanceData = intervals
-        .filter(i => i.value || i.lastCompleted)
-        .map(i => ({
-          car_id: carData.id,
-          interval_type: i.type,
-          interval_value: i.value,
-          last_completed_date: i.lastCompleted || null
-        }));
-
-      if (maintenanceData.length > 0) {
-        const { error: maintError } = await supabase
-          .from('maintenance_intervals')
-          .insert(maintenanceData);
-        if (maintError) throw maintError;
-      }
 
       alert(t('carForm.success'));
       setStatus(t('common.dataSaved'), 'success');

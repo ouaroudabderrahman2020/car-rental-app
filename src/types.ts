@@ -60,4 +60,14 @@ export interface Customer {
   trust_rank: number; // 1-5
   is_blacklisted: boolean;
   created_at: string;
+  email?: string;
+  address?: string;
+  dob?: string;
+  nationality?: string;
+  national_id?: string;
+  drive_id_photo?: string;
+  drive_license_front_photo?: string;
+  drive_license_back_photo?: string;
+  drive_contract_doc_id?: string;
+  notes?: string;
 }

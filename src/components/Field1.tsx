@@ -17,6 +17,8 @@ interface Field1Props {
   disabled?: boolean;
   style?: React.CSSProperties;
   required?: boolean;
+  min?: string | number;
+  max?: string | number;
 }
 
 const Field1: React.FC<Field1Props> = ({
@@ -34,7 +36,9 @@ const Field1: React.FC<Field1Props> = ({
   as = 'input',
   disabled = false,
   style,
-  required
+  required,
+  min,
+  max
 }) => {
   const isSelect = as === 'select';
   const isTextarea = as === 'textarea';
@@ -133,6 +137,8 @@ const Field1: React.FC<Field1Props> = ({
           onFocus={onFocus}
           onBlur={onBlur}
           disabled={disabled}
+          min={min}
+          max={max}
           className={`
             p-[11px_10px] text-[0.75rem] border-2 border-black rounded-[5px] bg-white font-bold uppercase
             focus:outline-none transition-all

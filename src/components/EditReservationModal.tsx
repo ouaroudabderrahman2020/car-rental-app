@@ -222,7 +222,9 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
       deposit_type: depositType
     };
 
-    const result = await gasService.generateContract(reservationDataToGAS);
+    const filename = `Contract_${clientName.replace(/\s+/g, '_')}_${new Date().getTime()}`;
+    const result = await gasService.generateContract(filename, reservationDataToGAS);
+
     if (result.success) {
       alert(t('reservations.form.contractSuccess', 'Contract generated successfully in Drive!'));
     } else {
@@ -263,7 +265,19 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
     const tasks = [];
     
     // 1. Export to Sheets
-    tasks.push(gasService.exportData('reservations', [resData]));
+    const rows = [[
+      resData.customer_name,
+      resData.customer_phone,
+      resData.car_brand,
+      resData.car_model,
+      resData.license_plate,
+      resData.start_date,
+      resData.end_date,
+      resData.total_price,
+      resData.status
+    ]];
+    tasks.push(gasService.exportData('Reservations', rows));
+
     
     // 2. Upload Pending File
     if (pendingFile) {
@@ -271,7 +285,9 @@ export default function EditReservationModal({ isOpen, onClose, reservationData 
     }
     
     // 3. Generate Contract
-    tasks.push(gasService.generateContract(resData));
+    const filename = `Contract_${resData.customer_name.replace(/\s+/g, '_')}_${new Date().getTime()}`;
+    tasks.push(gasService.generateContract(filename, resData));
+
     
     try {
       await Promise.allSettled(tasks);

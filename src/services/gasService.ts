@@ -19,36 +19,50 @@ export interface FileUploadData {
 
 export const gasService = {
   /**
-   * Uploads base64 data to Google Drive via GAS
+   * Universal fetch wrapper for GAS
    */
-  async uploadBase64(data: { base64Data: string; fileName: string; contentType: string }): Promise<{ success: boolean; fileUrl?: string; error?: string }> {
+  async _callGas(action: string, data: any) {
     if (!GAS_URL) {
       return { success: false, error: 'GAS_URL not configured.' };
     }
 
     try {
+      // NOTE: We use no-cors because GAS Web App redirects often cause CORS preflight failures in browser
+      // This means we won't be able to read the JSON response, but the action will trigger.
       await fetch(GAS_URL, {
         method: 'POST',
-        mode: 'no-cors',
+        mode: 'no-cors', 
         headers: {
           'Content-Type': 'text/plain',
         },
         body: JSON.stringify({
-          action: 'upload_file',
-          ...data
+          action,
+          data
         })
       });
-      return { success: true, fileUrl: 'Uploaded to Drive' };
+      return { success: true };
     } catch (error) {
-      console.error('GAS Upload Error:', error);
+      console.error(`GAS ${action} Error:`, error);
       return { success: false, error: 'Communication error with Google Services.' };
     }
   },
 
   /**
-   * Uploads a file to Google Drive via GAS (kept for backward compatibility or direct use)
+   * Uploads base64 data to Google Drive via GAS
    */
-  async uploadFile(file: File): Promise<{ success: boolean; fileUrl?: string; error?: string }> {
+  async uploadBase64(fileData: { base64Data: string; fileName: string; contentType: string; subFolder?: string }): Promise<{ success: boolean; error?: string }> {
+    return this._callGas('upload_file', {
+      filename: fileData.fileName,
+      mimeType: fileData.contentType,
+      base64Data: fileData.base64Data,
+      subFolder: fileData.subFolder
+    });
+  },
+
+  /**
+   * Uploads a file to Google Drive via GAS
+   */
+  async uploadFile(file: File, subFolder?: string): Promise<{ success: boolean; error?: string }> {
     if (file.size > MAX_FILE_SIZE) {
       return { success: false, error: 'File size exceeds 5MB limit.' };
     }
@@ -60,7 +74,8 @@ export const gasService = {
         const res = await this.uploadBase64({
           base64Data,
           fileName: file.name,
-          contentType: file.type
+          contentType: file.type,
+          subFolder
         });
         resolve(res);
       };
@@ -72,65 +87,20 @@ export const gasService = {
   /**
    * Exports data to Google Sheets via GAS
    */
-  async exportData(type: 'reservations' | 'fleet', data: any[]) {
-    if (!GAS_URL) {
-      return { success: false, error: 'GAS_URL not configured.' };
-    }
-
-    const sanitizedData = data.map(item => {
-      const newItem = { ...item };
-      for (const key in newItem) {
-        if (newItem[key] instanceof Date) {
-          newItem[key] = newItem[key].toISOString();
-        }
-      }
-      return newItem;
+  async exportData(sheetName: string, rows: any[][]) {
+    return this._callGas('export_data', {
+      sheetName,
+      rows
     });
-
-    try {
-      await fetch(GAS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'text/plain',
-        },
-        body: JSON.stringify({
-          action: 'export_data',
-          exportType: type,
-          payload: sanitizedData
-        })
-      });
-      return { success: true };
-    } catch (error) {
-      console.error('GAS Export Error:', error);
-      return { success: false, error: 'Export failed due to connection issues.' };
-    }
   },
 
   /**
    * Generates a contract from a template via GAS
    */
-  async generateContract(reservationData: any) {
-    if (!GAS_URL) {
-      return { success: false, error: 'GAS_URL not configured.' };
-    }
-
-    try {
-      await fetch(GAS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'text/plain',
-        },
-        body: JSON.stringify({
-          action: 'generate_contract',
-          reservation: reservationData
-        })
-      });
-      return { success: true };
-    } catch (error) {
-      console.error('Contract Generation Error:', error);
-      return { success: false, error: 'Contract generation failed.' };
-    }
+  async generateContract(filename: string, placeholders: Record<string, any>) {
+    return this._callGas('generate_contract', {
+      filename,
+      placeholders
+    });
   }
 };

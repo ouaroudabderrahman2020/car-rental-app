@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import AddCarModal from '../components/AddCarModal';
 import { SectionHeader } from '../components/SectionHeader';
 import CarDetailsModal from '../components/CarDetailsModal';
+import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../services/gasService';
 import { useStatus } from '../contexts/StatusContext';
@@ -65,7 +66,16 @@ export default function Fleet() {
   const handleExport = async () => {
     setIsExporting(true);
     setStatus(t('tools.imageToPdfTools.processing'), 'processing', 0);
-    const { success, error } = await gasService.exportData('fleet', fleetData);
+    const rows = fleetData.map(car => [
+      car.name,
+      car.plate,
+      car.daily_rate,
+      car.status,
+      car.odometer,
+      car.needsMaintenance ? 'Yes' : 'No'
+    ]);
+    const { success, error } = await gasService.exportData('Fleet', rows);
+
     if (!success) {
       setStatus(t('common.exportError'), 'error');
       alert(`${t('common.exportError')}: ${error}`);
@@ -107,110 +117,111 @@ export default function Fleet() {
         )}
 
       {/* Fleet Grid */}
-      <section className="py-lg">
-        <div className="max-w-[1440px] mx-auto px-margin v-section-gap">
-          {/* Action Toolbar */}
-          <SectionHeader 
-            title={t('fleet.inventory', 'Vehicle Inventory')}
-            actions={
-              <>
-                <button 
-                  onClick={handleExport}
-                  disabled={isExporting}
-                  className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
-                >
-                  {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
-                </button>
-                <button 
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  {t('fleet.addCar', 'ADD NEW CAR')}
-                </button>
-              </>
-            }
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {loading ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-white border border-slate-100 shadow-sm h-[400px] flex flex-col animate-pulse">
-                  <div className="h-1/2 bg-slate-200"></div>
-                  <div className="p-6 space-y-4 flex-grow">
-                    <div className="h-6 bg-slate-200 w-3/4"></div>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-slate-100 w-1/4"></div>
-                      <div className="h-4 bg-slate-200 w-1/2"></div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-slate-100 w-1/4"></div>
-                      <div className="h-6 bg-slate-200 w-1/3"></div>
-                    </div>
-                  </div>
-                  <div className="h-2 bg-slate-200 w-full mt-auto"></div>
+      <div className="py-lg">
+        <div className="max-w-[1440px] mx-auto">
+          <FormSection title={t('fleet.inventory', 'Vehicle Inventory')}>
+             <div className="w-full flex flex-col gap-8">
+              {/* Action Toolbar */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <button 
+                    onClick={handleExport}
+                    disabled={isExporting}
+                    className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 border border-white/10 disabled:opacity-50"
+                  >
+                    {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
+                  </button>
+                  <button 
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {t('fleet.addCar', 'ADD NEW CAR')}
+                  </button>
                 </div>
-              ))
-            ) : fleetData.length === 0 ? (
-              <div className="col-span-full py-20 bg-white border border-slate-100 shadow-sm text-center">
-                <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.noData', 'No vehicles found in fleet.')}</p>
               </div>
-            ) : (
-              fleetData.map((car) => (
-                <div 
-                  key={car.id} 
-                  onClick={() => handleOpenDetails(car)}
-                  className="car-card bg-white border border-slate-200 shadow-sm group flex flex-col h-full cursor-pointer hover:shadow-md transition-all"
-                >
-                  <div className="aspect-[3/4] overflow-hidden flex flex-col">
-                    <div className="h-1/2 overflow-hidden bg-slate-100 relative">
-                      <img 
-                        alt={car.name} 
-                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
-                        src={car.image}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = ''; // Clear broken src
-                          (e.target as HTMLImageElement).className = 'hidden';
-                        }}
-                      />
-                      {car.needsMaintenance && (
-                        <div className="absolute top-4 start-4 px-3 py-1 bg-workshop-amber text-white text-fluid-sm font-black uppercase tracking-widest industrial-shadow">
-                          {t('common.maintenance', 'Service Due')}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {loading ? (
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="bg-white border border-slate-100 shadow-sm h-[400px] flex flex-col animate-pulse">
+                      <div className="h-1/2 bg-slate-200"></div>
+                      <div className="p-6 space-y-4 flex-grow">
+                        <div className="h-6 bg-slate-200 w-3/4"></div>
+                        <div className="space-y-2">
+                          <div className="h-3 bg-slate-100 w-1/4"></div>
+                          <div className="h-4 bg-slate-200 w-1/2"></div>
                         </div>
-                      )}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-0 transition-opacity pointer-events-none">
-                        <CarIcon className="w-16 h-16 text-midnight" />
-                      </div>
-                    </div>
-                    <div className="p-6 flex-grow flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-bold text-fluid-base text-ink leading-tight mb-4">{car.name}</h3>
-                        <div className="space-y-3">
-                          <div className="flex flex-col">
-                            <span className="text-ink uppercase font-bold text-fluid-sm tracking-widest leading-none mb-1 opacity-70">{t('fleet.plateNumber', 'Plate Number')}</span>
-                            <span className="font-semibold text-midnight text-fluid-sm">{car.plate}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-ink uppercase font-bold text-fluid-sm tracking-widest leading-none mb-1 opacity-70">{t('fleet.dailyRate', 'Daily Rate')}</span>
-                            <span className="text-primary font-bold text-fluid-base">
-                              {t('common.price')}: ${car.daily_rate} {t('common.perDay')}
-                            </span>
-                          </div>
+                        <div className="space-y-2">
+                          <div className="h-3 bg-slate-100 w-1/4"></div>
+                          <div className="h-6 bg-slate-200 w-1/3"></div>
                         </div>
                       </div>
+                      <div className="h-2 bg-slate-200 w-full mt-auto"></div>
                     </div>
-                    <div 
-                      className={`h-2 ${car.statusColor} w-full mt-auto cursor-help`} 
-                      title={car.status}
-                    ></div>
+                  ))
+                ) : fleetData.length === 0 ? (
+                  <div className="col-span-full py-20 bg-white border border-slate-100 shadow-sm text-center">
+                    <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.noData', 'No vehicles found in fleet.')}</p>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ) : (
+                  fleetData.map((car) => (
+                    <div 
+                      key={car.id} 
+                      onClick={() => handleOpenDetails(car)}
+                      className="car-card bg-white border border-slate-200 shadow-sm group flex flex-col h-full cursor-pointer hover:shadow-md transition-all"
+                    >
+                      <div className="aspect-[3/4] overflow-hidden flex flex-col">
+                        <div className="h-1/2 overflow-hidden bg-slate-100 relative">
+                          <img 
+                            alt={car.name} 
+                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
+                            src={car.image}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = ''; // Clear broken src
+                              (e.target as HTMLImageElement).className = 'hidden';
+                            }}
+                          />
+                          {car.needsMaintenance && (
+                            <div className="absolute top-4 start-4 px-3 py-1 bg-workshop-amber text-white text-fluid-sm font-black uppercase tracking-widest industrial-shadow">
+                              {t('common.maintenance', 'Service Due')}
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-0 transition-opacity pointer-events-none">
+                            <CarIcon className="w-16 h-16 text-midnight" />
+                          </div>
+                        </div>
+                        <div className="p-6 flex-grow flex flex-col justify-between">
+                          <div>
+                            <h3 className="font-bold text-fluid-base text-ink leading-tight mb-4">{car.name}</h3>
+                            <div className="space-y-3">
+                              <div className="flex flex-col">
+                                <span className="text-ink uppercase font-bold text-fluid-sm tracking-widest leading-none mb-1 opacity-70">{t('fleet.plateNumber', 'Plate Number')}</span>
+                                <span className="font-semibold text-midnight text-fluid-sm">{car.plate}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-ink uppercase font-bold text-fluid-sm tracking-widest leading-none mb-1 opacity-70">{t('fleet.dailyRate', 'Daily Rate')}</span>
+                                <span className="text-primary font-bold text-fluid-base">
+                                  {t('common.price')}: ${car.daily_rate} {t('common.perDay')}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div 
+                          className={`h-2 ${car.statusColor} w-full mt-auto cursor-help`} 
+                          title={car.status}
+                        ></div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </FormSection>
         </div>
-      </section>
+      </div>
     </div>
   </Layout>
 );
