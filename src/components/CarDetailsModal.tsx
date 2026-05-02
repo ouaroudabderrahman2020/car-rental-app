@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Check, Edit, Lock, Loader2, Monitor 
+  X, Check, Edit, Lock, Loader2, Monitor, Trash2 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { callGasAction } from '../lib/gas';
+import { useStatus } from '../contexts/StatusContext';
 import { Car } from '../types';
 import CarForm, { MaintenanceInterval, EssentialItem } from './CarForm';
+import Button1 from './Button1';
 import ImageToPdf from './tools/ImageToPdf';
 
 interface CarDetailsModalProps {
@@ -18,6 +20,7 @@ interface CarDetailsModalProps {
 
 export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetailsModalProps) {
   const { t } = useTranslation();
+  const { setStatus: setGlobalStatus } = useStatus();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -105,12 +108,14 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
   const handleConfirm = async () => {
     if (!carData?.id) return;
     setIsSubmitting(true);
+    setGlobalStatus(t('common.savingCar'), 'processing', 0);
     try {
       let finalImageUrl = imageUrl;
       let finalDocUrl = docUrl;
 
       // Handle File Uploads via GAS if present
       if (carImage) {
+        setGlobalStatus(t('common.uploadingImage'), 'processing');
         const imgRes = await callGasAction('upload_to_drive', carImage);
         if (imgRes.status === 'success') {
           finalImageUrl = imgRes.data.url;
@@ -118,6 +123,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
       }
 
       if (docFile) {
+        setGlobalStatus(t('common.uploadingDoc'), 'processing');
         const docRes = await callGasAction('upload_to_drive', docFile);
         if (docRes.status === 'success') {
           finalDocUrl = docRes.data.url;
@@ -154,11 +160,13 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
 
       if (error) throw error;
 
+      setGlobalStatus(t('common.dataSaved'), 'success');
       alert(t('carDetails.updateSuccess'));
       setIsEditMode(false);
       onClose();
     } catch (error: any) {
       console.error('Update error:', error);
+      setGlobalStatus(t('common.error'), 'error');
       alert(`${t('carDetails.updateError')}: ${error.message || ''}`);
     } finally {
       setIsSubmitting(false);
@@ -168,15 +176,22 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
   const handleRemoveCar = async () => {
     if (!carData?.id) return;
     if (confirm(t('carDetails.removeCarConfirm'))) {
+      setIsSubmitting(true);
+      setGlobalStatus(t('common.deleting'), 'processing', 0);
       try {
         const { error } = await supabase
           .from('cars')
           .delete()
           .eq('id', carData.id);
         if (error) throw error;
+        setGlobalStatus(t('common.deleted'), 'success');
         onClose();
-      } catch (error) {
+      } catch (error: any) {
+        console.error('Delete error:', error);
+        setGlobalStatus(t('common.error'), 'error');
         alert(t('common.error'));
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -242,27 +257,33 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
         />
 
           {/* Footer */}
-          <div className="px-6 py-8 sm:px-10 bg-midnight-ink flex flex-col sm:flex-row gap-4 shrink-0">
-            <button 
+          <div className="px-6 py-8 sm:px-10 bg-slate-50 border-t border-black flex flex-col sm:flex-row gap-4 shrink-0">
+            <Button1 
               onClick={onClose}
-              className="w-full sm:flex-1 px-8 py-5 text-white font-bold uppercase tracking-[0.2em] hover:bg-white/10 transition-colors border border-white/20 min-h-[60px]"
+              className="sm:flex-1 !bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"
             >
-              {t('common.cancel')}
-            </button>
-            <button 
-              onClick={handleRemoveCar}
-              className="w-full sm:flex-1 px-8 py-5 bg-red-600 text-white font-black uppercase tracking-[0.2em] industrial-shadow hover:bg-red-700 active:scale-[0.98] transition-all min-h-[60px]"
-            >
-              {t('carDetails.removeCar')}
-            </button>
-            <button 
-              disabled={isSubmitting}
-              onClick={handleConfirm}
-              className={`w-full sm:flex-[2] px-8 py-5 bg-primary text-white font-black uppercase tracking-[0.2em] industrial-shadow active:scale-[0.98] transition-all min-h-[60px] flex items-center justify-center gap-2 ${!isEditMode || isSubmitting ? 'opacity-50 pointer-events-none' : ''}`}
-            >
-              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isSubmitting ? t('carForm.processing') : t('carDetails.lockSave')}
-            </button>
+              {isEditMode ? t('common.cancel') : t('common.close')}
+            </Button1>
+            {isEditMode && (
+              <Button1 
+                onClick={handleRemoveCar}
+                disabled={isSubmitting}
+                className="sm:flex-1 !bg-red-600 !border-red-600 hover:!bg-red-700 hover:!border-red-700"
+                icon={<Trash2 className="w-5 h-5" />}
+              >
+                {t('carDetails.removeCar')}
+              </Button1>
+            )}
+            {isEditMode && (
+              <Button1 
+                disabled={isSubmitting}
+                onClick={handleConfirm}
+                className="sm:flex-[2]"
+                icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+              >
+                {isSubmitting ? t('carForm.processing') : t('carDetails.lockSave')}
+              </Button1>
+            )}
           </div>
       </motion.div>
 
