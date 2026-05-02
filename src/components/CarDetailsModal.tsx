@@ -116,7 +116,11 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
       // Handle File Uploads via GAS if present
       if (carImage) {
         setGlobalStatus(t('common.uploadingImage'), 'processing');
-        const imgRes = await callGasAction('upload_to_drive', carImage);
+        const imgRes = await callGasAction('upload_to_drive', {
+          ...carImage,
+          category: 'CARS',
+          entityIdentifier: plate
+        });
         if (imgRes.status === 'success') {
           finalImageUrl = imgRes.data.url;
         } else {
@@ -126,7 +130,11 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
 
       if (docFile) {
         setGlobalStatus(t('common.uploadingDoc'), 'processing');
-        const docRes = await callGasAction('upload_to_drive', docFile);
+        const docRes = await callGasAction('upload_to_drive', {
+          ...docFile,
+          category: 'CARS',
+          entityIdentifier: plate
+        });
         if (docRes.status === 'success') {
           finalDocUrl = docRes.data.url;
         } else {

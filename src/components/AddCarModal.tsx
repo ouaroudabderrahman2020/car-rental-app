@@ -106,12 +106,15 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
       // Handle File Uploads via GAS if present
       if (carImage) {
         setStatus(t('common.uploadingImage', 'Uploading car image...'), 'processing');
-        const imgRes = await callGasAction('upload_to_drive', carImage);
+        const imgRes = await callGasAction('upload_to_drive', {
+          ...carImage,
+          category: 'CARS',
+          entityIdentifier: plate
+        });
         if (imgRes.status === 'success') {
           finalImageUrl = imgRes.data.url;
         } else {
           console.warn('Image upload failed:', imgRes.message);
-          // We proceed with the default image or existing one
         }
       }
 
@@ -119,7 +122,8 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
         setStatus(t('common.uploadingDoc', 'Uploading car documentation...'), 'processing');
         const docRes = await callGasAction('upload_to_drive', {
           ...docFile,
-          folderId: import.meta.env.VITE_DRIVE_FOLDER_ID // Optional: target folder for documents
+          category: 'CARS',
+          entityIdentifier: plate
         });
         if (docRes.status === 'success') {
           finalDocUrl = docRes.data.url;
