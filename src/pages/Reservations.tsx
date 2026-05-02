@@ -7,24 +7,8 @@ import ReservationModal from '../components/ReservationModal';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../lib/gas';
-import { Reservation } from '../types';
+import { Reservation, FormattedReservation } from '../types';
 import { exportToCSV } from '../lib/utils';
-
-interface FormattedReservation extends Reservation {
-  id_short: string;
-  client: string;
-  carName: string;
-  carPlate: string;
-  pickup: string;
-  return: string;
-  state: string;
-  price: string;
-  statusColor?: string;
-  clientType?: string;
-  mileage?: string;
-  durationString?: string;
-  hours?: string;
-}
 
 export default function Reservations() {
   const { t, i18n } = useTranslation();

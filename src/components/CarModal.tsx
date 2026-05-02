@@ -5,52 +5,53 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
-import { callGasAction } from '../lib/gas';
+import { gasService } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
-import { Car } from '../types';
-import CarForm, { MaintenanceInterval, EssentialItem } from './CarForm';
+import { Car, MaintenanceInterval, EssentialItem } from '../types';
+import CarForm from './CarForm';
 import Button1 from './Button1';
 import ImageToPdf from './tools/ImageToPdf';
 import BaseModal from './BaseModal';
 
-interface CarDetailsModalProps {
+interface CarModalProps {
   isOpen: boolean;
   onClose: () => void;
-  carData: Car;
+  mode: 'add' | 'edit';
+  carData?: Car | null;
 }
 
-export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetailsModalProps) {
+export default function CarModal({ isOpen, onClose, mode, carData }: CarModalProps) {
   const { t } = useTranslation();
   const { setStatus: setGlobalStatus } = useStatus();
-  // ... rest of the component state/logic ...
-  const [isEditMode, setIsEditMode] = useState(false);
+  
+  const [isEditMode, setIsEditMode] = useState(mode === 'add');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
-  const [brand, setBrand] = useState(carData?.brand || '');
-  const [model, setModel] = useState(carData?.model || '');
-  const [plate, setPlate] = useState(carData?.plate || '');
-  const [color, setColor] = useState(carData?.color || '');
-  const [fuelType, setFuelType] = useState<any>(carData?.fuel_type || 'Petrol');
-  const [transmission, setTransmission] = useState<any>(carData?.transmission || 'Automatic');
-  const [odometer, setOdometer] = useState(carData?.odometer?.toString() || '0');
-  const [dailyRate, setDailyRate] = useState(carData?.daily_rate?.toString() || '0');
-  const [status, setStatus] = useState<any>(carData?.status || 'Available');
-  const [damageNotes, setDamageNotes] = useState(carData?.damage_notes || '');
-  const [gpsSim, setGpsSim] = useState(carData?.gps_sim || '');
-  const [seats, setSeats] = useState(carData?.seats?.toString() || '5');
-  const [startingFuelLevel, setStartingFuelLevel] = useState(carData?.starting_fuel_level?.toString() || '100');
+  const [brand, setBrand] = useState('');
+  const [model, setModel] = useState('');
+  const [plate, setPlate] = useState('');
+  const [color, setColor] = useState('');
+  const [fuelType, setFuelType] = useState<any>('Petrol');
+  const [transmission, setTransmission] = useState<any>('Automatic');
+  const [odometer, setOdometer] = useState('0');
+  const [dailyRate, setDailyRate] = useState('0');
+  const [status, setStatus] = useState<any>('Available');
+  const [damageNotes, setDamageNotes] = useState('');
+  const [gpsSim, setGpsSim] = useState('');
+  const [seats, setSeats] = useState('5');
+  const [startingFuelLevel, setStartingFuelLevel] = useState('100');
 
-  const [registrationExpiry, setRegistrationExpiry] = useState(carData?.registration_expiry || '');
-  const [insuranceExpiry, setInsuranceExpiry] = useState(carData?.insurance_expiry || '');
-  const [techInspectionExpiry, setTechInspectionExpiry] = useState(carData?.tech_inspection_expiry || '');
-  const [taxRenewalExpiry, setTaxRenewalExpiry] = useState(carData?.tax_renewal_expiry || '');
+  const [registrationExpiry, setRegistrationExpiry] = useState('');
+  const [insuranceExpiry, setInsuranceExpiry] = useState('');
+  const [techInspectionExpiry, setTechInspectionExpiry] = useState('');
+  const [taxRenewalExpiry, setTaxRenewalExpiry] = useState('');
 
   // Media & Files
   const [carImage, setCarImage] = useState<{ base64Data: string; fileName: string; contentType: string } | null>(null);
   const [docFile, setDocFile] = useState<{ base64Data: string; fileName: string; contentType: string } | null>(null);
-  const [imageUrl, setImageUrl] = useState(carData?.image_url || '');
-  const [docUrl, setDocUrl] = useState(carData?.documentation_url || '');
+  const [imageUrl, setImageUrl] = useState('');
+  const [docUrl, setDocUrl] = useState('');
   const [showPdfTool, setShowPdfTool] = useState(false);
 
   // Dynamic Lists State
@@ -60,32 +61,66 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
   const [intervals, setIntervals] = useState<MaintenanceInterval[]>([]);
 
   useEffect(() => {
-    if (carData) {
-      setBrand(carData.brand || '');
-      setModel(carData.model || '');
-      setPlate(carData.plate || '');
-      setColor(carData.color || '');
-      setFuelType(carData.fuel_type || 'Petrol');
-      setTransmission(carData.transmission || 'Automatic');
-      setOdometer(carData.odometer?.toString() || '0');
-      setDailyRate(carData.daily_rate?.toString() || '0');
-      setStatus(carData.status || 'Available');
-      setDamageNotes(carData.damage_notes || '');
-      setGpsSim(carData.gps_sim || '');
-      setSeats(carData.seats?.toString() || '5');
-      setStartingFuelLevel(carData.starting_fuel_level?.toString() || '100');
-      setRegistrationExpiry(carData.registration_expiry || '');
-      setInsuranceExpiry(carData.insurance_expiry || '');
-      setTechInspectionExpiry(carData.tech_inspection_expiry || '');
-      setTaxRenewalExpiry(carData.tax_renewal_expiry || '');
-      setImageUrl(carData.image_url || '');
-      setDocUrl(carData.documentation_url || '');
+    if (isOpen) {
+      if (mode === 'edit' && carData) {
+        setBrand(carData.brand || '');
+        setModel(carData.model || '');
+        setPlate(carData.plate || '');
+        setColor(carData.color || '');
+        setFuelType(carData.fuel_type || 'Petrol');
+        setTransmission(carData.transmission || 'Automatic');
+        setOdometer(carData.odometer?.toString() || '0');
+        setDailyRate(carData.daily_rate?.toString() || '0');
+        setStatus(carData.status || 'Available');
+        setDamageNotes(carData.damage_notes || '');
+        setGpsSim(carData.gps_sim || '');
+        setSeats(carData.seats?.toString() || '5');
+        setStartingFuelLevel(carData.starting_fuel_level?.toString() || '100');
+        setRegistrationExpiry(carData.registration_expiry || '');
+        setInsuranceExpiry(carData.insurance_expiry || '');
+        setTechInspectionExpiry(carData.tech_inspection_expiry || '');
+        setTaxRenewalExpiry(carData.tax_renewal_expiry || '');
+        setImageUrl(carData.image_url || '');
+        setDocUrl(carData.documentation_url || '');
+        setEssentials(carData.essentials || []);
+        setIntervals(carData.intervals || []);
+        setIsEditMode(false);
+      } else {
+        // Add mode defaults
+        setBrand('');
+        setModel('');
+        setPlate('');
+        setColor('');
+        setFuelType('Petrol');
+        setTransmission('Automatic');
+        setOdometer('0');
+        setDailyRate('0');
+        setStatus('Available');
+        setDamageNotes('');
+        setGpsSim('');
+        setSeats('5');
+        setStartingFuelLevel('100');
+        setRegistrationExpiry('');
+        setInsuranceExpiry('');
+        setTechInspectionExpiry('');
+        setTaxRenewalExpiry('');
+        setImageUrl('');
+        setDocUrl('');
+        setEssentials([
+          { id: '1', name: 'Safety Vest', checked: true },
+          { id: '2', name: 'Warning Triangle', checked: true },
+          { id: '3', name: 'Fire Extinguisher', checked: true },
+          { id: '4', name: 'Spare Tire', checked: true },
+          { id: '5', name: 'Lifting Jack', checked: true },
+          { id: '6', name: 'First Aid Kit', checked: true },
+        ]);
+        setIntervals([{ id: '1', type: 'Engine Oil', value: '', lastCompleted: '' }]);
+        setIsEditMode(true);
+      }
       setCarImage(null);
       setDocFile(null);
-      setEssentials(carData.essentials || []);
-      setIntervals(carData.intervals || []);
     }
-  }, [carData, isOpen]);
+  }, [carData, isOpen, mode]);
 
   const handlePdfToolAssign = async (pdfResults: any[]) => {
     if (pdfResults.length === 0) return;
@@ -107,18 +142,29 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
     }
   };
 
+  const validatePlate = (p: string) => /^[a-zA-Z0-9-\s]{2,15}$/.test(p);
+
   const handleConfirm = async () => {
-    if (!carData?.id) return;
+    if (!brand || !model || !plate || !dailyRate) {
+      alert(t('carForm.fillRequired'));
+      return;
+    }
+
+    if (!validatePlate(plate)) {
+      alert(t('carForm.invalidPlate'));
+      return;
+    }
+
     setIsSubmitting(true);
     setGlobalStatus(t('common.savingCar'), 'processing', 0);
     try {
-      let finalImageUrl = imageUrl;
+      let finalImageUrl = imageUrl || 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800';
       let finalDocUrl = docUrl;
 
       // Handle File Uploads via GAS if present
       if (carImage) {
         setGlobalStatus(t('common.uploadingImage'), 'processing');
-        const imgRes = await callGasAction('upload_to_drive', {
+        const imgRes = await gasService.uploadBase64({
           ...carImage,
           category: 'CARS',
           entityIdentifier: plate
@@ -132,7 +178,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
 
       if (docFile) {
         setGlobalStatus(t('common.uploadingDoc'), 'processing');
-        const docRes = await callGasAction('upload_to_drive', {
+        const docRes = await gasService.uploadBase64({
           ...docFile,
           category: 'CARS',
           entityIdentifier: plate
@@ -144,39 +190,46 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
         }
       }
 
-      const { error } = await supabase
-        .from('cars')
-        .update({
-          brand,
-          model,
-          plate,
-          color,
-          fuel_type: fuelType,
-          transmission,
-          odometer: parseInt(odometer) || 0,
-          daily_rate: parseFloat(dailyRate),
-          status,
-          starting_fuel_level: parseInt(startingFuelLevel) || 100,
-          gps_sim: gpsSim,
-          seats: parseInt(seats) || 5,
-          damage_notes: damageNotes,
-          registration_expiry: registrationExpiry || null,
-          insurance_expiry: insuranceExpiry || null,
-          tech_inspection_expiry: techInspectionExpiry || null,
-          tax_renewal_expiry: taxRenewalExpiry || null,
-          image_url: finalImageUrl,
-          documentation_url: finalDocUrl,
-          essentials,
-          intervals,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', carData.id);
+      const payload = {
+        brand,
+        model,
+        plate,
+        color,
+        fuel_type: fuelType,
+        transmission,
+        odometer: parseInt(odometer) || 0,
+        daily_rate: parseFloat(dailyRate),
+        status,
+        starting_fuel_level: parseInt(startingFuelLevel) || 100,
+        gps_sim: gpsSim,
+        seats: parseInt(seats) || 5,
+        damage_notes: damageNotes,
+        registration_expiry: registrationExpiry || null,
+        insurance_expiry: insuranceExpiry || null,
+        tech_inspection_expiry: techInspectionExpiry || null,
+        tax_renewal_expiry: taxRenewalExpiry || null,
+        image_url: finalImageUrl,
+        documentation_url: finalDocUrl,
+        essentials,
+        intervals,
+      };
 
-      if (error) throw error;
+      if (mode === 'edit' && carData?.id) {
+        const { error } = await supabase
+          .from('cars')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', carData.id);
+        if (error) throw error;
+        alert(t('carDetails.updateSuccess'));
+      } else {
+        const { error } = await supabase
+          .from('cars')
+          .insert([payload]);
+        if (error) throw error;
+        alert(t('carForm.success'));
+      }
 
       setGlobalStatus(t('common.dataSaved'), 'success');
-      alert(t('carDetails.updateSuccess'));
-      setIsEditMode(false);
       onClose();
     } catch (error: any) {
       console.error('Update error:', error);
@@ -214,21 +267,25 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
     <BaseModal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={t('carDetails.title')}
+      title={mode === 'add' ? t('carForm.title') : t('carDetails.title')}
     >
       <div className="bg-white w-full">
         {/* Header toolbar */}
         <div className="px-6 py-4 sm:px-10 bg-midnight-ink flex flex-wrap justify-between items-center shrink-0 border-b border-black">
           <div className="flex items-center gap-4">
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">{t('carDetails.subtitle')}</span>
+            <span className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">
+              {mode === 'add' ? t('carForm.subtitle') : t('carDetails.subtitle')}
+            </span>
           </div>
-          <button 
-            onClick={() => setIsEditMode(!isEditMode)}
-            className={`flex items-center gap-2 px-6 py-2.5 text-white font-bold text-xs uppercase tracking-widest industrial-shadow transition-all ${isEditMode ? 'bg-slate-700' : 'bg-primary'}`}
-          >
-            {isEditMode ? <Lock className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-            <span>{isEditMode ? t('carDetails.lockSave') : t('carDetails.editProfile')}</span>
-          </button>
+          {mode === 'edit' && (
+            <button 
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`flex items-center gap-2 px-6 py-2.5 text-white font-bold text-xs uppercase tracking-widest industrial-shadow transition-all ${isEditMode ? 'bg-slate-700' : 'bg-primary'}`}
+            >
+              {isEditMode ? <Lock className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
+              <span>{isEditMode ? t('carDetails.lockSave') : t('carDetails.editProfile')}</span>
+            </button>
+          )}
         </div>
 
         {/* Content */}
@@ -268,9 +325,9 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
             onClick={onClose}
             className="sm:flex-1 !bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"
           >
-            {isEditMode ? t('common.cancel') : t('common.close')}
+            {mode === 'edit' && !isEditMode ? t('common.close') : t('common.cancel')}
           </Button1>
-          {isEditMode && (
+          {mode === 'edit' && isEditMode && (
             <Button1 
               onClick={handleRemoveCar}
               disabled={isSubmitting}
@@ -287,7 +344,7 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
               className="sm:flex-[2]"
               icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
             >
-              {isSubmitting ? t('carForm.processing') : t('carDetails.lockSave')}
+              {isSubmitting ? t('carForm.processing') : (mode === 'add' ? t('carForm.confirm') : t('carDetails.lockSave'))}
             </Button1>
           )}
         </div>

@@ -8,19 +8,7 @@ import { useTranslation } from 'react-i18next';
 import Button1 from './Button1';
 import Field1 from './Field1';
 import FormSection from './FormSection';
-
-export interface MaintenanceInterval {
-  id: string;
-  type: string;
-  value: string;
-  lastCompleted: string;
-}
-
-export interface EssentialItem {
-  id: string;
-  name: string;
-  checked: boolean;
-}
+import { MaintenanceInterval, EssentialItem } from '../types';
 
 interface CarFormProps {
   // Vehicle Specs

@@ -2,6 +2,19 @@ export type CarStatus = 'Available' | 'Rented' | 'In Maintenance' | 'Workshop' |
 export type ReservationStatus = 'Pending' | 'Confirmed' | 'In Progress' | 'Completed' | 'Cancelled' | 'Overdue';
 export type FuelType = 'Petrol' | 'Diesel' | 'Electric' | 'Hybrid';
 
+export interface MaintenanceInterval {
+  id: string;
+  type: string;
+  value: string;
+  lastCompleted: string;
+}
+
+export interface EssentialItem {
+  id: string;
+  name: string;
+  checked: boolean;
+}
+
 export interface Car {
   id: string;
   brand: string;
@@ -25,8 +38,18 @@ export interface Car {
   tax_renewal_expiry?: string;
   created_at: string;
   updated_at: string;
-  essentials?: any[];
-  intervals?: any[];
+  essentials?: EssentialItem[];
+  intervals?: MaintenanceInterval[];
+}
+
+export interface FormattedCar extends Car {
+  name: string;
+  statusColor?: string;
+  rentedBy?: string;
+  returnDate?: string;
+  needsMaintenance?: boolean;
+  rate?: string;
+  image?: string;
 }
 
 export interface Reservation {
@@ -52,6 +75,22 @@ export interface Reservation {
   rating?: number;
   created_at: string;
   car?: Car;
+}
+
+export interface FormattedReservation extends Reservation {
+  id_short: string;
+  client: string;
+  carName: string;
+  carPlate: string;
+  pickup: string;
+  return: string;
+  state: string;
+  price: string;
+  statusColor?: string;
+  clientType?: string;
+  mileage?: string;
+  durationString?: string;
+  hours?: string;
 }
 
 export interface Customer {

@@ -2,29 +2,20 @@ import { Plus, Car as CarIcon, Loader2, Download, FileSpreadsheet } from 'lucide
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
-import AddCarModal from '../components/AddCarModal';
+import CarModal from '../components/CarModal';
 import { SectionHeader } from '../components/SectionHeader';
-import CarDetailsModal from '../components/CarDetailsModal';
 import FormSection from '../components/FormSection';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
-import { Car } from '../types';
+import { Car, FormattedCar } from '../types';
 import { exportToCSV } from '../lib/utils';
-
-interface FormattedCar extends Car {
-  name: string;
-  rate: string;
-  statusColor: string;
-  needsMaintenance: boolean;
-  image: string;
-}
 
 export default function Fleet() {
   const { t, i18n } = useTranslation();
   const { setStatus } = useStatus();
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<FormattedCar | null>(null);
   const [fleetData, setFleetData] = useState<FormattedCar[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +102,14 @@ export default function Fleet() {
 
   const handleOpenDetails = (car: FormattedCar) => {
     setSelectedCar(car);
-    setIsDetailsModalOpen(true);
+    setModalMode('edit');
+    setIsModalOpen(true);
+  };
+
+  const handleAddCar = () => {
+    setSelectedCar(null);
+    setModalMode('add');
+    setIsModalOpen(true);
   };
 
   const filteredFleet = fleetData.filter(car => {
@@ -124,23 +122,15 @@ export default function Fleet() {
   return (
     <Layout title={t('nav.fleet')}>
       <div className="w-full bg-white min-h-full pb-10">
-        <AddCarModal 
-          isOpen={isAddModalOpen} 
+        <CarModal 
+          isOpen={isModalOpen}
+          mode={modalMode}
+          carData={selectedCar}
           onClose={() => {
-            setIsAddModalOpen(false);
+            setIsModalOpen(false);
             fetchFleet();
-          }} 
+          }}
         />
-        {selectedCar && (
-          <CarDetailsModal
-            isOpen={isDetailsModalOpen}
-            onClose={() => {
-              setIsDetailsModalOpen(false);
-              fetchFleet();
-            }}
-            carData={selectedCar}
-          />
-        )}
 
       {/* Fleet Grid */}
       <div className="py-lg">
@@ -194,7 +184,7 @@ export default function Fleet() {
                       {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
                     </button>
                   <button 
-                    onClick={() => setIsAddModalOpen(true)}
+                    onClick={handleAddCar}
                     className="px-6 py-2.5 bg-primary text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />

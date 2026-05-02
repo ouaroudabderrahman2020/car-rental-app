@@ -6,8 +6,7 @@ import { supabase } from '../lib/supabase';
 import { Customer, Reservation } from '../types';
 import Layout from '../components/Layout';
 import { SectionHeader } from '../components/SectionHeader';
-import ClientDetailsModal from '../components/ClientDetailsModal';
-import AddClientModal from '../components/AddClientModal';
+import ClientModal from '../components/ClientModal';
 import FormSection from '../components/FormSection';
 import { useStatus } from '../contexts/StatusContext';
 
@@ -18,9 +17,10 @@ export default function ClientDashboard() {
   const [clients, setClients] = useState<Customer[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Customer | null>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -83,56 +83,16 @@ export default function ClientDashboard() {
     client.phone.includes(searchTerm)
   );
 
-  const handleUpdateClient = async (updatedClient: Customer) => {
-    setStatus(t('common.saving'), 'processing', 0);
-    try {
-      const { error } = await supabase
-        .from('customers')
-        .update({
-          name: updatedClient.name,
-          national_id: updatedClient.national_id,
-          id_card_number: updatedClient.national_id,
-          dob: updatedClient.dob,
-          nationality: updatedClient.nationality,
-          license_number: updatedClient.license_number,
-          license_expiry: updatedClient.license_expiry,
-          license_issue: updatedClient.license_issue,
-          phone: updatedClient.phone,
-          email: updatedClient.email,
-          address: updatedClient.address,
-          trust_rank: updatedClient.trust_rank,
-          notes: updatedClient.notes,
-          is_blacklisted: updatedClient.is_blacklisted,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', updatedClient.id);
-      
-      if (error) throw error;
-      setStatus(t('common.success'), 'success');
-      fetchData();
-    } catch (err: any) {
-      console.error('Update error:', err);
-      setStatus(t('common.error'), 'error');
-      alert(`${t('common.error')}: ${err.message || ''}`);
-    }
+  const handleOpenDetails = (client: Customer) => {
+    setSelectedClient(client);
+    setModalMode('edit');
+    setIsModalOpen(true);
   };
 
-  const handleDeleteClient = async (id: string) => {
-    setStatus(t('common.deleting', 'Deleting...'), 'processing', 0);
-    try {
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      setStatus(t('common.success'), 'success');
-      fetchData();
-    } catch (err: any) {
-      console.error('Delete error:', err);
-      setStatus(t('common.error'), 'error');
-      alert(`${t('common.error')}: ${err.message || ''}`);
-    }
+  const handleAddClient = () => {
+    setSelectedClient(null);
+    setModalMode('add');
+    setIsModalOpen(true);
   };
 
   return (
@@ -154,7 +114,7 @@ export default function ClientDashboard() {
                   />
                 </div>
 
-                <button onClick={() => setIsAddModalOpen(true)} className="bg-midnight-ink text-white py-4 px-8 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-widest text-fluid-sm shrink-0">
+                <button onClick={handleAddClient} className="bg-midnight-ink text-white py-4 px-8 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-widest text-fluid-sm shrink-0">
                   <Plus className="w-5 h-5" />
                   {t('common.add')}
                 </button>
@@ -163,7 +123,7 @@ export default function ClientDashboard() {
               {/* Filtered Clients Card Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
                 {filteredClients.map(client => (
-                  <div key={client.id} className="bg-white p-4 border border-slate-200 cursor-pointer hover:shadow-md transition-all shadow-sm group" onClick={() => { setSelectedClient(client); setIsDetailsModalOpen(true); }}>
+                  <div key={client.id} className="bg-white p-4 border border-slate-200 cursor-pointer hover:shadow-md transition-all shadow-sm group" onClick={() => handleOpenDetails(client)}>
                     <p className="font-bold text-sm truncate group-hover:text-primary transition-colors">{client.name}</p>
                     <p className="text-xs text-slate-500 truncate">{client.phone}</p>
                   </div>
@@ -204,10 +164,7 @@ export default function ClientDashboard() {
                           {filteredClients.map((client) => (
                             <tr 
                               key={client.id}
-                              onClick={() => {
-                                setSelectedClient(client);
-                                setIsDetailsModalOpen(true);
-                              }}
+                              onClick={() => handleOpenDetails(client)}
                               className="group hover:bg-white cursor-pointer transition-colors"
                             >
                               {/* Customer Info */}
@@ -288,21 +245,13 @@ export default function ClientDashboard() {
           </FormSection>
         </div>
 
-        <ClientDetailsModal 
-          isOpen={isDetailsModalOpen}
-          onClose={() => setIsDetailsModalOpen(false)}
+        <ClientModal 
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          mode={modalMode}
           client={selectedClient}
           reservations={reservations}
-          onUpdate={handleUpdateClient}
-          onDelete={handleDeleteClient}
-        />
-        <AddClientModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onConfirm={(client) => {
-            fetchData();
-            setIsAddModalOpen(false);
-          }}
+          onRefresh={fetchData}
         />
       </div>
     </Layout>
