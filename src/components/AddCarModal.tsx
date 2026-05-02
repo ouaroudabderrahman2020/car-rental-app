@@ -109,6 +109,9 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
         const imgRes = await callGasAction('upload_to_drive', carImage);
         if (imgRes.status === 'success') {
           finalImageUrl = imgRes.data.url;
+        } else {
+          console.warn('Image upload failed:', imgRes.message);
+          // We proceed with the default image or existing one
         }
       }
 
@@ -120,6 +123,8 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
         });
         if (docRes.status === 'success') {
           finalDocUrl = docRes.data.url;
+        } else {
+          console.warn('Doc upload failed:', docRes.message);
         }
       }
 

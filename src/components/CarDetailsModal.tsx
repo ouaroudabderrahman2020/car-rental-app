@@ -119,6 +119,8 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
         const imgRes = await callGasAction('upload_to_drive', carImage);
         if (imgRes.status === 'success') {
           finalImageUrl = imgRes.data.url;
+        } else {
+          console.warn('Image upload failed:', imgRes.message);
         }
       }
 
@@ -127,6 +129,8 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
         const docRes = await callGasAction('upload_to_drive', docFile);
         if (docRes.status === 'success') {
           finalDocUrl = docRes.data.url;
+        } else {
+          console.warn('Doc upload failed:', docRes.message);
         }
       }
 

@@ -6,8 +6,8 @@ const GAS_WEB_APP_URL = import.meta.env.VITE_GAS_WEB_APP_URL || '';
 
 export async function callGasAction(action: string, payload: any) {
   if (!GAS_WEB_APP_URL) {
-    console.error('GAS_WEB_APP_URL is not defined in environment variables.');
-    throw new Error('Backend integration not configured.');
+    console.warn('GAS_WEB_APP_URL is not defined. Skipping backend action:', action);
+    return { status: 'error', message: 'Backend integration URL missing in environment variables.' };
   }
 
   try {
