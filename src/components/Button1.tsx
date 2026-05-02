@@ -1,12 +1,13 @@
 import React from 'react';
 
 interface Button1Props {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
   icon?: React.ReactNode;
+  title?: string;
 }
 
 const Button1: React.FC<Button1Props> = ({ 
@@ -15,13 +16,15 @@ const Button1: React.FC<Button1Props> = ({
   disabled, 
   type = 'button', 
   className = '',
-  icon
+  icon,
+  title
 }) => {
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={`
         border-2 border-[#24b4fb] bg-[#24b4fb]
         rounded-[0.9em] cursor-pointer

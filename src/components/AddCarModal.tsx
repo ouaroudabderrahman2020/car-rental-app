@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { 
-  X, Check, Loader2
+  X, Check, Loader2, Monitor
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { callGasAction } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
 import Button1 from './Button1';
 import CarForm, { MaintenanceInterval, EssentialItem } from './CarForm';
+import ImageToPdf from './tools/ImageToPdf';
 
 interface AddCarModalProps {
   isOpen: boolean;
@@ -37,6 +39,11 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
   const [techInspectionExpiry, setTechInspectionExpiry] = useState('');
   const [taxRenewalExpiry, setTaxRenewalExpiry] = useState('');
 
+  // Media & Files
+  const [carImage, setCarImage] = useState<{ base64Data: string; fileName: string; contentType: string } | null>(null);
+  const [docFile, setDocFile] = useState<{ base64Data: string; fileName: string; contentType: string } | null>(null);
+  const [showPdfTool, setShowPdfTool] = useState(false);
+
   // Validation State
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const validatePlate = (p: string) => /^[a-zA-Z0-9-\s]{2,15}$/.test(p);
@@ -57,6 +64,26 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
     { id: '1', type: 'Engine Oil', value: '', lastCompleted: '' }
   ]);
 
+  const handlePdfToolAssign = async (pdfResults: any[]) => {
+    if (pdfResults.length === 0) return;
+    try {
+      const result = pdfResults[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Data = (reader.result as string).split(',')[1];
+        setDocFile({
+          base64Data,
+          fileName: result.name,
+          contentType: 'application/pdf'
+        });
+        setShowPdfTool(false);
+      };
+      reader.readAsDataURL(result.blob);
+    } catch (err) {
+      console.error('Error assigning PDF tool result:', err);
+    }
+  };
+
   const handleConfirm = async () => {
     if (!brand || !model || !plate || !dailyRate) {
       alert(t('carForm.fillRequired'));
@@ -73,6 +100,29 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
     setStatus(t('common.savingCar'), 'processing', 0);
 
     try {
+      let finalImageUrl = 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800';
+      let finalDocUrl = null;
+
+      // Handle File Uploads via GAS if present
+      if (carImage) {
+        setStatus(t('common.uploadingImage', 'Uploading car image...'), 'processing');
+        const imgRes = await callGasAction('upload_to_drive', carImage);
+        if (imgRes.status === 'success') {
+          finalImageUrl = imgRes.data.url;
+        }
+      }
+
+      if (docFile) {
+        setStatus(t('common.uploadingDoc', 'Uploading car documentation...'), 'processing');
+        const docRes = await callGasAction('upload_to_drive', {
+          ...docFile,
+          folderId: import.meta.env.VITE_DRIVE_FOLDER_ID // Optional: target folder for documents
+        });
+        if (docRes.status === 'success') {
+          finalDocUrl = docRes.data.url;
+        }
+      }
+
       const { data: carData, error: carError } = await supabase
         .from('cars')
         .insert([{
@@ -93,7 +143,8 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
           insurance_expiry: insuranceExpiry || null,
           tech_inspection_expiry: techInspectionExpiry || null,
           tax_renewal_expiry: taxRenewalExpiry || null,
-          image_url: 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800',
+          image_url: finalImageUrl,
+          documentation_url: finalDocUrl,
           essentials: essentials,
           intervals: intervals
         }])
@@ -157,6 +208,9 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
           isAddingEssential={isAddingEssential} setIsAddingEssential={setIsAddingEssential}
           newEssentialText={newEssentialText} setNewEssentialText={setNewEssentialText}
           intervals={intervals} setIntervals={setIntervals}
+          carImage={carImage} setCarImage={setCarImage}
+          docFile={docFile} setDocFile={setDocFile}
+          onOpenPdfTool={() => setShowPdfTool(true)}
           errors={errors}
           disabled={isSubmitting}
         />
@@ -179,6 +233,36 @@ export default function AddCarModal({ isOpen, onClose }: AddCarModalProps) {
             </Button1>
         </div>
       </motion.div>
+
+      {/* Image to PDF Tool Overlay */}
+      <AnimatePresence>
+        {showPdfTool && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[75] flex items-center justify-center bg-midnight-ink/90 backdrop-blur-md p-4 sm:p-20 overflow-y-auto no-scrollbar"
+          >
+            <div className="bg-white w-full max-w-4xl p-8 sm:p-12 industrial-shadow relative my-auto">
+              <button 
+                onClick={() => setShowPdfTool(false)}
+                className="absolute top-4 right-4 p-2 text-ink/40 hover:text-red-500 transition-colors"
+              >
+                <X size={32} />
+              </button>
+              
+              <div className="mb-12 border-b-4 border-midnight-ink pb-4">
+                <h3 className="text-3xl font-black uppercase tracking-tighter text-midnight-ink flex items-center gap-4">
+                  <Monitor className="w-10 h-10 text-primary" />
+                  {t('tools.imageToPdf')}
+                </h3>
+              </div>
+
+              <ImageToPdf onAssign={handlePdfToolAssign} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

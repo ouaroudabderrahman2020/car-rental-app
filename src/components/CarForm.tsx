@@ -39,6 +39,13 @@ interface CarFormProps {
   gpsSim: string; setGpsSim: (v: string) => void;
   seats: string; setSeats: (v: string) => void;
   damageNotes: string; setDamageNotes: (v: string) => void;
+  carImage?: { base64Data: string; fileName: string; contentType: string } | null;
+  setCarImage: (val: { base64Data: string; fileName: string; contentType: string } | null) => void;
+  docFile?: { base64Data: string; fileName: string; contentType: string } | null;
+  setDocFile: (val: { base64Data: string; fileName: string; contentType: string } | null) => void;
+  onOpenPdfTool?: () => void;
+  imageUrl?: string;
+  docUrl?: string;
   
   // Paperwork
   registrationExpiry: string; setRegistrationExpiry: (v: string) => void;
@@ -82,6 +89,10 @@ const CarForm: React.FC<CarFormProps> = ({
   gpsSim, setGpsSim,
   seats, setSeats,
   damageNotes, setDamageNotes,
+  carImage, setCarImage,
+  docFile, setDocFile,
+  onOpenPdfTool,
+  imageUrl, docUrl,
   registrationExpiry, setRegistrationExpiry,
   insuranceExpiry, setInsuranceExpiry,
   techInspectionExpiry, setTechInspectionExpiry,
@@ -94,6 +105,26 @@ const CarForm: React.FC<CarFormProps> = ({
   disabled = false
 }) => {
   const { t } = useTranslation();
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
+  const docInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'doc') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Data = (reader.result as string).split(',')[1];
+      const fileData = {
+        base64Data,
+        fileName: file.name,
+        contentType: file.type
+      };
+      if (type === 'image') setCarImage(fileData);
+      else setDocFile(fileData);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const getStatusColor = () => {
     switch (status) {
@@ -250,24 +281,105 @@ const CarForm: React.FC<CarFormProps> = ({
       <div className="p-4 sm:p-10 border-t border-muted-cream">
         <FormSection title={t('carForm.media')}>
           <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.uploadImage')}</label>
-            <div className={`w-full aspect-video border-2 border-dashed border-form-border bg-white flex flex-col items-center justify-center transition-colors ${!disabled ? 'cursor-pointer hover:bg-ink/5' : 'cursor-default opacity-60'}`}>
-              <Camera className="w-12 h-12 text-midnight-ink/40" />
-              <p className="mt-2 text-xs font-bold uppercase tracking-widest text-midnight-ink/60">{t('carForm.dragOrClick')}</p>
-            </div>
-          </div>
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <Button1 
-                onClick={() => {}}
-                className="w-full !justify-between"
-                icon={<Upload className="w-5 h-5" />}
-                disabled={disabled}
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.uploadImage')}</label>
+              <input 
+                type="file" 
+                ref={imageInputRef}
+                onChange={(e) => handleFileChange(e, 'image')}
+                accept="image/*"
+                className="hidden"
+              />
+              <div 
+                onClick={() => !disabled && imageInputRef.current?.click()}
+                className={`w-full aspect-video border-2 border-dashed border-form-border bg-slate-50 flex flex-col items-center justify-center transition-all overflow-hidden relative group ${!disabled ? 'cursor-pointer hover:border-primary hover:bg-white' : 'cursor-default opacity-60'}`}
               >
-                {t('carForm.pdfLabel')}
-              </Button1>
+                {carImage || imageUrl ? (
+                  <>
+                    <img 
+                      src={carImage ? `data:${carImage.contentType};base64,${carImage.base64Data}` : imageUrl} 
+                      alt="Car Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    {!disabled && (
+                      <div className="absolute inset-0 bg-midnight-ink/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera className="w-8 h-8 text-white" />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-12 h-12 text-midnight-ink/20" />
+                    <p className="mt-2 text-xs font-bold uppercase tracking-widest text-midnight-ink/40">{t('carForm.dragOrClick')}</p>
+                  </>
+                )}
+              </div>
+              {(carImage || imageUrl) && !disabled && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setCarImage(null); }}
+                  className="text-[10px] font-bold text-red-500 uppercase tracking-widest flex items-center gap-1 hover:underline"
+                >
+                  <Trash2 className="w-3 h-3" /> {t('common.remove', 'Remove Image')}
+                </button>
+              )}
             </div>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.15em] bg-midnight-ink/5 px-2 py-1 inline-block text-midnight-ink">{t('carForm.pdfLabel')}</label>
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-2">
+                    <input 
+                      type="file" 
+                      ref={docInputRef}
+                      onChange={(e) => handleFileChange(e, 'doc')}
+                      accept="application/pdf"
+                      className="hidden"
+                    />
+                    <Button1 
+                      onClick={() => !disabled && docInputRef.current?.click()}
+                      className="flex-1 !justify-between"
+                      icon={<Upload className="w-5 h-5" />}
+                      disabled={disabled}
+                      type="button"
+                    >
+                      {t('carForm.uploadPdf', 'Upload PDF')}
+                    </Button1>
+                    {onOpenPdfTool && (
+                      <Button1 
+                        onClick={onOpenPdfTool}
+                        className="bg-slate-100 text-slate-800"
+                        icon={<FileText className="w-5 h-5" />}
+                        disabled={disabled}
+                        type="button"
+                        title={t('tools.imageToPdf')}
+                      />
+                    )}
+                  </div>
+                  {(docFile || docUrl) && (
+                    <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 industrial-shadow">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-emerald-600 flex items-center justify-center text-white">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black uppercase text-emerald-800 truncate max-w-[200px]">
+                            {docFile ? docFile.fileName : t('carForm.viewPdf', 'Car Documentation PDF')}
+                          </span>
+                          <span className="text-[8px] font-bold text-emerald-600 uppercase">READY FOR UPLOAD</span>
+                        </div>
+                      </div>
+                      {!disabled && (
+                        <button 
+                          onClick={() => setDocFile(null)}
+                          className="p-1 hover:bg-emerald-100 text-emerald-600 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field1 
                 label={t('carForm.gpsSim')}

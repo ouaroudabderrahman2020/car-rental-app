@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Check, Edit, Lock, Loader2 
+  X, Check, Edit, Lock, Loader2, Monitor 
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { callGasAction } from '../lib/gas';
 import { Car } from '../types';
 import CarForm, { MaintenanceInterval, EssentialItem } from './CarForm';
+import ImageToPdf from './tools/ImageToPdf';
 
 interface CarDetailsModalProps {
   isOpen: boolean;
@@ -39,6 +41,13 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
   const [techInspectionExpiry, setTechInspectionExpiry] = useState(carData?.tech_inspection_expiry || '');
   const [taxRenewalExpiry, setTaxRenewalExpiry] = useState(carData?.tax_renewal_expiry || '');
 
+  // Media & Files
+  const [carImage, setCarImage] = useState<{ base64Data: string; fileName: string; contentType: string } | null>(null);
+  const [docFile, setDocFile] = useState<{ base64Data: string; fileName: string; contentType: string } | null>(null);
+  const [imageUrl, setImageUrl] = useState(carData?.image_url || '');
+  const [docUrl, setDocUrl] = useState(carData?.documentation_url || '');
+  const [showPdfTool, setShowPdfTool] = useState(false);
+
   // Dynamic Lists State
   const [isAddingEssential, setIsAddingEssential] = useState(false);
   const [newEssentialText, setNewEssentialText] = useState('');
@@ -64,24 +73,57 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
       setInsuranceExpiry(carData.insurance_expiry || '');
       setTechInspectionExpiry(carData.tech_inspection_expiry || '');
       setTaxRenewalExpiry(carData.tax_renewal_expiry || '');
-      setEssentials(carData.essentials || [
-        { id: '1', name: 'Safety Vest', checked: true },
-        { id: '2', name: 'Warning Triangle', checked: true },
-        { id: '3', name: 'Fire Extinguisher', checked: true },
-        { id: '4', name: 'Spare Tire', checked: true },
-        { id: '5', name: 'Lifting Jack', checked: true },
-        { id: '6', name: 'First Aid Kit', checked: true },
-      ]);
-      setIntervals(carData.intervals || [
-        { id: '1', type: 'Engine Oil', value: '', lastCompleted: '' }
-      ]);
+      setImageUrl(carData.image_url || '');
+      setDocUrl(carData.documentation_url || '');
+      setCarImage(null);
+      setDocFile(null);
+      setEssentials(carData.essentials || []);
+      setIntervals(carData.intervals || []);
     }
   }, [carData, isOpen]);
+
+  const handlePdfToolAssign = async (pdfResults: any[]) => {
+    if (pdfResults.length === 0) return;
+    try {
+      const result = pdfResults[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Data = (reader.result as string).split(',')[1];
+        setDocFile({
+          base64Data,
+          fileName: result.name,
+          contentType: 'application/pdf'
+        });
+        setShowPdfTool(false);
+      };
+      reader.readAsDataURL(result.blob);
+    } catch (err) {
+      console.error('Error assigning PDF tool result:', err);
+    }
+  };
 
   const handleConfirm = async () => {
     if (!carData?.id) return;
     setIsSubmitting(true);
     try {
+      let finalImageUrl = imageUrl;
+      let finalDocUrl = docUrl;
+
+      // Handle File Uploads via GAS if present
+      if (carImage) {
+        const imgRes = await callGasAction('upload_to_drive', carImage);
+        if (imgRes.status === 'success') {
+          finalImageUrl = imgRes.data.url;
+        }
+      }
+
+      if (docFile) {
+        const docRes = await callGasAction('upload_to_drive', docFile);
+        if (docRes.status === 'success') {
+          finalDocUrl = docRes.data.url;
+        }
+      }
+
       const { error } = await supabase
         .from('cars')
         .update({
@@ -102,6 +144,8 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
           insurance_expiry: insuranceExpiry || null,
           tech_inspection_expiry: techInspectionExpiry || null,
           tax_renewal_expiry: taxRenewalExpiry || null,
+          image_url: finalImageUrl,
+          documentation_url: finalDocUrl,
           essentials,
           intervals,
           updated_at: new Date().toISOString()
@@ -189,6 +233,10 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
           isAddingEssential={isAddingEssential} setIsAddingEssential={setIsAddingEssential}
           newEssentialText={newEssentialText} setNewEssentialText={setNewEssentialText}
           intervals={intervals} setIntervals={setIntervals}
+          carImage={carImage} setCarImage={setCarImage}
+          docFile={docFile} setDocFile={setDocFile}
+          onOpenPdfTool={() => setShowPdfTool(true)}
+          imageUrl={imageUrl} docUrl={docUrl}
           errors={{}}
           disabled={!isEditMode || isSubmitting}
         />
@@ -217,6 +265,36 @@ export default function CarDetailsModal({ isOpen, onClose, carData }: CarDetails
             </button>
           </div>
       </motion.div>
+
+      {/* Image to PDF Tool Overlay */}
+      <AnimatePresence>
+        {showPdfTool && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[75] flex items-center justify-center bg-midnight-ink/90 backdrop-blur-md p-4 sm:p-20 overflow-y-auto no-scrollbar"
+          >
+            <div className="bg-white w-full max-w-4xl p-8 sm:p-12 industrial-shadow relative my-auto">
+              <button 
+                onClick={() => setShowPdfTool(false)}
+                className="absolute top-4 right-4 p-2 text-ink/40 hover:text-red-500 transition-colors"
+              >
+                <X size={32} />
+              </button>
+              
+              <div className="mb-12 border-b-4 border-midnight-ink pb-4">
+                <h3 className="text-3xl font-black uppercase tracking-tighter text-midnight-ink flex items-center gap-4">
+                  <Monitor className="w-10 h-10 text-primary" />
+                  {t('tools.imageToPdf')}
+                </h3>
+              </div>
+
+              <ImageToPdf onAssign={handlePdfToolAssign} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
