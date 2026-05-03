@@ -162,7 +162,6 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
             className="fixed inset-0 bg-midnight-ink/60 backdrop-blur-sm"
           />
           

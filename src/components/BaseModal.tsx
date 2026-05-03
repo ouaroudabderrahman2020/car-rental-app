@@ -27,7 +27,6 @@ export default function BaseModal({
   return (
     <div 
       className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 backdrop-blur-sm p-4 sm:p-10 overflow-y-auto no-scrollbar"
-      onClick={onClose}
     >
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
