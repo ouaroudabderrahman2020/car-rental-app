@@ -236,17 +236,35 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
     setIsSubmitting(true);
     setGlobalStatus(t('common.savingCar'), 'processing', 0);
     try {
-      let finalImageUrl = imageUrl || 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800';
+      let finalImageUrl = imageUrl || '';
       let finalDocUrl = docUrl;
+
+      // Helper to extract file ID from existing Drive URL if present
+      const getFileIdFromUrl = (url?: string) => url?.split('id=')[1];
 
       // Handle File Uploads via GAS if present
       if (carImage) {
         setGlobalStatus(t('common.uploadingImage'), 'processing');
-        const imgRes = await gasService.uploadBase64({
-          ...carImage,
-          category: 'CARS',
-          entityIdentifier: plate
-        });
+        const oldImageId = getFileIdFromUrl(carData?.image_url);
+        
+        let imgRes;
+        if (mode === 'edit' && oldImageId) {
+          imgRes = await gasService.updateCarFile({
+            oldFileId: oldImageId,
+            base64: carImage.base64Data,
+            fileName: carImage.fileName,
+            contentType: carImage.contentType,
+            plateNumber: plate
+          });
+        } else {
+          imgRes = await gasService.uploadCarFile({
+            base64: carImage.base64Data,
+            fileName: carImage.fileName,
+            contentType: carImage.contentType,
+            plateNumber: plate
+          });
+        }
+
         if (imgRes.status === 'success') {
           finalImageUrl = imgRes.data.url;
         } else {
@@ -256,11 +274,26 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
 
       if (docFile) {
         setGlobalStatus(t('common.uploadingDoc'), 'processing');
-        const docRes = await gasService.uploadBase64({
-          ...docFile,
-          category: 'CARS',
-          entityIdentifier: plate
-        });
+        const oldDocId = getFileIdFromUrl(carData?.documentation_url);
+
+        let docRes;
+        if (mode === 'edit' && oldDocId) {
+          docRes = await gasService.updateCarFile({
+            oldFileId: oldDocId,
+            base64: docFile.base64Data,
+            fileName: docFile.fileName,
+            contentType: docFile.contentType,
+            plateNumber: plate
+          });
+        } else {
+          docRes = await gasService.uploadCarFile({
+            base64: docFile.base64Data,
+            fileName: docFile.fileName,
+            contentType: docFile.contentType,
+            plateNumber: plate
+          });
+        }
+
         if (docRes.status === 'success') {
           finalDocUrl = docRes.data.url;
         } else {
@@ -484,7 +517,7 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
                   {carImage || imageUrl ? (
                     <>
                       <img 
-                        src={carImage ? `data:${carImage.contentType};base64,${carImage.base64Data}` : imageUrl} 
+                        src={carImage ? `data:${carImage.contentType};base64,${carImage.base64Data}` : (imageUrl || undefined)} 
                         alt="Car Preview" 
                         className="w-full h-full object-cover"
                       />

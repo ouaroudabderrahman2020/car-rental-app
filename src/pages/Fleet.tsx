@@ -44,8 +44,8 @@ export default function Fleet() {
           statusColor: car.status === 'Available' ? 'bg-primary' : 
                        car.status === 'In Maintenance' ? 'bg-workshop-amber' : 
                        car.status === 'Rented' ? 'bg-indigo-600' : 'bg-slate-500',
-          needsMaintenance: car.odometer >= 15000,
-          image: car.image_url || 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800'
+          needsMaintenance: car.status === 'In Maintenance' || car.status === 'Workshop',
+          image: car.image_url || null
         }));
         setFleetData(formattedData);
       }
@@ -177,21 +177,22 @@ export default function Fleet() {
                     >
                       <div className="aspect-[3/4] overflow-hidden flex flex-col">
                         <div className="h-1/2 overflow-hidden bg-slate-100 relative">
-                          <img 
-                            alt={car.name} 
-                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
-                            src={car.image}
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = ''; // Clear broken src
-                              (e.target as HTMLImageElement).className = 'hidden';
-                            }}
-                          />
+                          {car.image ? (
+                            <img 
+                              alt={car.name} 
+                              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
+                              src={car.image}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).className = 'hidden';
+                              }}
+                            />
+                          ) : null}
                           {car.needsMaintenance && (
                             <div className="absolute top-4 start-4 px-3 py-1 bg-workshop-amber text-white text-fluid-sm font-black uppercase tracking-widest industrial-shadow">
                               {t('common.maintenance', 'Service Due')}
                             </div>
                           )}
-                          <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-0 transition-opacity pointer-events-none">
+                          <div className={`absolute inset-0 flex items-center justify-center transition-opacity pointer-events-none ${car.image ? 'opacity-20 group-hover:opacity-0' : 'opacity-40'}`}>
                             <CarIcon className="w-16 h-16 text-midnight" />
                           </div>
                         </div>

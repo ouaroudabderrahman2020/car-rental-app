@@ -238,7 +238,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
                     exit={{ opacity: 0, scale: 0.9 }}
                     className="relative aspect-square industrial-shadow border-2 border-midnight-ink group"
                   >
-                    <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                    <img src={img.url || undefined} alt={img.name} className="w-full h-full object-cover" />
                     <button 
                       onClick={() => removeImage(img.id)}
                       className="absolute -top-2 -right-2 bg-red-600 text-white p-1 shadow-lg hover:scale-110 transition-transform"
@@ -285,7 +285,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
                 </div>
                 <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-4">
                   <div className="relative w-full flex-1 overflow-hidden industrial-shadow border border-midnight-ink">
-                    <img src={res.previewUrl} className="w-full h-full object-cover opacity-60" alt="Preview"/>
+                    <img src={res.previewUrl || undefined} className="w-full h-full object-cover opacity-60" alt="Preview"/>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <FileText className="w-12 h-12 text-midnight-ink" />
                     </div>
