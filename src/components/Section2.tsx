@@ -37,7 +37,7 @@ export const Section2: React.FC<Section2Props> = ({
         shadow-[0_2px_4px_rgba(0,0,0,0.02),0_10px_15px_-3px_rgba(0,0,0,0.03)]
         
         rounded-xl
-        p-6 
+        p-4 md:p-10
         transition-all 
         duration-300
         hover:shadow-xl hover:shadow-slate-200/50
@@ -47,13 +47,13 @@ export const Section2: React.FC<Section2Props> = ({
     >
       {/* "Display" Title Style: Sharp, Black, and Smooth */}
       {title && (
-        <h2 className="text-xl font-black tracking-tighter text-black antialiased mb-5 leading-none uppercase">
+        <h2 className="text-fluid-h2 font-black tracking-tighter text-black antialiased mb-6 leading-none uppercase">
           {title}
         </h2>
       )}
 
       {/* Content Area */}
-      <div className="text-slate-800 text-sm leading-relaxed relative z-10">
+      <div className="text-slate-800 text-fluid-sm md:text-fluid-base leading-relaxed relative z-10">
         {children}
       </div>
     </section>

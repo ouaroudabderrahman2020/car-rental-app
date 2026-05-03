@@ -104,15 +104,15 @@ export default function ClientDashboard() {
         <PageHeader 
           title={t('crm.title')}
           actions={
-            <button onClick={handleAddClient} className="bg-midnight-ink text-white py-4 px-8 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-widest text-fluid-sm shrink-0">
-              <Plus className="w-5 h-5" />
+            <button onClick={handleAddClient} className="bg-midnight-ink text-white py-2.5 px-6 industrial-shadow hover:bg-primary transition-all flex items-center gap-3 font-black uppercase tracking-[0.2em] text-fluid-sm shrink-0">
+              <Plus className="w-4 h-4" />
               {t('common.add')}
             </button>
           }
-          className="p-6 md:p-10 border-b border-slate-200"
+          className="p-6 md:p-10"
         />
         {/* Main Content */}
-        <div className="max-w-[1440px] mx-auto v-section-gap">
+        <div className="max-w-[1440px] mx-auto pt-6 pb-12">
           <Section2 title={t('crm.table.title', 'Client Directory')}>
             <div className="w-full flex flex-col gap-8">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">

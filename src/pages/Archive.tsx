@@ -157,14 +157,14 @@ export default function Archive() {
               <button 
                 onClick={handleExport}
                 disabled={isExporting}
-                className="px-6 py-2.5 bg-midnight-ink text-white font-bold text-fluid-sm uppercase tracking-widest industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 bg-midnight-ink text-white font-black text-fluid-sm uppercase tracking-[0.2em] industrial-shadow hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50"
               >
                 {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
               </button>
             </div>
           }
-          className="p-6 md:p-10 border-b border-slate-200"
+          className="p-6 md:p-10"
         />
         <ReservationModal 
           isOpen={isModalOpen} 
@@ -179,7 +179,7 @@ export default function Archive() {
           initialData={initialData}
         />
 
-        <div className="py-lg">
+        <div className="pt-6 pb-12">
           <div className="max-w-[1440px] mx-auto">
             <Section2 title={t('archive.overview', 'Archive Overview')}>
               <div className="w-full flex flex-col gap-8">

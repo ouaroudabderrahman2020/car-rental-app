@@ -39,11 +39,11 @@ export default function Tools() {
       <div className="min-h-full bg-white pb-12">
         <PageHeader 
           title={t('tools.title')}
-          className="p-6 md:p-10 border-b border-slate-200"
+          className="p-6 md:p-10"
         />
         <main className="w-full">
-          <div className="py-12">
-            <div className="max-w-[1440px] mx-auto v-section-gap">
+          <div className="pt-6 pb-12 px-4">
+            <div className="max-w-[1440px] mx-auto">
               <Section2 title={t('tools.availableTools', 'System Utilities')}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto py-8">
                   {tools.map((tool) => (

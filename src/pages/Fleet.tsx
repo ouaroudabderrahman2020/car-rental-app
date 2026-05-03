@@ -95,7 +95,7 @@ export default function Fleet() {
               {t('fleet.addCar', 'ADD NEW CAR')}
             </button>
           }
-          className="p-6 md:p-10 border-b border-slate-200"
+          className="p-6 md:p-10"
         />
         <CarModal 
           isOpen={isModalOpen}
@@ -108,7 +108,7 @@ export default function Fleet() {
         />
 
       {/* Fleet Grid */}
-      <div className="py-lg">
+      <div className="pt-6 pb-12">
         <div className="max-w-[1440px] mx-auto">
           <Section2 title={t('fleet.inventory', 'Vehicle Inventory')}>
               <div className="w-full flex flex-col gap-8">

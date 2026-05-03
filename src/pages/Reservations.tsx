@@ -128,7 +128,7 @@ export default function Reservations() {
               <Plus className="w-4 h-4" /> {t('reservations.newReservation')}
             </button>
           }
-          className="p-6 md:p-10 border-b border-slate-200"
+          className="p-6 md:p-10"
         />
         <ReservationModal 
           isOpen={isModalOpen} 
@@ -143,7 +143,7 @@ export default function Reservations() {
           initialData={initialData}
         />
 
-        <div className="max-w-[1440px] mx-auto py-12">
+        <div className="max-w-[1440px] mx-auto pt-6 pb-12">
           <Section2 title={t('reservations.activeTitle')}>
             <div className="w-full flex flex-col gap-6">
               {/* Action Toolbar */}
