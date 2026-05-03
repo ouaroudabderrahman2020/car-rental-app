@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useStatus } from '../contexts/StatusContext';
 import Layout from '../components/Layout';
 import { PageHeader } from '../components/PageHeader';
-import FormSection from '../components/FormSection';
+import Section2 from '../components/Section2';
+/* removed FormSection import */
 
 export default function Financials() {
   const { t, i18n } = useTranslation();
@@ -138,7 +139,7 @@ export default function Financials() {
               </div>
             ) : (
               <div className="v-section-gap px-4">
-                <FormSection title={t('financials.overview', 'Financial Overview')}>
+                <Section2 title={t('financials.overview', 'Financial Overview')}>
                   <div className="flex flex-col gap-8">
                     {/* Action Bar */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -191,10 +192,10 @@ export default function Financials() {
                       </div>
                     </div>
                   </div>
-                </FormSection>
+                </Section2>
 
                 {/* Transaction History Section */}
-                <FormSection title={t('financials.transactions', 'Transaction History')}>
+                <Section2 title={t('financials.transactions', 'Transaction History')}>
                   <div className="bg-white border border-slate-200 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse">
@@ -242,7 +243,7 @@ export default function Financials() {
                       </table>
                     </div>
                   </div>
-                </FormSection>
+                </Section2>
               </div>
             )}
           </div>

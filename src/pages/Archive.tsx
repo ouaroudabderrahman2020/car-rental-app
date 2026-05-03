@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import ReservationModal from '../components/ReservationModal';
 import { PageHeader } from '../components/PageHeader';
-import FormSection from '../components/FormSection';
+import Section2 from '../components/Section2';
+/* removed FormSection import */
 import { supabase } from '../lib/supabase';
 import { useStatus } from '../contexts/StatusContext';
 import { gasService } from '../lib/gas';
@@ -180,7 +181,7 @@ export default function Archive() {
 
         <div className="py-lg">
           <div className="max-w-[1440px] mx-auto">
-            <FormSection title={t('archive.overview', 'Archive Overview')}>
+            <Section2 title={t('archive.overview', 'Archive Overview')}>
               <div className="w-full flex flex-col gap-8">
                 {/* Action Toolbar */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -210,12 +211,12 @@ export default function Archive() {
                   </div>
                 </div>
               </div>
-            </FormSection>
+            </Section2>
           </div>
         </div>
 
             <div className="py-10">
-              <FormSection title={t('reservations.history')}>
+              <Section2 title={t('reservations.history')}>
                 <div className="w-full flex flex-col gap-6">
                   <div className="flex justify-between items-center">
                     <span className="px-3 py-1 bg-ink text-white text-xs font-bold uppercase tracking-widest">
@@ -286,7 +287,7 @@ export default function Archive() {
                     </table>
                   </div>
                 </div>
-              </FormSection>
+              </Section2>
             </div>
       </div>
     </Layout>

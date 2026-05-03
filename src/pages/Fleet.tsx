@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import CarModal from '../components/CarModal';
 import { PageHeader } from '../components/PageHeader';
+import Section2 from '../components/Section2';
 /* removed FormSection import */
 import { supabase } from '../lib/supabase';
 import { useStatus } from '../contexts/StatusContext';
@@ -109,12 +110,7 @@ export default function Fleet() {
       {/* Fleet Grid */}
       <div className="py-lg">
         <div className="max-w-[1440px] mx-auto">
-          <div className="relative border-2 border-black bg-[#E8EBF7] rounded-[5px] p-6 mb-8">
-              <div className="absolute top-0 -translate-y-1/2 left-4 p-1.5 bg-white border-2 border-black rounded-[4px] z-10 flex items-center justify-center min-w-[32px]">
-                <span className="text-[10px] font-black uppercase tracking-widest text-black leading-none text-center">
-                  {t('fleet.inventory', 'Vehicle Inventory')}
-                </span>
-              </div>
+          <Section2 title={t('fleet.inventory', 'Vehicle Inventory')}>
               <div className="w-full flex flex-col gap-8">
                 {/* Action Toolbar */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -225,7 +221,7 @@ export default function Fleet() {
                   ))
                 )}
               </div>
-            </div>
+          </Section2>
           </div>
         </div>
       </div>

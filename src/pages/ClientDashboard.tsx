@@ -7,7 +7,8 @@ import { Customer, Reservation } from '../types';
 import Layout from '../components/Layout';
 import ClientModal from '../components/ClientModal';
 import { PageHeader } from '../components/PageHeader';
-import FormSection from '../components/FormSection';
+import Section2 from '../components/Section2';
+/* removed FormSection import */
 import { useStatus } from '../contexts/StatusContext';
 
 export default function ClientDashboard() {
@@ -112,7 +113,7 @@ export default function ClientDashboard() {
         />
         {/* Main Content */}
         <div className="max-w-[1440px] mx-auto v-section-gap">
-          <FormSection title={t('crm.table.title', 'Client Directory')}>
+          <Section2 title={t('crm.table.title', 'Client Directory')}>
             <div className="w-full flex flex-col gap-8">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="relative w-full max-w-md">
@@ -249,7 +250,7 @@ export default function ClientDashboard() {
                 </div>
               </div>
             </div>
-          </FormSection>
+          </Section2>
         </div>
 
         <ClientModal 

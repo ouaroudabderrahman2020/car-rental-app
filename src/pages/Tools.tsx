@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import BaseModal from '../components/BaseModal';
 import { PageHeader } from '../components/PageHeader';
-import FormSection from '../components/FormSection';
+import Section2 from '../components/Section2';
+/* removed FormSection import */
 import CalculatorTool from '../components/tools/CalculatorTool';
 import CalendarTool from '../components/tools/CalendarTool';
 import ImageToPdf from '../components/tools/ImageToPdf';
@@ -43,7 +44,7 @@ export default function Tools() {
         <main className="w-full">
           <div className="py-12">
             <div className="max-w-[1440px] mx-auto v-section-gap">
-              <FormSection title={t('tools.availableTools', 'System Utilities')}>
+              <Section2 title={t('tools.availableTools', 'System Utilities')}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto py-8">
                   {tools.map((tool) => (
                     <button 
@@ -59,7 +60,7 @@ export default function Tools() {
                     </button>
                   ))}
                 </div>
-              </FormSection>
+              </Section2>
             </div>
           </div>
       </main>
