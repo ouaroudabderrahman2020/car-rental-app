@@ -9,6 +9,7 @@ interface Field1Props {
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   onFocus?: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  onClick?: (e: React.MouseEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   name?: string;
   error?: string;
   className?: string;
@@ -29,6 +30,7 @@ const Field1: React.FC<Field1Props> = ({
   onChange,
   onFocus,
   onBlur,
+  onClick,
   name,
   error,
   className = '',
@@ -63,6 +65,19 @@ const Field1: React.FC<Field1Props> = ({
     checkOverflow();
     return () => resizeObserver.disconnect();
   }, [label]);
+
+  const handleClick = (e: React.MouseEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    if (onClick) onClick(e);
+    // Auto-trigger native picker for date/time/color inputs if supported
+    if (type && ['date', 'datetime-local', 'time', 'month', 'week'].includes(type) && (e.target as any).showPicker) {
+      try {
+        (e.target as any).showPicker();
+      } catch (err) {
+        // Fallback for browsers that don't support showPicker yet
+        console.debug('showPicker not supported', err);
+      }
+    }
+  };
 
   return (
     <div className={`flex flex-col w-full relative ${className}`} style={style}>
@@ -101,6 +116,7 @@ const Field1: React.FC<Field1Props> = ({
           onChange={onChange}
           onFocus={onFocus}
           onBlur={onBlur}
+          onClick={handleClick}
           disabled={disabled}
           className={`
             p-[11px_10px] text-[0.75rem] border-2 border-black rounded-[5px] bg-white font-bold uppercase
@@ -119,6 +135,7 @@ const Field1: React.FC<Field1Props> = ({
           onChange={onChange}
           onFocus={onFocus}
           onBlur={onBlur}
+          onClick={handleClick}
           disabled={disabled}
           className={`
             p-[11px_10px] text-[0.75rem] border-2 border-black rounded-[5px] bg-white font-bold min-h-[100px]
@@ -136,6 +153,7 @@ const Field1: React.FC<Field1Props> = ({
           onChange={onChange}
           onFocus={onFocus}
           onBlur={onBlur}
+          onClick={handleClick}
           disabled={disabled}
           min={min}
           max={max}

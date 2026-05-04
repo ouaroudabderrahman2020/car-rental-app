@@ -2,6 +2,7 @@ import { CarStatus, ReservationStatus, FuelType } from './types';
 
 export const CAR_STATUSES: readonly CarStatus[] = [
   'Available', 
+  'Unavailable',
   'Rented', 
   'In Maintenance', 
   'Workshop', 

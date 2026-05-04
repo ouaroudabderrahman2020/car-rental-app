@@ -71,7 +71,7 @@ function uploadCarFile(fileBlob, plateNumber) {
   
   return {
     fileId: file.getId(),
-    url: "https://drive.google.com/uc?export=view&id=" + file.getId()
+    url: "https://lh3.googleusercontent.com/d/" + file.getId()
   };
 }
 

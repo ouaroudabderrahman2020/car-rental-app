@@ -38,8 +38,8 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
   const [color, setColor] = useState('');
   const [fuelType, setFuelType] = useState<any>('Petrol');
   const [transmission, setTransmission] = useState<any>('Automatic');
-  const [odometer, setOdometer] = useState('0');
-  const [dailyRate, setDailyRate] = useState('0');
+  const [odometer, setOdometer] = useState('');
+  const [dailyRate, setDailyRate] = useState('');
   const [status, setStatus] = useState<any>('Available');
   const [damageNotes, setDamageNotes] = useState('');
   const [gpsSim, setGpsSim] = useState('');
@@ -73,13 +73,13 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
         setColor(carData.color || '');
         setFuelType(carData.fuel_type || 'Petrol');
         setTransmission(carData.transmission || 'Automatic');
-        setOdometer(carData.odometer?.toString() || '0');
-        setDailyRate(carData.daily_rate?.toString() || '0');
+        setOdometer(carData.odometer ? carData.odometer.toString() : '');
+        setDailyRate(carData.daily_rate ? carData.daily_rate.toString() : '');
         setStatus(carData.status || 'Available');
         setDamageNotes(carData.damage_notes || '');
         setGpsSim(carData.gps_sim || '');
-        setSeats(carData.seats?.toString() || '5');
-        setStartingFuelLevel(carData.starting_fuel_level?.toString() || '100');
+        setSeats(carData.seats ? carData.seats.toString() : '');
+        setStartingFuelLevel(carData.starting_fuel_level ? carData.starting_fuel_level.toString() : '');
         setRegistrationExpiry(carData.registration_expiry || '');
         setInsuranceExpiry(carData.insurance_expiry || '');
         setTechInspectionExpiry(carData.tech_inspection_expiry || '');
@@ -87,7 +87,10 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
         setImageUrl(carData.image_url || '');
         setDocUrl(carData.documentation_url || '');
         setEssentials(carData.essentials || []);
-        setIntervals(carData.intervals || []);
+        setIntervals((carData.intervals || []).map(interval => ({
+          ...interval,
+          value: (interval.value === '0' || !interval.value) ? '' : interval.value
+        })));
         setIsEditMode(false);
       } else {
         // Add mode defaults
@@ -97,8 +100,8 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
         setColor('');
         setFuelType('Petrol');
         setTransmission('Automatic');
-        setOdometer('0');
-        setDailyRate('0');
+        setOdometer('');
+        setDailyRate('');
         setStatus('Available');
         setDamageNotes('');
         setGpsSim('');
@@ -176,6 +179,7 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
   const getStatusColor = () => {
     switch (status) {
       case 'Available': return 'border-green-500';
+      case 'Unavailable': return 'border-red-500';
       case 'In Maintenance': return 'border-amber-500';
       case 'Decommissioned': return 'border-slate-500';
       default: return 'border-form-border';
@@ -308,12 +312,12 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
         color,
         fuel_type: fuelType,
         transmission,
-        odometer: parseInt(odometer) || 0,
-        daily_rate: parseFloat(dailyRate),
+        odometer: odometer === '' ? 0 : (parseInt(odometer) || 0),
+        daily_rate: dailyRate === '' ? 0 : (parseFloat(dailyRate) || 0),
         status,
-        starting_fuel_level: parseInt(startingFuelLevel) || 100,
+        starting_fuel_level: (startingFuelLevel === '' || isNaN(parseInt(startingFuelLevel))) ? 100 : parseInt(startingFuelLevel),
         gps_sim: gpsSim,
-        seats: parseInt(seats) || 5,
+        seats: (seats === '' || isNaN(parseInt(seats))) ? 5 : parseInt(seats),
         damage_notes: damageNotes,
         registration_expiry: registrationExpiry || null,
         insurance_expiry: insuranceExpiry || null,
@@ -482,15 +486,8 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
                 className={`border-s-4 ${getStatusColor()} font-bold`}
                 disabled={!isEditMode || isSubmitting}
               >
-                {CAR_STATUSES.map(st => (
-                  <option 
-                    key={st} 
-                    value={st} 
-                    className={st === 'Available' ? 'text-green-600 font-bold' : st === 'In Maintenance' ? 'text-amber-600 font-bold' : 'text-slate-600 font-bold'}
-                  >
-                    {t(`common.${st.toLowerCase().replace(/\s+/g, '')}`, st)}
-                  </option>
-                ))}
+                <option value="Available" className="text-green-600 font-bold">{t('common.available', 'Available')}</option>
+                <option value="Unavailable" className="text-red-600 font-bold">{t('common.unavailable', 'Unavailable')}</option>
               </Field1>
             </div>
           </div>
@@ -520,6 +517,7 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
                         src={carImage ? `data:${carImage.contentType};base64,${carImage.base64Data}` : (imageUrl || undefined)} 
                         alt="Car Preview" 
                         className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
                       />
                       {isEditMode && !isSubmitting && (
                         <div className="absolute inset-0 bg-midnight-ink/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -696,9 +694,10 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
                     {isEditMode && !isSubmitting && (
                       <button 
                         onClick={() => handleRemoveEssential(item.id)}
-                        className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition-all industrial-shadow shrink-0 ml-4"
+                        title={t('common.remove')}
                       >
-                        <X className="w-4 h-4" />
+                        <Trash2 className="w-5 h-5" />
                       </button>
                     )}
                   </div>
@@ -787,12 +786,15 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
                       </td>
                       <td className="md:p-2 md:border md:border-form-border text-center">
                         {isEditMode && !isSubmitting && (
-                          <button 
-                            onClick={() => handleRemoveInterval(interval.id)}
-                            className="text-red-500 hover:text-red-700 transition-colors p-1"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                          <div className="flex justify-center items-center py-2">
+                            <button 
+                              onClick={() => handleRemoveInterval(interval.id)}
+                              className="w-10 h-10 flex items-center justify-center rounded-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white transition-all industrial-shadow"
+                              title={t('common.remove')}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

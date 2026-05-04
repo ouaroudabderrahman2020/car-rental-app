@@ -182,6 +182,7 @@ export default function Fleet() {
                               alt={car.name} 
                               className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
                               src={car.image}
+                              referrerPolicy="no-referrer"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).className = 'hidden';
                               }}

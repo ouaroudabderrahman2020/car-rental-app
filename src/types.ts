@@ -1,4 +1,4 @@
-export type CarStatus = 'Available' | 'Rented' | 'In Maintenance' | 'Workshop' | 'Decommissioned';
+export type CarStatus = 'Available' | 'Unavailable' | 'Rented' | 'In Maintenance' | 'Workshop' | 'Decommissioned';
 export type ReservationStatus = 'Pending' | 'Confirmed' | 'In Progress' | 'Completed' | 'Cancelled' | 'Overdue';
 export type FuelType = 'Petrol' | 'Diesel' | 'Electric' | 'Hybrid';
 
