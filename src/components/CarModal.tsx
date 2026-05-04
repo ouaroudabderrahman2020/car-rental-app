@@ -451,12 +451,8 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
     <BaseModal 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={mode === 'add' ? t('carForm.title') : t('carDetails.title')}
-      hideHeader={true}
-    >
-      <div className="bg-white w-full">
-        {/* Slim Sticky Header */}
-        <div className="sticky top-0 z-30 px-6 py-4 sm:px-10 bg-warm-accent flex justify-between items-center border-b-2 border-black translate-y-[-1px]">
+      title={
+        <div className="flex justify-between items-center w-full pr-8">
           <div className="flex flex-col">
             <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em] drop-shadow-sm">
               {mode === 'add' ? t('carForm.title') : t('carDetails.title')}
@@ -473,15 +469,12 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
                 <span className="hidden sm:inline">{isEditMode ? t('carDetails.lockSave') : t('carDetails.editProfile')}</span>
               </button>
             )}
-            <button 
-              onClick={onClose}
-              className="p-2 text-black hover:bg-black/5 transition-colors sm:hidden"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
         </div>
-
+      }
+      headerBg="bg-warm-accent"
+    >
+      <div className="bg-white w-full">
         {/* Content */}
         <div className="p-4 sm:p-10">
           <FormSection title={t('carForm.specs')}>

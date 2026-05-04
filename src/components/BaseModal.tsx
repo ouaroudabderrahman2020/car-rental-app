@@ -6,11 +6,12 @@ import { useTranslation } from 'react-i18next';
 interface BaseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?: string;
   hideHeader?: boolean;
+  headerBg?: string;
 }
 
 export default function BaseModal({ 
@@ -20,7 +21,8 @@ export default function BaseModal({
   children, 
   footer,
   maxWidth = 'max-w-5xl',
-  hideHeader = false
+  hideHeader = false,
+  headerBg = 'bg-white'
 }: BaseModalProps) {
   const { t } = useTranslation();
   
@@ -50,15 +52,16 @@ export default function BaseModal({
       >
         {/* Header */}
         {!hideHeader && (
-          <div className="sticky top-0 z-20 px-6 py-4 sm:px-8 bg-white flex justify-between items-center shrink-0 border-b-2 border-black">
-            <div>
-              <h2 className="text-lg sm:text-xl font-black text-black uppercase tracking-widest">{title}</h2>
+          <div className={`sticky top-0 z-20 px-6 py-2 sm:px-8 ${headerBg} flex justify-between items-center shrink-0 border-b-2 border-black`}>
+            <div className="flex-1">
+              <div className="text-lg sm:text-xl font-black text-black uppercase tracking-widest">{title}</div>
             </div>
             <button 
               onClick={onClose} 
-              className="p-2 text-black hover:bg-black/5 transition-colors"
+              className="group p-2 -mr-2 text-black hover:bg-black/5 transition-colors active:scale-95"
+              aria-label="Close"
             >
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6 sm:w-7 sm:h-7 transition-transform group-hover:rotate-90" />
             </button>
           </div>
         )}
