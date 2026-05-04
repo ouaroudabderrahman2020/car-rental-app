@@ -22,7 +22,7 @@ export default function BaseModal({
   footer,
   maxWidth = 'max-w-5xl',
   hideHeader = false,
-  headerBg = 'bg-white'
+  headerBg = 'bg-warm-accent'
 }: BaseModalProps) {
   const { t } = useTranslation();
   

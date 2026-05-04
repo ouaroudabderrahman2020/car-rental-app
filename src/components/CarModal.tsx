@@ -472,7 +472,6 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
           </div>
         </div>
       }
-      headerBg="bg-warm-accent"
     >
       <div className="bg-white w-full">
         {/* Content */}
