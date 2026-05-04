@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { gasService } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { Car, MaintenanceInterval, EssentialItem } from '../types';
 import Button1 from './Button1';
 import Field1 from './Field1';
@@ -29,6 +30,7 @@ interface CarModalProps {
 export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticUpdate, onOptimisticDelete }: CarModalProps) {
   const { t } = useTranslation();
   const { setStatus: setGlobalStatus } = useStatus();
+  const { showToast, confirm: customConfirm } = useNotification();
   
   const [isEditMode, setIsEditMode] = useState(mode === 'add');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -270,8 +272,11 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
       intervals,
     };
 
-    if (onOptimisticUpdate) onOptimisticUpdate(optimisticPayload);
-    onClose();
+    if (onOptimisticUpdate) {
+      // We'll call onOptimisticUpdate AFTER success to ensure backend integrity 
+      // and avoid duplicate entries with temp IDs.
+    }
+    // onClose(); // Removed from here, will close after success
 
     try {
       let finalImageUrl = imageUrl || '';
@@ -364,45 +369,77 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
       };
 
       if (mode === 'edit' && carData?.id) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('cars')
           .update({ ...payload, updated_at: new Date().toISOString() })
-          .eq('id', carData.id);
+          .eq('id', carData.id)
+          .select()
+          .single();
         if (error) throw error;
+        
+        if (onOptimisticUpdate && data) {
+          onOptimisticUpdate(data);
+        }
+        
         setGlobalStatus("CAR SAVED SUCCESSFULLY", 'success');
+        showToast(t('common.success', 'Car saved successfully'), 'success');
+        onClose();
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('cars')
-          .insert([payload]);
+          .insert([payload])
+          .select()
+          .single();
         if (error) throw error;
+        
+        if (onOptimisticUpdate && data) {
+          onOptimisticUpdate(data);
+        }
+        
         setGlobalStatus("CAR SAVED SUCCESSFULLY", 'success');
+        showToast(t('common.success', 'Car saved successfully'), 'success');
+        onClose();
       }
     } catch (error: any) {
       console.error('Update error:', error);
       setGlobalStatus(`ERROR: ${error.message || 'FAILED TO SAVE'}`, 'error');
+      showToast(error.message || 'Failed to save', 'error');
     }
   };
 
   const handleRemoveCar = async () => {
     if (!carData?.id) return;
-    if (confirm(t('carDetails.removeCarConfirm'))) {
+    const confirmed = await customConfirm({
+      title: t('carDetails.removeCar'),
+      message: t('carDetails.removeCarConfirm'),
+      confirmLabel: t('common.remove', 'Remove'),
+      cancelLabel: t('common.cancel', 'Cancel'),
+      type: 'danger'
+    });
+
+    if (confirmed) {
       setIsSubmitting(true);
       setGlobalStatus("DELETING CAR...", 'processing', 0);
       
-      // Optimistic Delete
-      if (onOptimisticDelete && carData.id) onOptimisticDelete(carData.id);
-      onClose();
-
+      // Final Delete
       try {
         const { error } = await supabase
           .from('cars')
           .delete()
           .eq('id', carData.id);
         if (error) throw error;
+        
+        if (onOptimisticDelete && carData.id) {
+          onOptimisticDelete(carData.id);
+        }
+        
         setGlobalStatus("CAR DELETED", 'success');
+        showToast(t('common.deleted', 'Car deleted successfully'), 'success');
+        onClose();
       } catch (error: any) {
         console.error('Delete error:', error);
         setGlobalStatus("ERROR: DELETE FAILED", 'error');
+        showToast('Delete failed', 'error');
       }
     }
   };
@@ -412,24 +449,34 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
       isOpen={isOpen} 
       onClose={onClose} 
       title={mode === 'add' ? t('carForm.title') : t('carDetails.title')}
+      hideHeader={true}
     >
       <div className="bg-white w-full">
-        {/* Header toolbar */}
-        <div className="px-6 py-4 sm:px-10 bg-midnight-ink flex flex-wrap justify-between items-center shrink-0 border-b border-black">
-          <div className="flex items-center gap-4">
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">
-              {mode === 'add' ? t('carForm.subtitle') : t('carDetails.subtitle')}
-            </span>
+        {/* Slim Sticky Header */}
+        <div className="sticky top-0 z-30 px-6 py-4 sm:px-10 bg-warm-accent flex justify-between items-center border-b-2 border-black translate-y-[-1px]">
+          <div className="flex flex-col">
+            <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em] drop-shadow-sm">
+              {mode === 'add' ? t('carForm.title') : t('carDetails.title')}
+            </h2>
           </div>
-          {mode === 'edit' && (
+          
+          <div className="flex items-center gap-4">
+            {mode === 'edit' && (
+              <button 
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={`flex items-center gap-2 px-4 py-2 text-white font-bold text-[10px] uppercase tracking-widest industrial-shadow transition-all ${isEditMode ? 'bg-slate-700' : 'bg-primary'}`}
+              >
+                {isEditMode ? <Lock className="w-3.5 h-3.5" /> : <Edit className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{isEditMode ? t('carDetails.lockSave') : t('carDetails.editProfile')}</span>
+              </button>
+            )}
             <button 
-              onClick={() => setIsEditMode(!isEditMode)}
-              className={`flex items-center gap-2 px-6 py-2.5 text-white font-bold text-xs uppercase tracking-widest industrial-shadow transition-all ${isEditMode ? 'bg-slate-700' : 'bg-primary'}`}
+              onClick={onClose}
+              className="p-2 text-black hover:bg-black/5 transition-colors sm:hidden"
             >
-              {isEditMode ? <Lock className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-              <span>{isEditMode ? t('carDetails.lockSave') : t('carDetails.editProfile')}</span>
+              <X className="w-5 h-5" />
             </button>
-          )}
+          </div>
         </div>
 
         {/* Content */}
@@ -839,8 +886,8 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
           </FormSection>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-8 sm:px-10 bg-slate-50 border-t border-black flex flex-col sm:flex-row gap-4 shrink-0">
+        {/* Flowing Footer (not sticky) */}
+        <div className="px-6 py-8 sm:px-10 bg-slate-50 border-t-2 border-black flex flex-col sm:flex-row gap-4">
           <Button1 
             onClick={onClose}
             className="sm:flex-1 !bg-slate-500 !border-slate-500 hover:!bg-slate-600 hover:!border-slate-600"

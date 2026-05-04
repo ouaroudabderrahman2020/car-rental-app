@@ -80,34 +80,32 @@ const Field1: React.FC<Field1Props> = ({
   };
 
   return (
-    <div className={`flex flex-col w-full relative ${className}`} style={style}>
-      <div className="relative max-w-[calc(100%-20px)] ml-[7px]">
-        <label 
-          ref={labelRef}
-          onMouseEnter={() => isOverflowing && setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-          className={`text-[0.75rem] text-black font-bold relative top-[0.5rem] px-[3px] bg-white z-10 uppercase tracking-wider whitespace-nowrap overflow-hidden inline-block transition-all truncate max-w-full
-            ${isOverflowing ? 'cursor-help' : ''}
-          `}
-        >
-          {label}
-          {required && <span className="text-red-600 font-bold ml-0.5">*</span>}
-        </label>
+    <div className={`flex flex-col w-full relative mt-2 ${className}`} style={style}>
+      <label 
+        ref={labelRef}
+        onMouseEnter={() => isOverflowing && setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        className={`absolute -top-2 left-3 px-1 bg-white z-10 text-[0.65rem] text-black font-black uppercase tracking-[0.1em] whitespace-nowrap overflow-hidden transition-all truncate max-w-[90%]
+          ${isOverflowing ? 'cursor-help' : ''}
+        `}
+      >
+        {label}
+        {required && <span className="text-red-600 font-bold ml-0.5">*</span>}
+      </label>
 
-        <AnimatePresence>
-          {showTooltip && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 5 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 5 }}
-              className="absolute z-[100] left-[7px] bottom-[calc(100%-0.5rem)] px-2 py-1 bg-black text-white text-[10px] rounded font-bold uppercase pointer-events-none whitespace-normal max-w-[200px] shadow-xl border border-white/20 mb-1"
-            >
-              {label}
-              <div className="absolute top-full left-2 -mt-1 border-4 border-transparent border-t-black" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      <AnimatePresence>
+        {showTooltip && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 5 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 5 }}
+            className="absolute z-[100] left-3 -top-10 px-2 py-1 bg-black text-white text-[9px] rounded font-bold uppercase pointer-events-none whitespace-normal max-w-[200px] shadow-xl border border-white/20"
+          >
+            {label}
+            <div className="absolute top-full left-2 -mt-1 border-4 border-transparent border-t-black" />
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {isSelect ? (
         <select

@@ -145,7 +145,6 @@ export default function Fleet() {
           onOptimisticDelete={handleOptimisticDelete}
           onClose={() => {
             setIsModalOpen(false);
-            fetchFleet();
           }}
         />
 
