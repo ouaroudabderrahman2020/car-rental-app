@@ -22,9 +22,11 @@ interface CarModalProps {
   onClose: () => void;
   mode: 'add' | 'edit';
   carData?: Car | null;
+  onOptimisticUpdate?: (car: any) => void;
+  onOptimisticDelete?: (id: string) => void;
 }
 
-export default function CarModal({ isOpen, onClose, mode, carData }: CarModalProps) {
+export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticUpdate, onOptimisticDelete }: CarModalProps) {
   const { t } = useTranslation();
   const { setStatus: setGlobalStatus } = useStatus();
   
@@ -41,8 +43,9 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
   const [odometer, setOdometer] = useState('');
   const [dailyRate, setDailyRate] = useState('');
   const [status, setStatus] = useState<any>('Available');
-  const [damageNotes, setDamageNotes] = useState('');
+  const [notes, setNotes] = useState('');
   const [gpsSim, setGpsSim] = useState('');
+  const [showRequiredError, setShowRequiredError] = useState(false);
   const [seats, setSeats] = useState('5');
   const [startingFuelLevel, setStartingFuelLevel] = useState('100');
 
@@ -76,7 +79,7 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
         setOdometer(carData.odometer ? carData.odometer.toString() : '');
         setDailyRate(carData.daily_rate ? carData.daily_rate.toString() : '');
         setStatus(carData.status || 'Available');
-        setDamageNotes(carData.damage_notes || '');
+        setNotes(carData.damage_notes || '');
         setGpsSim(carData.gps_sim || '');
         setSeats(carData.seats ? carData.seats.toString() : '');
         setStartingFuelLevel(carData.starting_fuel_level ? carData.starting_fuel_level.toString() : '');
@@ -103,7 +106,7 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
         setOdometer('');
         setDailyRate('');
         setStatus('Available');
-        setDamageNotes('');
+        setNotes('');
         setGpsSim('');
         setSeats('5');
         setStartingFuelLevel('100');
@@ -227,8 +230,9 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
   const validatePlate = (p: string) => /^[a-zA-Z0-9-\s]{2,15}$/.test(p);
 
   const handleConfirm = async () => {
-    if (!brand || !model || !plate || !dailyRate) {
-      setGlobalStatus(t('carForm.fillRequired'), 'error');
+    if (!brand || !model || !plate) {
+      setShowRequiredError(true);
+      setTimeout(() => setShowRequiredError(false), 3000);
       return;
     }
 
@@ -239,6 +243,36 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
 
     setIsSubmitting(true);
     setGlobalStatus(t('common.savingCar'), 'processing', 0);
+
+    // Optimistic Update & Early Close
+    const optimisticPayload = {
+      id: carData?.id || `temp-${Date.now()}`,
+      brand,
+      model,
+      plate,
+      color,
+      fuel_type: fuelType,
+      transmission,
+      odometer: odometer === '' ? 0 : (parseInt(odometer) || 0),
+      daily_rate: dailyRate === '' ? 0 : (parseFloat(dailyRate) || 0),
+      status,
+      starting_fuel_level: (startingFuelLevel === '' || isNaN(parseInt(startingFuelLevel))) ? 100 : parseInt(startingFuelLevel),
+      gps_sim: gpsSim,
+      seats: (seats === '' || isNaN(parseInt(seats))) ? 5 : parseInt(seats),
+      damage_notes: notes,
+      registration_expiry: registrationExpiry || null,
+      insurance_expiry: insuranceExpiry || null,
+      tech_inspection_expiry: techInspectionExpiry || null,
+      tax_renewal_expiry: taxRenewalExpiry || null,
+      image_url: carImage ? `data:${carImage.contentType};base64,${carImage.base64Data}` : imageUrl,
+      documentation_url: docUrl,
+      essentials,
+      intervals,
+    };
+
+    if (onOptimisticUpdate) onOptimisticUpdate(optimisticPayload);
+    onClose();
+
     try {
       let finalImageUrl = imageUrl || '';
       let finalDocUrl = docUrl;
@@ -318,7 +352,7 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
         starting_fuel_level: (startingFuelLevel === '' || isNaN(parseInt(startingFuelLevel))) ? 100 : parseInt(startingFuelLevel),
         gps_sim: gpsSim,
         seats: (seats === '' || isNaN(parseInt(seats))) ? 5 : parseInt(seats),
-        damage_notes: damageNotes,
+        damage_notes: notes,
         registration_expiry: registrationExpiry || null,
         insurance_expiry: insuranceExpiry || null,
         tech_inspection_expiry: techInspectionExpiry || null,
@@ -343,13 +377,9 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
         if (error) throw error;
         setGlobalStatus(t('carForm.success'), 'success');
       }
-
-      onClose();
     } catch (error: any) {
       console.error('Update error:', error);
       setGlobalStatus(`${t('carDetails.updateError')}: ${error.message || ''}`, 'error');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -358,6 +388,11 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
     if (confirm(t('carDetails.removeCarConfirm'))) {
       setIsSubmitting(true);
       setGlobalStatus(t('common.deleting'), 'processing', 0);
+      
+      // Optimistic Delete
+      if (onOptimisticDelete && carData.id) onOptimisticDelete(carData.id);
+      onClose();
+
       try {
         const { error } = await supabase
           .from('cars')
@@ -365,12 +400,9 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
           .eq('id', carData.id);
         if (error) throw error;
         setGlobalStatus(t('common.deleted'), 'success');
-        onClose();
       } catch (error: any) {
         console.error('Delete error:', error);
         setGlobalStatus(t('common.error'), 'error');
-      } finally {
-        setIsSubmitting(false);
       }
     }
   };
@@ -405,9 +437,9 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
           <FormSection title={t('carForm.specs')}>
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { label: t('carForm.brand'), val: brand, setter: setBrand },
-              { label: t('carForm.model'), val: model, setter: setModel },
-              { label: t('carForm.plate'), val: plate, setter: setPlate, extra: 'uppercase' },
+              { label: t('carForm.brand'), val: brand, setter: setBrand, required: true },
+              { label: t('carForm.model'), val: model, setter: setModel, required: true },
+              { label: t('carForm.plate'), val: plate, setter: setPlate, extra: 'uppercase', required: true },
               { label: t('carForm.color'), val: color, setter: setColor },
             ].map(field => (
               <Field1 
@@ -418,6 +450,7 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
                 placeholder={t('carForm.placeholder')}
                 className={field.extra}
                 disabled={!isEditMode || isSubmitting}
+                required={field.required}
               />
             ))}
 
@@ -617,9 +650,9 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
             <div className="lg:col-span-2">
               <Field1 
                 as="textarea"
-                label={t('carForm.damageNotes')}
-                value={damageNotes}
-                onChange={(e) => setDamageNotes(e.target.value)}
+                label={t('common.notes', 'Notes')}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 placeholder={t('carForm.placeholder')}
                 disabled={!isEditMode || isSubmitting}
               />
@@ -825,14 +858,28 @@ export default function CarModal({ isOpen, onClose, mode, carData }: CarModalPro
             </Button1>
           )}
           {isEditMode && (
-            <Button1 
-              disabled={isSubmitting}
-              onClick={handleConfirm}
-              className="sm:flex-[2]"
-              icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-            >
-              {isSubmitting ? t('carForm.processing') : (mode === 'add' ? t('carForm.confirm') : t('carDetails.lockSave'))}
-            </Button1>
+            <div className="flex items-center gap-4 sm:flex-[2]">
+              <AnimatePresence>
+                {showRequiredError && (
+                  <motion.span 
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-red-600 font-bold text-xs uppercase tracking-widest whitespace-nowrap"
+                  >
+                    Fill required fields!
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              <Button1 
+                disabled={isSubmitting}
+                onClick={handleConfirm}
+                className="w-full"
+                icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+              >
+                {isSubmitting ? t('carForm.processing') : (mode === 'add' ? t('carForm.confirm') : t('carDetails.lockSave'))}
+              </Button1>
+            </div>
           )}
         </div>
 

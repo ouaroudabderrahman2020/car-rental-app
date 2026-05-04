@@ -91,7 +91,7 @@ const Field1: React.FC<Field1Props> = ({
           `}
         >
           {label}
-          {required && <span className="text-red-500 ml-0.5">*</span>}
+          {required && <span className="text-red-600 font-bold ml-0.5">*</span>}
         </label>
 
         <AnimatePresence>
