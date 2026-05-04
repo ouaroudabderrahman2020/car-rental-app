@@ -81,7 +81,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
     }
 
     setIsSubmitting(true);
-    setStatus(t('common.saving'), 'processing', 0);
+    setStatus("SAVING CLIENT DATA...", 'processing', 0);
     try {
       const payload = {
         name,
@@ -113,7 +113,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
         if (error) throw error;
       }
       
-      setStatus(t('common.success'), 'success');
+      setStatus("CLIENT SAVED SUCCESSFULLY", 'success');
       if (onRefresh) onRefresh();
       onClose();
     } catch (err: any) {
@@ -129,7 +129,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
     if (!window.confirm(t('common.confirmation'))) return;
     
     setIsSubmitting(true);
-    setStatus(t('common.deleting'), 'processing', 0);
+    setStatus("DELETING CLIENT...", 'processing', 0);
     try {
       const { error } = await supabase
         .from('customers')
@@ -137,7 +137,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
         .eq('id', client.id);
       
       if (error) throw error;
-      setStatus(t('common.success'), 'success');
+      setStatus("CLIENT DELETED", 'success');
       if (onRefresh) onRefresh();
       onClose();
     } catch (err: any) {

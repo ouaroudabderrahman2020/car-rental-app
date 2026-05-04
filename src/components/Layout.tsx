@@ -270,28 +270,32 @@ export default function Layout({ children, title }: LayoutProps) {
         {children}
       </main>
 
-      {/* Slim Borderless Sticky Footer */}
-      <footer className="sticky bottom-0 w-full bg-white text-ink/40 py-3 border-t border-slate-50 z-[50] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-margin flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-          <div className="flex items-center gap-4">
+      {/* Global Status Bar (Footer) */}
+      <footer className="fixed bottom-0 w-full bg-white text-black py-2 border-t-2 border-black z-[9999] shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
+        <div className="max-w-[1440px] mx-auto px-4 md:px-margin flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em]">
+          <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div 
-                className="w-1.5 h-1.5 rounded-full" 
+                className="w-2 h-2 border border-black" 
                 style={{ backgroundColor: connectivity.color }} 
               />
-              <span>{connectivity.text === 'Active' ? t('common.active') : t('common.offline', 'Offline')}</span>
+              <span className="opacity-40">{connectivity.text === 'Active' ? t('common.active') : t('common.offline', 'Offline')}</span>
             </div>
             
-            {status && (
-              <div className="flex items-center gap-2">
-                {type === 'processing' && <Loader2 className="w-3 h-3 animate-spin" />}
-                <span>{status}</span>
-              </div>
-            )}
+            <div className="h-3 w-[1px] bg-black/10" />
+
+            <div className="flex items-center gap-3">
+              {type === 'processing' && (
+                <div className="w-1.5 h-1.5 bg-primary animate-pulse" />
+              )}
+              <span className={type === 'processing' ? 'animate-pulse' : ''}>
+                {status || 'IDLE'}
+              </span>
+            </div>
           </div>
 
-          <div>
-            © 2026 RentalCore Enterprise
+          <div className="hidden md:block opacity-20">
+            RentalCore System v1.0.4 // {verifiedTime.getFullYear()}
           </div>
         </div>
       </footer>

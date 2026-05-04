@@ -276,11 +276,11 @@ export default function ReservationModal({
     const file = event.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
-    setStatus(t('reservations.form.processingFile'), 'processing', 0);
+    setStatus("PROCESSING FILE...", 'processing', 0);
     try {
       const base64Data = await fileToBase64(file);
       setPendingFile({ base64Data, fileName: file.name, contentType: file.type });
-      setStatus(t('reservations.form.fileReady'), 'success');
+      setStatus("FILE READY FOR UPLOAD", 'success');
     } catch (err) {
       setStatus(t('common.error'), 'error');
     } finally {
@@ -319,7 +319,7 @@ export default function ReservationModal({
     }
 
     setErrors({});
-    setStatus(t('common.processingSubmission'), 'processing', 10);
+    setStatus("SAVING RESERVATION...", 'processing', 0);
 
     const baseData = {
       car_id: selectedCarId!,
@@ -367,7 +367,7 @@ export default function ReservationModal({
         license_plate: licensePlate
       });
 
-      setStatus(t('common.success'), 'success');
+      setStatus("RESERVATION SAVED SUCCESSFULLY", 'success');
       onClose();
     } catch (err: any) {
       setStatus(`Error: ${err.message}`, 'error');
@@ -384,6 +384,7 @@ export default function ReservationModal({
   const handleCreateContract = async () => {
     if (!isFormValid) return;
     setIsGeneratingContract(true);
+    setStatus("GENERATING CONTRACT...", 'processing', 0);
     
     const resData = {
       customer_name: clientName,
@@ -405,9 +406,9 @@ export default function ReservationModal({
     const result = await gasService.generateContract(filename, resData);
 
     if (result.success) {
-      setStatus(t('reservations.form.contractSuccess', 'Contract generated successfully in Drive!'), 'success');
+      setStatus("CONTRACT GENERATED SUCCESSFULLY", 'success');
     } else {
-      setStatus(`${t('common.error')}: ${result.error}`, 'error');
+      setStatus(`ERROR: ${result.error}`, 'error');
     }
     setIsGeneratingContract(false);
   };

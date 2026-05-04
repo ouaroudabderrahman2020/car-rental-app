@@ -242,7 +242,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
     }
 
     setIsSubmitting(true);
-    setGlobalStatus(t('common.savingCar'), 'processing', 0);
+    setGlobalStatus("SAVING CAR DATA...", 'processing', 0);
 
     // Optimistic Update & Early Close
     const optimisticPayload = {
@@ -282,7 +282,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
 
       // Handle File Uploads via GAS if present
       if (carImage) {
-        setGlobalStatus(t('common.uploadingImage'), 'processing');
+        setGlobalStatus("UPLOADING IMAGE...", 'processing');
         const oldImageId = getFileIdFromUrl(carData?.image_url);
         
         let imgRes;
@@ -311,7 +311,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
       }
 
       if (docFile) {
-        setGlobalStatus(t('common.uploadingDoc'), 'processing');
+        setGlobalStatus("UPLOADING DOCUMENTATION...", 'processing');
         const oldDocId = getFileIdFromUrl(carData?.documentation_url);
 
         let docRes;
@@ -369,17 +369,17 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
           .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('id', carData.id);
         if (error) throw error;
-        setGlobalStatus(t('carDetails.updateSuccess'), 'success');
+        setGlobalStatus("CAR SAVED SUCCESSFULLY", 'success');
       } else {
         const { error } = await supabase
           .from('cars')
           .insert([payload]);
         if (error) throw error;
-        setGlobalStatus(t('carForm.success'), 'success');
+        setGlobalStatus("CAR SAVED SUCCESSFULLY", 'success');
       }
     } catch (error: any) {
       console.error('Update error:', error);
-      setGlobalStatus(`${t('carDetails.updateError')}: ${error.message || ''}`, 'error');
+      setGlobalStatus(`ERROR: ${error.message || 'FAILED TO SAVE'}`, 'error');
     }
   };
 
@@ -387,7 +387,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
     if (!carData?.id) return;
     if (confirm(t('carDetails.removeCarConfirm'))) {
       setIsSubmitting(true);
-      setGlobalStatus(t('common.deleting'), 'processing', 0);
+      setGlobalStatus("DELETING CAR...", 'processing', 0);
       
       // Optimistic Delete
       if (onOptimisticDelete && carData.id) onOptimisticDelete(carData.id);
@@ -399,10 +399,10 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
           .delete()
           .eq('id', carData.id);
         if (error) throw error;
-        setGlobalStatus(t('common.deleted'), 'success');
+        setGlobalStatus("CAR DELETED", 'success');
       } catch (error: any) {
         console.error('Delete error:', error);
-        setGlobalStatus(t('common.error'), 'error');
+        setGlobalStatus("ERROR: DELETE FAILED", 'error');
       }
     }
   };
