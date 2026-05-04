@@ -32,7 +32,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
   const { setStatus: setGlobalStatus } = useStatus();
   const { showToast, confirm: customConfirm } = useNotification();
   
-  const [isEditMode, setIsEditMode] = useState(mode === 'add');
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
@@ -71,6 +71,9 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
 
   useEffect(() => {
     if (isOpen) {
+      setIsSubmitting(false);
+      setShowRequiredError(false);
+      
       if (mode === 'edit' && carData) {
         setBrand(carData.brand || '');
         setModel(carData.model || '');
