@@ -1,0 +1,294 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Fluid Scale Variables */
+  --text-fluid-base: clamp(1rem, 0.95rem + 0.25vw, 1.25rem); /* 16px to 20px */
+  --text-fluid-sm: clamp(0.875rem, 0.85rem + 0.125vw, 1rem); /* 14px to 16px */
+  --text-fluid-h1: clamp(1.5rem, 4vw, 2.5rem);
+  --text-fluid-h2: clamp(1.25rem, 3.5vw, 2rem);
+  --text-fluid-h3: clamp(1.125rem, 3vw, 1.75rem);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-primary: #31A984;
+  --color-secondary: #475569;
+  --color-tertiary: #765b00;
+  --color-background: #F9F5EB;
+  --color-on-background: #131B2E;
+  --color-midnight: #131B2E;
+  --color-ink: #131B2E;
+  --color-muted-mint: #E8F3F1;
+  --color-muted-cream: #F9F5EB;
+  --color-border-tint: #D1E2E0;
+  --color-slate-blue: #475569;
+  --color-nav-bg: #ECEEF0;
+  --color-accent-blue: #0C87BB;
+  --color-overdue-red: #DA453B;
+  --color-ice-blue: #F7F9FB;
+  --color-workshop-amber: #f59e0b;
+  --color-midnight-ink: #131B2E;
+  --color-slate-header: #475569;
+  --color-warm-accent: #FEF3C7;
+  --color-form-border: #CBD5E1;
+
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-default: 0px;
+
+  --spacing-unit: 4px;
+  --spacing-gutter: 1.5rem;
+  --spacing-margin: 2rem;
+
+  /* Vertical Rhythm Variables */
+  --spacing-title-gap: 1.5rem;   /* 24px - mb-6 */
+  --spacing-heading-gap: 1rem;    /* 16px - mb-4 */
+  --spacing-section-gap: 2.5rem;  /* 40px - gap-10 / space-y-10 */
+  --spacing-section-gap-sm: 1.5rem; /* 24px - gap-6 / space-y-6 */
+}
+
+/* RTL Font Scaling: Increase Arabic text by 20% */
+[dir="rtl"] {
+  --text-fluid-base: calc(clamp(1rem, 0.95rem + 0.25vw, 1.25rem) * 1.2);
+  --text-fluid-sm: calc(clamp(0.875rem, 0.85rem + 0.125vw, 1rem) * 1.2);
+  --text-fluid-h1: calc(clamp(1.5rem, 4vw, 2.5rem) * 1.2);
+  --text-fluid-h2: calc(clamp(1.25rem, 3.5vw, 2rem) * 1.2);
+  --text-fluid-h3: calc(clamp(1.125rem, 3vw, 1.75rem) * 1.2);
+}
+
+/* RTL Typography Scaling: Ensure all Arabic text is 20% larger */
+/* We scale the font-size of common text elements and Tailwind utility classes */
+[dir="rtl"] h1, [dir="rtl"] .text-fluid-h1 { font-size: calc(var(--text-fluid-h1)); }
+[dir="rtl"] h2, [dir="rtl"] .text-fluid-h2 { font-size: calc(var(--text-fluid-h2)); }
+[dir="rtl"] h3, [dir="rtl"] .text-fluid-h3 { font-size: calc(var(--text-fluid-h3)); }
+[dir="rtl"] p, [dir="rtl"] .text-fluid-base { font-size: calc(var(--text-fluid-base)); }
+
+/* Scale standard Tailwind font size classes by 20% in RTL */
+/* Note: We target the utility classes specifically as the app uses them extensively */
+[dir="rtl"] .text-base { font-size: 1.2rem !important; }
+[dir="rtl"] .text-sm { font-size: calc(0.875rem * 1.2) !important; }
+[dir="rtl"] .text-xs { font-size: calc(0.75rem * 1.2) !important; }
+[dir="rtl"] .text-lg { font-size: calc(1.125rem * 1.2) !important; }
+[dir="rtl"] .text-xl { font-size: calc(1.25rem * 1.2) !important; }
+[dir="rtl"] .text-2xl { font-size: calc(1.5rem * 1.2) !important; }
+[dir="rtl"] .text-\[10px\] { font-size: calc(10px * 1.2) !important; }
+[dir="rtl"] .text-\[9px\] { font-size: calc(9px * 1.2) !important; }
+[dir="rtl"] .text-\[8px\] { font-size: calc(8px * 1.2) !important; }
+
+@layer base {
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    @apply bg-white text-midnight font-sans antialiased;
+    font-size: var(--text-fluid-base);
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    transition: font-size 0.2s ease-in-out;
+  }
+
+  /* RTL Support for Arabic Script */
+  [dir="rtl"] body {
+    line-height: 1.8;
+  }
+
+  h1 {
+    font-size: var(--text-fluid-h1);
+    @apply font-black leading-tight tracking-tight uppercase;
+  }
+
+  h2 {
+    font-size: var(--text-fluid-h2);
+    @apply font-bold leading-tight;
+  }
+
+  h3 {
+    font-size: var(--text-fluid-h3);
+    @apply font-bold leading-tight;
+  }
+
+  p {
+    @apply mb-4;
+  }
+
+  input, select, textarea {
+    @apply text-base text-ink border border-black focus:outline-none focus:border-primary focus:ring-0 transition-colors py-3 px-4;
+  }
+}
+
+@layer utilities {
+  .text-fluid-base {
+    font-size: var(--text-fluid-base);
+  }
+  .text-fluid-sm {
+    font-size: var(--text-fluid-sm);
+  }
+  .text-fluid-h1 {
+    font-size: var(--text-fluid-h1);
+  }
+  .text-fluid-h2 {
+    font-size: var(--text-fluid-h2);
+  }
+  .text-fluid-h3 {
+    font-size: var(--text-fluid-h3);
+  }
+
+  .industrial-shadow {
+    box-shadow: 4px 4px 0px rgba(15, 23, 42, 0.1);
+  }
+
+  /* Vertical Rhythm Utilities */
+  .v-title-gap {
+    margin-bottom: var(--spacing-title-gap);
+  }
+  .v-heading-gap {
+    margin-bottom: var(--spacing-heading-gap);
+  }
+  .v-section-gap {
+    @apply flex flex-col gap-[var(--spacing-section-gap-sm)] lg:gap-[var(--spacing-section-gap)];
+  }
+
+  .standard-row-text {
+    @apply font-sans text-fluid-base font-semibold text-midnight;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .blue-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .blue-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .blue-scrollbar::-webkit-scrollbar-thumb {
+    background: #0066FF;
+    border-radius: 10px;
+  }
+  .blue-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #0052cc;
+  }
+
+  .black-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .black-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .black-scrollbar::-webkit-scrollbar-thumb {
+    background: #000000;
+    border-radius: 10px;
+  }
+  .black-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #1a1a1a;
+  }
+
+  /* Disable arrows/spinners for number inputs */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .combobox-list {
+    @apply absolute top-full inset-x-0 z-50 bg-white border border-black border-t-0;
+    box-shadow: 4px 4px 0px rgba(15, 23, 42, 0.1);
+  }
+
+  .combobox-item {
+    @apply px-4 py-3 cursor-pointer text-sm font-semibold uppercase hover:bg-ink/5 transition-colors;
+  }
+
+  .section-header-rule {
+    @apply relative flex items-center w-full after:flex-1 after:h-[3px] after:bg-black before:flex-1 before:h-[3px] before:bg-black;
+  }
+
+  .section-header-content {
+    @apply bg-warm-accent px-6 py-2.5 flex items-center gap-3 z-10 border-2 border-black;
+    box-shadow: 4px 4px 0px rgba(15, 23, 42, 0.1);
+  }
+
+  .filter-input {
+    background-color: transparent;
+    border-block-end: 2px solid #131B2E;
+    border-block-start: none;
+    border-inline: none;
+    padding: 0.5rem 0;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .filter-input:focus {
+    border-block-end-color: #31A984;
+    outline: none;
+  }
+  
+  .car-card {
+    @apply cursor-pointer transition-all duration-200 ease-in-out;
+  }
+  .car-card:hover {
+    @apply -translate-y-1 shadow-[8px_8px_0px_rgba(19,27,46,0.15)];
+  }
+
+  .header-btn {
+    @apply h-11 px-6 rounded-[1.5rem] bg-[#10B981] text-white font-sans font-black uppercase tracking-widest text-[10px] flex items-center gap-2 transition-all border border-white/20 shadow-sm hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 duration-150;
+  }
+
+  .empty-table-cell {
+    @apply py-12 text-center text-midnight/40 font-bold uppercase tracking-widest;
+  }
+}
+
+/* Responsive Table Mobile Styles */
+@media (max-width: 1023px) {
+  .responsive-table thead {
+    display: none;
+  }
+  .responsive-table, .responsive-table tbody, .responsive-table tr, .responsive-table td {
+    display: block;
+    width: 100%;
+  }
+  .responsive-table tr {
+    background: white !important;
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0 !important;
+    border-block-end: 1px solid #D1E2E0;
+    text-align: end !important;
+  }
+  .responsive-table td:last-child {
+    border-block-end: 0;
+  }
+  .responsive-table td:before {
+    content: attr(data-label);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    @apply text-slate-blue bg-nav-bg;
+    text-align: start;
+    padding: 2px 8px;
+    border: 1px solid #D1E2E0;
+    margin-inline-end: 1rem;
+    flex-shrink: 0;
+  }
+  .responsive-table td.empty-table-cell {
+    display: block !important;
+    text-align: center !important;
+    width: 100% !important;
+  }
+  .responsive-table td.empty-table-cell:before {
+    display: none !important;
+  }
+}
