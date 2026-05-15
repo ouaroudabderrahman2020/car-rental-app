@@ -367,7 +367,7 @@ export default function ReservationModal({
       if (customers) {
         setAllCustomers(customers);
         if (clientId) {
-          const matched = customers.find(c => (c.id_card_number === clientId || c.national_id === clientId));
+          const matched = customers.find(c => (c.national_id === clientId));
           if (matched) setSelectedCustomer(matched);
         }
       }
@@ -460,13 +460,13 @@ export default function ReservationModal({
     const file = event.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
-    setStatus("PROCESSING FILE...", 'processing', 0);
+    setStatus(t('reservationModal.processingFile', 'Processing file...'), 'processing', 0);
     try {
       const base64Data = await fileToBase64(file);
       setPendingFile({ base64Data, fileName: file.name, contentType: file.type });
-      setStatus("FILE READY FOR UPLOAD", 'success');
+      setStatus(t('reservationModal.fileReady', 'File ready for upload'), 'success');
     } catch (err) {
-      setStatus(t('common.error', 'Error'), 'error');
+      setStatus(t('reservationModal.fileError', 'Error processing file'), 'error');
     } finally {
       setIsUploading(false);
     }
@@ -495,32 +495,30 @@ export default function ReservationModal({
   };
 
   const triggerGasSideEffects = async (resData: any) => {
-    const resFolderName = `Res_${resData.customer_name}_${new Date().toISOString().split('T')[0]}`.replace(/\s+/g, '_');
+    // Format: reservations/[id]_[date]
+    const resFolderName = `${resData.id}_${new Date().toISOString().split('T')[0]}`.replace(/\s+/g, '_');
     const tasks: Promise<any>[] = [];
 
     // Individual standard images (if any)
     if (pendingFile) {
-      tasks.push(gasService.uploadCarFile({
+      tasks.push(gasService.uploadReservationFile({
         ...pendingFile,
-        carFolderName: resFolderName
+        reservationFolderName: resFolderName
       }));
     }
 
     // List of multiple files from Documentation section
     Object.entries(docFiles).forEach(([key, fileList]) => {
       fileList.forEach((fileObj: any) => {
-        tasks.push(gasService.uploadCarFile({
+        tasks.push(gasService.uploadReservationFile({
           ...fileObj,
           fileName: `${key}_${fileObj.name}`,
-          carFolderName: resFolderName
+          reservationFolderName: resFolderName
         }));
       });
     });
 
     await Promise.allSettled(tasks);
-    
-    // Contract generation
-    await gasService.generateContract(`Contract_${resData.customer_name}`, resData);
   };
 
   const [isRegistering, setIsRegistering] = useState(false);
@@ -583,7 +581,7 @@ export default function ReservationModal({
   const handleFormSubmit = async (statusOverride?: 'Completed' | 'Confirmed') => {
     const dateError = validateDates();
     if (dateError) { 
-      setStatus(dateError, 'error'); 
+      setStatus(dateError, 'error'); // Keep as is - it's a validation message
       return; 
     }
 
@@ -602,7 +600,7 @@ export default function ReservationModal({
     }
 
     setErrors({});
-    setStatus("SAVING RESERVATION...", 'processing', 0);
+    setStatus(t('reservationModal.savingReservation', 'Saving reservation...'), 'processing', 0);
 
     const baseData = {
       car_id: selectedCarId!,
@@ -616,10 +614,10 @@ export default function ReservationModal({
       prepayment: typeof prepayment === 'string' ? parseFloat(prepayment) || 0 : prepayment,
       deposit_type: depositType,
       deposit_amount: typeof depositAmount === 'string' ? parseFloat(depositAmount) || 0 : depositAmount,
-      fuel_level_out: parseInt(fuelOut) || null,
-      fuel_level_in: parseInt(fuelIn) || null,
-      odometer_out: parseInt(odometerOut) || null,
-      odometer_in: parseInt(odometerIn) || null,
+      fuel_level_out: fuelOut ? parseInt(fuelOut, 10) : undefined,
+      fuel_level_in: fuelIn ? parseInt(fuelIn, 10) : undefined,
+      odometer_out: odometerOut ? parseInt(odometerOut, 10) : undefined,
+      odometer_in: odometerIn ? parseInt(odometerIn, 10) : undefined,
       cleaned_before: cleanedBefore,
       included_items: includedItems,
       notes: notes,
@@ -636,10 +634,10 @@ export default function ReservationModal({
       }
 
       if (statusOverride === 'Completed' && selectedCarId) {
-        await supabase.from('cars').update({ 
+        await supabase.from('cars').update({
           status: 'Available',
-          odometer: parseInt(odometerIn) || undefined,
-          starting_fuel_level: parseInt(fuelIn) || undefined
+          odometer: odometerIn ? parseInt(odometerIn, 10) : undefined,
+          starting_fuel_level: fuelIn ? parseInt(fuelIn, 10) : undefined
         }).eq('id', selectedCarId);
       }
 
@@ -650,10 +648,10 @@ export default function ReservationModal({
         license_plate: licensePlate
       });
 
-      setStatus("RESERVATION SAVED SUCCESSFULLY", 'success');
+      setStatus(t('reservationModal.reservationSaved', 'Reservation saved successfully'), 'success');
       onClose();
     } catch (err: any) {
-      setStatus(`Error: ${err.message}`, 'error');
+      setStatus(`${t('reservationModal.saveError', 'Error saving reservation')}: ${err.message}`, 'error');
     }
   };
 
@@ -667,7 +665,7 @@ export default function ReservationModal({
   const handleCreateContract = async () => {
     if (!isFormValid) return;
     setIsGeneratingContract(true);
-    setStatus("GENERATING CONTRACT...", 'processing', 0);
+    setStatus(t('reservationModal.generatingContract', 'Generating contract...'), 'processing', 0);
     
     const resData = {
       customer_name: clientName,
@@ -688,10 +686,16 @@ export default function ReservationModal({
     const filename = `Contract_${clientName.replace(/\s+/g, '_')}_${new Date().getTime()}`;
     const result = await gasService.generateContract(filename, resData);
 
-    if (result.success) {
-      setStatus("CONTRACT GENERATED SUCCESSFULLY", 'success');
+    if (result.success || result.data) {
+      setStatus(t('reservationModal.contractGenerated', 'Contract generated successfully'), 'success');
+      // Store the generated contract file info
+      setGeneratedContractFile({
+        name: result.data?.fileName || filename,
+        url: result.data?.url,
+        id: result.data?.id
+      });
     } else {
-      setStatus(`ERROR: ${result.error}`, 'error');
+      setStatus(`${t('reservationModal.contractError', 'Error generating contract')}: ${result.error || result.message || 'Failed to generate contract'}`, 'error');
     }
     setIsGeneratingContract(false);
   };
@@ -714,7 +718,6 @@ export default function ReservationModal({
             extraHeader={
               <button 
                 onClick={() => {
-                  resetClientSelection();
                   setIsClientModalOpen(true);
                 }}
                 className="px-4 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest border-2 border-black rounded-[12px] hover:bg-blue-700 transition-all flex items-center gap-2"
@@ -764,7 +767,7 @@ export default function ReservationModal({
                   >
                     {allCustomers.filter(c => 
                       c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) || 
-                      (c.national_id || c.id_card_number || '').toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+                      (c.national_id || '').toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
                       (c.license_number || '').toLowerCase().includes(clientSearchQuery.toLowerCase())
                     ).map(customer => (
                       <div 
@@ -774,7 +777,7 @@ export default function ReservationModal({
                           setSelectedCustomer(customer);
                           setClientName(customer.name);
                           setClientPhone(customer.phone_number || customer.phone || '');
-                          setClientId(customer.national_id || customer.id_card_number || '');
+                          setClientId(customer.national_id || '');
                           setClientLicense(customer.license_number || '');
                           setClientSearchQuery(customer.name);
                           setIsClientSearchListActive(false);
@@ -783,7 +786,7 @@ export default function ReservationModal({
                         <div className="flex flex-col gap-1">
                           <span className="text-black group-hover:text-blue-600 transition-colors uppercase">{customer.name}</span>
                           <div className="flex items-center gap-4 text-[10px] text-black/40 font-black uppercase tracking-widest">
-                            <span className="flex items-center gap-1.5"><CreditCard className="w-3 h-3" /> {customer.national_id || customer.id_card_number || '---'}</span>
+                            <span className="flex items-center gap-1.5"><CreditCard className="w-3 h-3" /> {customer.national_id || '---'}</span>
                             <span className="flex items-center gap-1.5"><Monitor className="w-3 h-3" /> {customer.license_number || '---'}</span>
                           </div>
                         </div>
@@ -1106,10 +1109,19 @@ export default function ReservationModal({
         >
           <div className="col-span-full flex flex-col gap-10">
             {generatedContractFile && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border-2 border-emerald-500/20 rounded-[12px] w-fit animate-in fade-in slide-in-from-top-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (generatedContractFile.url) {
+                    window.open(generatedContractFile.url, '_blank');
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border-2 border-emerald-500/20 rounded-[12px] w-fit animate-in fade-in slide-in-from-top-2 hover:bg-emerald-100 hover:border-emerald-500/40 transition-all cursor-pointer"
+              >
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
                 <span className="text-[10px] font-bold text-emerald-900">{generatedContractFile.name}</span>
-              </div>
+                <FileText className="w-3 h-3 text-emerald-600" />
+              </button>
             )}
 
             <div className="grid grid-cols-1 gap-8 w-full">
@@ -1228,6 +1240,7 @@ export default function ReservationModal({
                 const { data } = await supabase.from('customers').select('*');
                 if (data) setAllCustomers(data);
               }}
+              onConfirm={() => setIsClientModalOpen(false)}
             />
           )}
 
@@ -1419,6 +1432,7 @@ export default function ReservationModal({
           onClose={() => setIsClientViewModalOpen(false)}
           mode="edit"
           client={selectedCustomer}
+          onConfirm={() => setIsClientViewModalOpen(false)}
         />
     </BaseModal>
   );

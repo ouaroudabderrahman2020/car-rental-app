@@ -85,11 +85,13 @@ export default function ClientDashboard() {
   }, [clients, reservations]);
 
   const filteredClients = useMemo(() => {
-    return enrichedClients.filter(client => 
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone.includes(searchTerm)
-    );
+    return enrichedClients
+      .filter(client => 
+        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.phone.includes(searchTerm)
+      )
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [enrichedClients, searchTerm]);
 
   const handleOpenDetails = (client: Customer) => {
@@ -126,11 +128,11 @@ export default function ClientDashboard() {
                   <table className="w-full text-start border-collapse responsive-table">
                     <thead>
                       <tr className="bg-slate-800 text-white text-[10px] md:text-xs font-black uppercase tracking-[0.2em] border-b border-slate-800">
-                        <th className="py-5 px-8 text-start">{t('crm.table.customer', 'Customer')}</th>
-                        <th className="py-5 px-6 text-start">{t('crm.table.identity', 'ID / License')}</th>
-                        <th className="py-5 px-6 text-center">{t('crm.table.reservations', 'Res.')}</th>
-                        <th className="py-5 px-6 text-start">{t('crm.table.lastRental', 'Last/Active Rental')}</th>
-                        <th className="py-5 px-8 text-end">{t('crm.table.ranking', 'Ranking')}</th>
+                        <th className="py-3 px-6 text-start">{t('crm.table.customer', 'Customer')}</th>
+                        <th className="py-3 px-4 text-start">{t('crm.table.identity', 'ID / License')}</th>
+                        <th className="py-3 px-4 text-center">{t('crm.table.reservations', 'Res.')}</th>
+                        <th className="py-3 px-4 text-start">{t('crm.table.lastRental', 'Last/Active Rental')}</th>
+                        <th className="py-3 px-6 text-end">{t('crm.table.ranking', 'Ranking')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -159,10 +161,10 @@ export default function ClientDashboard() {
                               className="group hover:bg-slate-50 cursor-pointer transition-colors"
                             >
                               {/* Customer Info */}
-                              <td className="py-6 px-8" data-label={t('crm.table.customer')}>
-                                <div className="flex items-center gap-4">
-                                  <div className={`w-10 h-10 flex items-center justify-center border-2 ${client.is_blacklisted ? 'border-red-500 bg-red-50' : 'border-midnight-ink/10 bg-white'} transition-colors shrink-0`}>
-                                    <User className={`w-5 h-5 ${client.is_blacklisted ? 'text-red-500' : 'text-slate-400'}`} />
+                              <td className="py-2.5 px-6" data-label={t('crm.table.customer')}>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 flex items-center justify-center border-2 ${client.is_blacklisted ? 'border-red-500 bg-red-50' : 'border-midnight-ink/10 bg-white'} transition-colors shrink-0`}>
+                                    <User className={`w-4 h-4 ${client.is_blacklisted ? 'text-red-500' : 'text-slate-400'}`} />
                                   </div>
                                   <div className="text-start">
                                     <div className={`font-black uppercase tracking-tight text-sm ${client.is_blacklisted ? 'text-red-600' : 'text-slate-900 group-hover:text-blue-600'}`}>
@@ -176,7 +178,7 @@ export default function ClientDashboard() {
                               </td>
 
                               {/* ID / Driver License */}
-                              <td className="py-6 px-6 text-start" data-label={t('crm.table.identity')}>
+                              <td className="py-2.5 px-4 text-start" data-label={t('crm.table.identity')}>
                                 <div className="flex flex-col">
                                   <span className="text-sm font-bold text-slate-800">{client.id_card_number || client.id}</span>
                                   <span className="text-[11px] font-medium text-slate-400">{client.license_number || 'No License'}</span>
@@ -184,12 +186,12 @@ export default function ClientDashboard() {
                               </td>
 
                               {/* Number of Reservations */}
-                              <td className="py-6 px-6 text-center font-mono font-bold text-sm" data-label={t('crm.table.reservations')}>
+                              <td className="py-2.5 px-4 text-center font-mono font-bold text-sm" data-label={t('crm.table.reservations')}>
                                 {client.rentalCount}
                               </td>
 
                               {/* Active/Last Rental */}
-                              <td className="py-6 px-6 text-start" data-label={t('crm.table.lastRental')}>
+                              <td className="py-2.5 px-4 text-start" data-label={t('crm.table.lastRental')}>
                                 {client.displayRental ? (
                                   <div className="flex flex-col">
                                     <div className="flex items-center gap-1.5">
@@ -210,7 +212,7 @@ export default function ClientDashboard() {
                               </td>
 
                               {/* Ranking */}
-                              <td className="py-6 px-8 text-end" data-label={t('crm.table.ranking')}>
+                              <td className="py-2.5 px-6 text-end" data-label={t('crm.table.ranking')}>
                                 <div className="flex justify-end gap-0.5">
                                   {[1, 2, 3, 4, 5].map((star) => (
                                     <Star 

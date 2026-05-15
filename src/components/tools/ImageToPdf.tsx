@@ -131,7 +131,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
           });
         }
         const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const blob = new Blob([pdfBytes.buffer], { type: 'application/pdf' });
         setResults([{
           id: 'single-result',
           name: 'converted_images.pdf',
@@ -169,7 +169,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
           newResults.push({
             id: img.id,
             name: `${img.name.split('.')[0]}.pdf`,
-            blob: new Blob([pdfBytes], { type: 'application/pdf' }),
+            blob: new Blob([pdfBytes.buffer], { type: 'application/pdf' }),
             previewUrl: img.url
           });
         }
