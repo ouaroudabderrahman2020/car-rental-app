@@ -1137,20 +1137,6 @@ export default function ReservationModal({
                 onRemove={(idx: number) => handleRemoveFile('paper_contract', idx)}
                 disabled={isEdit && isEditLocked}
               />
-              <MultiFileUpload 
-                label={t('reservations.form.idCard', 'Client ID Card')}
-                files={docFiles.id_card}
-                onUpload={(e: any) => handleFileUploadList('id_card', e)}
-                onRemove={(idx: number) => handleRemoveFile('id_card', idx)}
-                disabled={isEdit && isEditLocked}
-              />
-              <MultiFileUpload 
-                label={t('reservations.form.drivingLicense', 'Client Driving License')}
-                files={docFiles.license}
-                onUpload={(e: any) => handleFileUploadList('license', e)}
-                onRemove={(idx: number) => handleRemoveFile('license', idx)}
-                disabled={isEdit && isEditLocked}
-              />
             </div>
           </div>
         </ModalSection1>
@@ -1261,7 +1247,7 @@ export default function ReservationModal({
                         setLicensePlate(car.plate);
                         setDailyRate(car.daily_rate);
                         setOdometerOut(car.odometer?.toString() || '0');
-                        setFuelOut(car.starting_fuel_level?.toString() || '100');
+                        setFuelOut('');
                         // Pre-select items from car essentials
                         if (car.essentials) {
                           setIncludedItems(car.essentials.filter((e: any) => e.checked).map((e: any) => e.name));
