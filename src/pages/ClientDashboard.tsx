@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, User, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity, FileText } from 'lucide-react';
+import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Customer, Reservation } from '../types';
@@ -163,9 +163,6 @@ export default function ClientDashboard() {
                               {/* Customer Info */}
                               <td className="py-2.5 px-6" data-label={t('crm.table.customer')}>
                                 <div className="flex items-center gap-3">
-                                  <div className={`w-8 h-8 flex items-center justify-center border-2 ${client.is_blacklisted ? 'border-red-500 bg-red-50' : 'border-midnight-ink/10 bg-white'} transition-colors shrink-0`}>
-                                    <User className={`w-4 h-4 ${client.is_blacklisted ? 'text-red-500' : 'text-slate-400'}`} />
-                                  </div>
                                   <div className="text-start">
                                     <div className={`font-black uppercase tracking-tight text-sm ${client.is_blacklisted ? 'text-red-600' : 'text-slate-900 group-hover:text-blue-600'}`}>
                                       {client.name}
@@ -179,10 +176,7 @@ export default function ClientDashboard() {
 
                               {/* ID / Driver License */}
                               <td className="py-2.5 px-4 text-start" data-label={t('crm.table.identity')}>
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-slate-800">{client.id_card_number || client.id}</span>
-                                  <span className="text-[11px] font-medium text-slate-400">{client.license_number || 'No License'}</span>
-                                </div>
+                                <span className="text-sm font-bold text-slate-800">{client.national_id || client.id_card_number || '---'} / {client.license_number || '---'}</span>
                               </td>
 
                               {/* Number of Reservations */}

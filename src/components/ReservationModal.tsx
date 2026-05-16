@@ -3,7 +3,7 @@ import {
   X, Search, User, Phone, CreditCard, 
   Car as CarIcon, Calendar, Monitor, ClipboardList, 
   Upload, Star, Plus, Check, Edit, Lock, Trash2, CheckCircle, Loader2, FileText,
-  AlertCircle, ChevronRight, ChevronDown, Gauge, Fuel, Sparkles, Files, XCircle, ClipboardPaste
+  AlertCircle, ChevronRight, ChevronDown, Gauge, Fuel, Sparkles, Files, XCircle, ClipboardPaste, RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
@@ -534,6 +534,7 @@ export default function ReservationModal({
           name: clientName,
           national_id: clientId,
           license_number: clientLicense,
+          phone: clientPhone || '',
           trust_rank: '3',
           is_blacklisted: false
         }]);
@@ -552,7 +553,18 @@ export default function ReservationModal({
     }
   };
 
-  const isRegisterEnabled = !selectedCustomer && clientName.trim() !== '' && clientId.trim() !== '' && clientLicense.trim() !== '';
+  const isRegisterEnabled = clientName.trim() !== '' && clientId.trim() !== '' && clientLicense.trim() !== '' && !selectedCustomer;
+
+  const handleResetCustomerSection = () => {
+    setClientSearchQuery('');
+    setClientName('');
+    setClientPhone('');
+    setClientId('');
+    setClientLicense('');
+    setSelectedCustomer(null);
+    setRegistrationStatus(null);
+    setIsClientSearchListActive(false);
+  };
 
   const handleFormSubmit = async (statusOverride?: 'Completed' | 'Confirmed') => {
     const dateError = validateDates();
@@ -871,17 +883,26 @@ export default function ReservationModal({
             </div>
           )}
 
-          {!selectedCustomer && (
-            <div className="col-span-full pt-4 border-t-2 border-black/5 flex flex-col items-center gap-4">
+          <div className="border-t-2 border-black/5 mx-3" />
+          <div className="flex flex-col items-center gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
               <button
-                onClick={handleRegisterClient}
-                disabled={!isRegisterEnabled || isRegistering}
-                className={`min-w-[200px] h-11 px-8 rounded-[12px] text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all shadow-sm flex items-center justify-center gap-3 ${
-                  !isRegisterEnabled 
-                    ? 'bg-slate-100 text-black/20 border-black/10 cursor-not-allowed' 
-                    : 'bg-[#0066FF] text-white border-[#0066FF] hover:bg-blue-700 shadow-blue-100 shadow-lg'
-                }`}
-              >
+                  onClick={handleResetCustomerSection}
+                  disabled={isRegistering}
+                  className="w-full sm:w-auto sm:min-w-[120px] h-11 px-6 rounded-[12px] text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all shadow-sm flex items-center justify-center gap-2 bg-white text-black hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  {t('common.reset', 'Reset')}
+                </button>
+                <button
+                  onClick={handleRegisterClient}
+                  disabled={!isRegisterEnabled || isRegistering}
+                  className={`w-full sm:w-auto sm:min-w-[200px] h-11 px-8 rounded-[12px] text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all shadow-sm flex items-center justify-center gap-3 ${
+                    !isRegisterEnabled 
+                      ? 'bg-slate-100 text-black/20 border-black/10 cursor-not-allowed' 
+                      : 'bg-[#0066FF] text-white border-[#0066FF] hover:bg-blue-700 shadow-blue-100 shadow-lg'
+                  }`}
+                >
                 {isRegistering ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -894,19 +915,19 @@ export default function ReservationModal({
                   </>
                 )}
               </button>
-
-              {registrationStatus && (
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-[12px] border-2 text-[10px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-2 duration-300 ${
-                  registrationStatus.type === 'success' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' :
-                  registrationStatus.type === 'warning' ? 'bg-amber-50 border-amber-500 text-amber-700' :
-                  'bg-red-50 border-red-500 text-red-700'
-                }`}>
-                  {registrationStatus.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                  {registrationStatus.message}
-                </div>
-              )}
             </div>
-          )}
+
+            {registrationStatus && (
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-[12px] border-2 text-[10px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-2 duration-300 ${
+                registrationStatus.type === 'success' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' :
+                registrationStatus.type === 'warning' ? 'bg-amber-50 border-amber-500 text-amber-700' :
+                'bg-red-50 border-red-500 text-red-700'
+              }`}>
+                {registrationStatus.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                {registrationStatus.message}
+              </div>
+            )}
+          </div>
         </ModalSection1>
 
         {/* Section 2: Schedule */}
