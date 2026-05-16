@@ -350,6 +350,18 @@ export default function ReservationModal({
     fetchData();
   }, [isOpen]);
 
+  // Fill missing car-specific fields from availableCars when editing
+  useEffect(() => {
+    if (!isEdit || !selectedCarId || availableCars.length === 0) return;
+    const car = availableCars.find(c => c.id === selectedCarId);
+    if (!car) return;
+    if (!dailyRate) setDailyRate(car.daily_rate || '');
+    if (!odometerOut) setOdometerOut(car.odometer?.toString() || '');
+    if (!carBrand) setCarBrand(car.brand || '');
+    if (!carModel) setCarModel(car.model || '');
+    if (!licensePlate) setLicensePlate(car.plate || '');
+  }, [availableCars, isEdit, selectedCarId]);
+
   const [duration, setDuration] = useState('0 Days, 0 Hours');
   const [totalPrice, setTotalPrice] = useState(0);
   const [balanceDue, setBalanceDue] = useState(0);

@@ -16,7 +16,6 @@ export default function Reservations() {
   const { setStatus } = useStatus();
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<FormattedReservation | null>(null);
   const [initialData, setInitialData] = useState<any>(null);
   const [activeReservations, setActiveReservations] = useState<FormattedReservation[]>([]);
@@ -34,7 +33,12 @@ export default function Reservations() {
             car:cars (
               brand,
               model,
-              plate
+              plate,
+              daily_rate,
+              odometer,
+              starting_fuel_level,
+              image_url,
+              essentials
             )
           `)
           .order('created_at', { ascending: false });
@@ -81,12 +85,6 @@ export default function Reservations() {
     fetchReservations();
   }, [i18n.language]);
 
-  const handleOpenEdit = (res: FormattedReservation) => {
-    setSelectedReservation(res);
-    setModalMode('edit');
-    setIsModalOpen(true);
-  };
-
   const handleOpenDetails = (res: FormattedReservation) => {
     setSelectedReservation(res);
     setModalMode('edit');
@@ -101,7 +99,7 @@ export default function Reservations() {
       carBrand: res.car?.brand,
       carModel: res.car?.model,
       carPlate: res.car?.plate,
-      daily_rate: res.total_price / 3, // Mock fallback or get from car
+      daily_rate: res.car?.daily_rate || 0,
       prepayment: 0,
       deposit_type: res.deposit_type,
       deposit_amount: res.deposit_amount,
