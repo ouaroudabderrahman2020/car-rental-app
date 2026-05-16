@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Languages, Circle, Loader2, CheckCircle2, AlertCircle, Menu, X, Clock } from 'lucide-react';
+import { Languages, Circle, Loader2, CheckCircle2, AlertCircle, Menu, X, Clock, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { useVerifiedTime, SyncStatus } from '../hooks/useVerifiedTime';
 import { useStatus } from '../contexts/StatusContext';
 
@@ -37,6 +38,7 @@ export default function Layout({ children, title }: LayoutProps) {
   const { verifiedTime, syncStatus } = useVerifiedTime();
   const { t, i18n } = useTranslation();
   const { status, type } = useStatus();
+  const { signOut } = useAuth();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [connectivity, setConnectivity] = useState({ text: 'Active', color: '#31A984' });
@@ -203,6 +205,14 @@ export default function Layout({ children, title }: LayoutProps) {
             </div>
 
             <div className="flex items-center gap-2 md:gap-4">
+              <button
+                onClick={signOut}
+                className="flex items-center gap-1 p-1.5 hover:bg-ink/5 transition-all border border-transparent hover:border-ink/10"
+                title={t('common.signOut', 'Sign Out')}
+              >
+                <LogOut className="w-4 h-4 md:w-5 md:h-5 text-ink" />
+              </button>
+
               <div className="relative lang-switcher-container">
                 <button 
                   onClick={() => setLangDropdownOpen(!langDropdownOpen)}
