@@ -1096,6 +1096,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
                 onChange={(items) => setEssentials(items)}
                 isEdit={isEditMode && !isSubmitting}
                 isEditLocked={false}
+                disabled={!isEditMode}
               />
 
               <TextareaField 

@@ -15,6 +15,7 @@ interface ItemSectionProps {
   onChange: (items: string[]) => void;
   isEdit?: boolean;
   isEditLocked?: boolean;
+  disabled?: boolean;
 }
 
 const DEFAULT_EQUIPMENT_KEYS = ['vest', 'triangle', 'extinguisher', 'tire', 'jack', 'wrench'];
@@ -32,7 +33,8 @@ export const ItemSection: React.FC<ItemSectionProps> = ({
   items, 
   onChange, 
   isEdit, 
-  isEditLocked 
+  isEditLocked,
+  disabled = false
 }) => {
   const { t } = useTranslation();
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -105,7 +107,7 @@ export const ItemSection: React.FC<ItemSectionProps> = ({
             <button 
               key={key} 
               type="button"
-              disabled={isEdit && isEditLocked}
+              disabled={disabled || (isEdit && isEditLocked)}
               onClick={() => handleToggleItem(label)}
               className={`flex items-center gap-2 p-1.5 border-[1px] rounded-[12px] group transition-all text-left min-w-0 ${
                 isSelected 
@@ -166,7 +168,7 @@ export const ItemSection: React.FC<ItemSectionProps> = ({
                 </span>
               </div>
 
-              {!(isEdit && isEditLocked) && (
+              {!disabled && !(isEdit && isEditLocked) && (
                 <button 
                   onClick={() => handleRemoveItem(item)}
                   className="text-emerald-700 p-1 rounded-[8px] hover:bg-emerald-100 transition-all"
@@ -179,7 +181,7 @@ export const ItemSection: React.FC<ItemSectionProps> = ({
         })}
 
         {/* Add Custom Item Button */}
-        {!(isEdit && isEditLocked) && !isAddingItem && (
+        {!disabled && !(isEdit && isEditLocked) && !isAddingItem && (
           <button 
             onClick={() => setIsAddingItem(true)}
             className="h-12 px-4 bg-slate-50 border-[1px] border-dashed border-black/10 rounded-[12px] flex flex-col items-center justify-center gap-1 text-[8px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all hover:border-black/20 group"
