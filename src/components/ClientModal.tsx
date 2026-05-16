@@ -11,7 +11,8 @@ import { Customer, Reservation } from '../types';
 import { useStatus } from '../contexts/StatusContext';
 import { useNotification } from '../contexts/NotificationContext';
 import BaseModal from './BaseModal';
-import { gasService, getFileIdFromUrl, getDrivePreviewUrl } from '../lib/gas';
+import { getDrivePreviewUrl } from '../lib/gas';
+import { uploadFile, deleteFiles, listFolderFiles } from '../lib/storage';
 
 import ModalSection1 from './modalSection1';
 
@@ -260,25 +261,20 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       if (mode === 'edit' && client) {
         oldFolderName = `${client.name} ${client.national_id || client.id_card_number || ''}`.trim();
         
-        // If identity changed BUT no file is uploaded, we should still rename the folder
-        if (oldFolderName !== folderName && !idDocFile && !licenseDocFile && !masterDocFile) {
-          await gasService.renameClientFolder(oldFolderName, folderName);
+        // If identity changed, remove all files under the old folder path
+        if (oldFolderName !== folderName) {
+          const oldFiles = await listFolderFiles('client-files', oldFolderName);
+          if (oldFiles.length > 0) await deleteFiles('client-files', oldFiles);
         }
       }
 
       // Upload ID Doc
       if (idDocFile) {
         setStatus(t('common.processing', 'Processing...'), 'processing');
-        const oldId = getFileIdFromUrl(client?.drive_id_photo) || undefined;
-        const res = await gasService.uploadClientFile({
-          ...idDocFile,
-          clientFolderName: folderName,
-          oldClientFolderName: oldFolderName,
-          oldFileId: oldId
-        });
-        if (res.status === 'success' && res.data.url) {
-          finalIdDocUrl = res.data.url;
-          setIdDocUrl(res.data.url);
+        const url = await uploadFile('client-files', idDocFile.base64, idDocFile.fileName, idDocFile.contentType, folderName);
+        if (url) {
+          finalIdDocUrl = url;
+          setIdDocUrl(url);
           setIdDocFile(null);
         }
       }
@@ -286,16 +282,10 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       // Upload License Doc
       if (licenseDocFile) {
         setStatus(t('common.processing', 'Processing...'), 'processing');
-        const oldId = getFileIdFromUrl(client?.drive_license_front_photo) || undefined;
-        const res = await gasService.uploadClientFile({
-          ...licenseDocFile,
-          clientFolderName: folderName,
-          oldClientFolderName: oldFolderName,
-          oldFileId: oldId
-        });
-        if (res.status === 'success' && res.data.url) {
-          finalLicenseDocUrl = res.data.url;
-          setLicenseDocUrl(res.data.url);
+        const url = await uploadFile('client-files', licenseDocFile.base64, licenseDocFile.fileName, licenseDocFile.contentType, folderName);
+        if (url) {
+          finalLicenseDocUrl = url;
+          setLicenseDocUrl(url);
           setLicenseDocFile(null);
         }
       }
@@ -303,16 +293,10 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       // Upload Master Doc
       if (masterDocFile) {
         setStatus(t('common.processing', 'Processing...'), 'processing');
-        const oldId = getFileIdFromUrl(client?.drive_contract_doc_id) || undefined;
-        const res = await gasService.uploadClientFile({
-          ...masterDocFile,
-          clientFolderName: folderName,
-          oldClientFolderName: oldFolderName,
-          oldFileId: oldId
-        });
-        if (res.status === 'success' && res.data.url) {
-          finalMasterDocUrl = res.data.url;
-          setMasterDocUrl(res.data.url);
+        const url = await uploadFile('client-files', masterDocFile.base64, masterDocFile.fileName, masterDocFile.contentType, folderName);
+        if (url) {
+          finalMasterDocUrl = url;
+          setMasterDocUrl(url);
           setMasterDocFile(null);
         }
       }
@@ -379,7 +363,8 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       setStatus(t('common.processing', 'Processing...'), 'processing', 0);
       try {
         const folderName = `${client.name} ${client.national_id || client.id_card_number || ''}`.trim();
-        await gasService.deleteClientFolder(folderName).catch(() => {});
+        const oldFiles = await listFolderFiles('client-files', folderName);
+        if (oldFiles.length > 0) await deleteFiles('client-files', oldFiles);
 
         const { error } = await supabase
           .from('customers')

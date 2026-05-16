@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { gasService } from '../lib/gas';
+import { uploadFile } from '../lib/storage';
 import { getDriveImageUrl } from '../lib/gas';
 import { useReservations } from '../hooks/useReservations';
 import { useVerifiedTime } from '../hooks/useVerifiedTime';
@@ -471,26 +471,20 @@ export default function ReservationModal({
   };
 
   const triggerGasSideEffects = async (resData: any) => {
-    // Format: reservations/[id]_[date]
     const resFolderName = `${resData.id}_${new Date().toISOString().split('T')[0]}`.replace(/\s+/g, '_');
     const tasks: Promise<any>[] = [];
 
-    // Individual standard images (if any)
     if (pendingFile) {
-      tasks.push(gasService.uploadReservationFile({
-        ...pendingFile,
-        reservationFolderName: resFolderName
-      }));
+      tasks.push(
+        uploadFile('reservation-files', pendingFile.base64Data, pendingFile.fileName, pendingFile.contentType, resFolderName)
+      );
     }
 
-    // List of multiple files from Documentation section
     Object.entries(docFiles).forEach(([key, fileList]) => {
-      fileList.forEach((fileObj: any) => {
-        tasks.push(gasService.uploadReservationFile({
-          ...fileObj,
-          fileName: `${key}_${fileObj.name}`,
-          reservationFolderName: resFolderName
-        }));
+      (fileList as any[]).forEach((fileObj: any) => {
+        tasks.push(
+          uploadFile('reservation-files', fileObj.base64Data, `${key}_${fileObj.name}`, fileObj.contentType, resFolderName)
+        );
       });
     });
 
@@ -672,19 +666,7 @@ export default function ReservationModal({
     };
 
     const filename = `Contract_${clientName.replace(/\s+/g, '_')}_${new Date().getTime()}`;
-    const result = await gasService.generateContract(filename, resData);
-
-    if (result.success || result.data) {
-      setStatus(t('reservationModal.contractGenerated', 'Contract generated successfully'), 'success');
-      // Store the generated contract file info
-      setGeneratedContractFile({
-        name: result.data?.fileName || filename,
-        url: result.data?.url,
-        id: result.data?.id
-      });
-    } else {
-      setStatus(`${t('reservationModal.contractError', 'Error generating contract')}: ${result.error || result.message || 'Failed to generate contract'}`, 'error');
-    }
+    setStatus(t('reservationModal.contractNotAvailable', 'Contract generation is not available'), 'error');
     setIsGeneratingContract(false);
   };
 

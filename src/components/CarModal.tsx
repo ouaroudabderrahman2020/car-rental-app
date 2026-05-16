@@ -7,7 +7,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
-import { gasService, getFileIdFromUrl, getDrivePreviewUrl, getDriveImageUrl } from '../lib/gas';
+import { getDrivePreviewUrl, getDriveImageUrl } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { Car, MaintenanceInterval, EssentialItem } from '../types';
@@ -24,6 +24,8 @@ const Label = ({ children, required }: { children: React.ReactNode, required?: b
     {required && <span className="text-red-500">*</span>}
   </label>
 );
+
+import { uploadFile, deleteFiles, listFolderFiles } from '../lib/storage';
 
 const ColorPicker = ({ label, value, onChange, disabled }: { label: string, value: string, onChange: (c: string) => void, disabled?: boolean }) => {
   const colors = [
@@ -342,10 +344,6 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
       setShowRequiredError(false);
       setUploadError(null);
       
-      if (!import.meta.env.VITE_GAS_WEB_APP_URL) {
-        console.error('GAS URL is missing!');
-        setUploadError('Configuration Error: GAS URL is missing. Please check .env file.');
-      }
       if (mode === 'edit' && carData) {
         console.log('--- DEBUG: LOADING CAR FOR EDIT ---', {
           id: carData.id,
@@ -590,128 +588,64 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
       if (mode === 'edit' && carData) {
         oldCarFolderName = `${carData.brand} ${carData.model} ${carData.plate}`.trim();
         
-        // If identity changed BUT no file is uploaded, we should still rename the folder
-        if (oldCarFolderName !== carFolderName && !carImage && !docFile) {
-          await gasService.renameFolder(oldCarFolderName, carFolderName);
+        // If identity changed, remove all files under the old folder path
+        if (oldCarFolderName !== carFolderName) {
+          const oldFiles = await listFolderFiles('car-files', oldCarFolderName);
+          if (oldFiles.length > 0) await deleteFiles('car-files', oldFiles);
         }
       }
 
-      // Check if old files need manual deletion
-      if (mode === 'edit' && carData) {
-        if (carData.image_url && !imageUrl && !carImage) {
-          const oldImageId = getFileIdFromUrl(carData.image_url);
-          if (oldImageId) {
-            setGlobalStatus(t('common.processing'), 'processing');
-            await gasService.deleteCarFile(oldImageId);
-          }
-        }
-        if (carData.documentation_url && !docUrl && !docFile) {
-          const oldDocId = getFileIdFromUrl(carData.documentation_url);
-          if (oldDocId) {
-            setGlobalStatus(t('common.processing'), 'processing');
-            await gasService.deleteCarFile(oldDocId);
-          }
-        }
-      }
-
-      // Handle File Uploads via GAS if present
+      // Handle File Uploads via Supabase Storage
       if (carImage) {
         setGlobalStatus(t('common.processing'), 'processing');
-        const oldImageId = getFileIdFromUrl(carData?.image_url) || undefined;
-        
-        const imgRes = await gasService.uploadCarFile({
-          base64: carImage.base64Data,
-          fileName: carImage.fileName,
-          contentType: carImage.contentType,
-          carFolderName,
-          oldCarFolderName,
-          oldFileId: oldImageId
-        });
-
-        if (imgRes.status === 'success') {
-          finalImageUrl = imgRes.data.url;
-          // Immediately update state so preview shows up
-          console.log('Image upload successful:', { url: imgRes.data.url, fullResponse: imgRes });
-          setImageUrl(imgRes.data.url);
+        const url = await uploadFile('car-files', carImage.base64Data, carImage.fileName, carImage.contentType, carFolderName);
+        if (url) {
+          finalImageUrl = url;
+          setImageUrl(url);
         } else {
-          console.warn('Image upload failed:', imgRes.message);
+          console.warn('Image upload failed');
         }
       }
 
-        if (docFile) {
-          setGlobalStatus(t('common.processing'), 'processing');
-          const oldDocId = getFileIdFromUrl(carData?.documentation_url) || undefined;
-
-          const docRes = await gasService.uploadCarFile({
-            base64: docFile.base64Data,
-            fileName: docFile.fileName,
-            contentType: docFile.contentType,
-            carFolderName,
-            oldCarFolderName,
-            oldFileId: oldDocId
-          });
-
-          if (docRes.status === 'success') {
-            finalDocUrl = docRes.data.url;
-            // Immediately update state so preview shows up
-            setDocUrl(docRes.data.url);
-          } else {
-            console.warn('Doc upload failed:', docRes.message);
-          }
+      if (docFile) {
+        setGlobalStatus(t('common.processing'), 'processing');
+        const url = await uploadFile('car-files', docFile.base64Data, docFile.fileName, docFile.contentType, carFolderName);
+        if (url) {
+          finalDocUrl = url;
+          setDocUrl(url);
+        } else {
+          console.warn('Doc upload failed');
         }
+      }
 
-        if (regCardFile) {
-          const oldId = getFileIdFromUrl(carData?.registration_card_url) || undefined;
-          const res = await gasService.uploadCarFile({
-            base64: regCardFile.base64Data,
-            fileName: regCardFile.fileName,
-            contentType: regCardFile.contentType,
-            carFolderName,
-            oldCarFolderName,
-            oldFileId: oldId
-          });
-          if (res.status === 'success') {
-            finalRegCardUrl = res.data.url;
-            // Immediately update state so preview shows up
-            setRegCardUrl(res.data.url);
-          }
+      if (regCardFile) {
+        setGlobalStatus(t('common.processing'), 'processing');
+        const url = await uploadFile('car-files', regCardFile.base64Data, regCardFile.fileName, regCardFile.contentType, carFolderName);
+        if (url) {
+          finalRegCardUrl = url;
+          setRegCardUrl(url);
         }
+      }
 
-        if (insuranceFile) {
-          const oldId = getFileIdFromUrl(carData?.insurance_url) || undefined;
-          const res = await gasService.uploadCarFile({
-            base64: insuranceFile.base64Data,
-            fileName: insuranceFile.fileName,
-            contentType: insuranceFile.contentType,
-            carFolderName,
-            oldCarFolderName,
-            oldFileId: oldId
-          });
-          if (res.status === 'success') {
-            finalInsuranceUrl = res.data.url;
-            // Immediately update state so preview shows up
-            setInsuranceUrl(res.data.url);
-          }
+      if (insuranceFile) {
+        setGlobalStatus(t('common.processing'), 'processing');
+        const url = await uploadFile('car-files', insuranceFile.base64Data, insuranceFile.fileName, insuranceFile.contentType, carFolderName);
+        if (url) {
+          finalInsuranceUrl = url;
+          setInsuranceUrl(url);
         }
+      }
 
-        if (vignetteFile) {
-          const oldId = getFileIdFromUrl(carData?.vignette_url) || undefined;
-          const res = await gasService.uploadCarFile({
-            base64: vignetteFile.base64Data,
-            fileName: vignetteFile.fileName,
-            contentType: vignetteFile.contentType,
-            carFolderName,
-            oldCarFolderName,
-            oldFileId: oldId
-          });
-          if (res.status === 'success') {
-            finalVignetteUrl = res.data.url;
-            // Immediately update state so preview shows up
-            setVignetteUrl(res.data.url);
-          }
+      if (vignetteFile) {
+        setGlobalStatus(t('common.processing'), 'processing');
+        const url = await uploadFile('car-files', vignetteFile.base64Data, vignetteFile.fileName, vignetteFile.contentType, carFolderName);
+        if (url) {
+          finalVignetteUrl = url;
+          setVignetteUrl(url);
         }
+      }
 
-        const payload = {
+      const payload = {
           brand,
           model,
           plate,
@@ -802,9 +736,10 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
       // Final Delete
       try {
         const carFolderName = `${brand} ${model} ${plate}`.trim();
-        // Also delete folder from Google Drive
+        // Delete folder from Supabase Storage
         setGlobalStatus(t('common.processing'), 'processing');
-        await gasService.deleteCarFolder(carFolderName);
+        const oldFiles = await listFolderFiles('car-files', carFolderName);
+        if (oldFiles.length > 0) await deleteFiles('car-files', oldFiles);
 
         const { error } = await supabase
           .from('cars')
