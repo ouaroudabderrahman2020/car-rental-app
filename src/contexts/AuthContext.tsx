@@ -24,6 +24,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Catch OAuth error redirects like /#/error=... and forward to /login
+    const hash = window.location.hash;
+    if (hash.includes('error=') && !hash.includes('/login')) {
+      const params = new URLSearchParams(hash.slice(1));
+      const desc = params.get('error_description');
+      if (desc) {
+        sessionStorage.setItem('auth_error', decodeURIComponent(desc.replace(/\+/g, ' ')));
+      }
+      window.location.hash = '#/login';
+    }
+  }, []);
+
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);

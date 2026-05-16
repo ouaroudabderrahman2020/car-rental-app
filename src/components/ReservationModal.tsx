@@ -1361,7 +1361,7 @@ export default function ReservationModal({
               </button>
             )}
 
-            {isEdit && reservationData.status !== 'Completed' && (
+            {isEdit && reservationData?.status !== 'Completed' && (
               <button 
                 onClick={() => handleFormSubmit('Completed')}
                 className="w-full sm:w-48 h-12 bg-slate-800 text-white border-2 border-black rounded-[12px] text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-black transition-all shadow-sm"

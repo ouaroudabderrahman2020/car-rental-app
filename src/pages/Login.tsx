@@ -1,14 +1,42 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { AlertCircle, X } from 'lucide-react';
 
 export default function Login() {
   const { user, loading, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) navigate('/', { replace: true });
   }, [user, navigate]);
+
+  useEffect(() => {
+    // Read error passed from AuthContext via sessionStorage
+    const stored = sessionStorage.getItem('auth_error');
+    if (stored) {
+      setErrorMsg(stored);
+      sessionStorage.removeItem('auth_error');
+    }
+
+    // Also check URL hash for error params as fallback
+    const hash = window.location.hash;
+    if (!hash || !hash.includes('error')) return;
+
+    const params = new URLSearchParams(hash.slice(1));
+    const desc = params.get('error_description');
+    const code = params.get('error');
+
+    if (desc) {
+      setErrorMsg(decodeURIComponent(desc.replace(/\+/g, ' ')));
+    } else if (code === 'access_denied') {
+      setErrorMsg('Access denied — your email is not authorized.');
+    }
+
+    // Clean the URL so refreshing doesn't show the same error
+    window.location.hash = '#/login';
+  }, []);
 
   if (loading) {
     return (
@@ -25,6 +53,16 @@ export default function Login() {
           <h1 className="text-3xl font-black uppercase tracking-tight text-black">RentalCore</h1>
           <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mt-2">Car Rental Management</p>
         </div>
+
+        {errorMsg && (
+          <div className="w-full flex items-start gap-2 px-4 py-3 bg-red-50 border-2 border-red-500 rounded-[12px]">
+            <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+            <p className="flex-1 text-[10px] font-bold text-red-700 leading-relaxed">{errorMsg}</p>
+            <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         <button
           onClick={signInWithGoogle}
