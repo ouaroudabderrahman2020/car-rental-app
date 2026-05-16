@@ -64,8 +64,23 @@ export const gasService = {
     });
   },
 
+  async uploadClientFile(fileData: { base64?: string; base64Data?: string; fileName: string; contentType: string; clientFolderName: string; oldClientFolderName?: string; oldFileId?: string }) {
+    return callGasAction('uploadClientFile', {
+      base64: fileData.base64 || fileData.base64Data,
+      fileName: fileData.fileName,
+      contentType: fileData.contentType,
+      clientFolderName: fileData.clientFolderName,
+      oldClientFolderName: fileData.oldClientFolderName,
+      oldFileId: fileData.oldFileId
+    });
+  },
+
   async renameFolder(oldName: string, newName: string) {
     return callGasAction('renameFolder', { oldName, newName });
+  },
+
+  async renameClientFolder(oldName: string, newName: string) {
+    return callGasAction('renameClientFolder', { oldName, newName });
   },
 
   async deleteCarFile(fileId: string) {
@@ -74,6 +89,10 @@ export const gasService = {
 
   async deleteCarFolder(carFolderName: string) {
     return callGasAction('deleteCarFolder', { carFolderName });
+  },
+
+  async deleteClientFolder(clientFolderName: string) {
+    return callGasAction('deleteClientFolder', { clientFolderName });
   },
 
   // Legacy stubs

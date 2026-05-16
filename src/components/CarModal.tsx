@@ -242,26 +242,6 @@ const InputField = (props: any) => {
       {label && <Label required={required}>{label}</Label>}
       <input 
         {...rest}
-        onClick={(e) => {
-          if (props.type === 'date' && 'showPicker' in e.currentTarget) {
-            try {
-              (e.currentTarget as any).showPicker();
-            } catch (err) {
-              console.debug('showPicker failed:', err);
-            }
-          }
-          props.onClick?.(e);
-        }}
-        onFocus={(e) => {
-          if (props.type === 'date' && 'showPicker' in e.currentTarget) {
-            try {
-              (e.currentTarget as any).showPicker();
-            } catch (err) {
-              console.debug('showPicker failed:', err);
-            }
-          }
-          props.onFocus?.(e);
-        }}
         className={`w-full h-11 bg-white border border-black rounded-[12px] px-5 text-sm font-bold focus:outline-none focus:border-[#22c55e] focus:ring-2 focus:ring-[#22c55e] transition-all duration-300 ease-in-out disabled:bg-slate-50 disabled:text-black disabled:cursor-default overflow-hidden bg-clip-padding relative z-0 ${props.className || ''}`}
       />
     </div>
@@ -318,7 +298,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
   const [model, setModel] = useState('');
   const [plate, setPlate] = useState('');
   const [color, setColor] = useState('');
-  const [fuelType, setFuelType] = useState<any>('Petrol');
+  const [fuelType, setFuelType] = useState<any>('');
   const [transmission, setTransmission] = useState<any>('Manual');
   const [odometer, setOdometer] = useState('');
   const [dailyRate, setDailyRate] = useState('');
@@ -326,7 +306,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
   const [notes, setNotes] = useState('');
   const [gpsSim, setGpsSim] = useState('');
   const [showRequiredError, setShowRequiredError] = useState(false);
-  const [seats, setSeats] = useState('5');
+  const [seats, setSeats] = useState('');
 
   const [registrationExpiry, setRegistrationExpiry] = useState('');
   const [insuranceExpiry, setInsuranceExpiry] = useState('');
@@ -379,9 +359,9 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
         setBrand(carData.brand || '');
         setModel(carData.model || '');
         setPlate(carData.plate || '');
-        setColor(carData.color || 'white');
-        setFuelType(carData.fuel_type || 'Petrol');
-        setTransmission(carData.transmission || 'Automatic');
+        setColor(carData.color || '');
+        setFuelType(carData.fuel_type || '');
+        setTransmission(carData.transmission || 'Manual');
         setOdometer(carData.odometer?.toString() || '');
         setDailyRate(carData.daily_rate?.toString() || '');
         setStatus(carData.status || 'Available');
@@ -422,15 +402,15 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
         setBrand('');
         setModel('');
         setPlate('');
-        setColor('white');
-        setFuelType('Petrol');
-        setTransmission('Automatic');
+        setColor('');
+        setFuelType('');
+        setTransmission('Manual');
         setOdometer('');
         setDailyRate('');
         setStatus('Available');
         setNotes('');
         setGpsSim('');
-        setSeats('5');
+        setSeats('');
         setRegistrationExpiry('');
         setInsuranceExpiry('');
         setTechInspectionExpiry('');
@@ -1151,6 +1131,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
                   onChange={(e: any) => setFuelType(e.target.value)}
                   disabled={!isEditMode || isSubmitting}
                 >
+                  <option value="" disabled>{t('common.select', 'Select')}</option>
                   {FUEL_TYPES.map(ft => (
                     <option key={ft} value={ft}>{t(`carForm.fuel${ft}`)}</option>
                   ))}

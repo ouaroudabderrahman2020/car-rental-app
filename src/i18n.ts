@@ -690,7 +690,13 @@ const resources = {
           firstAid: "Trousse de Premiers Secours"
         },
         fillRequired: "Veuillez remplir les champs obligatoires (Marque, Modèle, Plaque, Tarif).",
-        invalidPlate: "Format de plaque invalide (2-15 caractères, alphanumérique)"
+        invalidPlate: "Format de plaque invalide (2-15 caractères, alphanumérique)",
+        fuelPetrol: "Essence",
+        fuelDiesel: "Diesel / Gazole",
+        fuelElectric: "Électrique",
+        fuelHybrid: "Hybride",
+        transManual: "Manuelle",
+        transAutomatic: "Automatique"
       },
       editReservation: {
         title: "Modifier la Réservation",

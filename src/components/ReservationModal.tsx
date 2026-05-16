@@ -50,30 +50,6 @@ const InputField = (props: any) => {
       <div className="flex relative items-stretch w-full min-w-0">
         <input 
           {...rest}
-          onClick={(e) => {
-            if (props.type === 'date' || props.type === 'datetime-local') {
-               if ('showPicker' in e.currentTarget) {
-                try {
-                  (e.currentTarget as any).showPicker();
-                } catch (err) {
-                  console.debug('showPicker failed:', err);
-                }
-              }
-            }
-            props.onClick?.(e);
-          }}
-          onFocus={(e) => {
-            if (props.type === 'date' || props.type === 'datetime-local') {
-              if ('showPicker' in e.currentTarget) {
-                try {
-                  (e.currentTarget as any).showPicker();
-                } catch (err) {
-                  console.debug('showPicker failed:', err);
-                }
-              }
-            }
-            props.onFocus?.(e);
-          }}
           className={`flex-1 min-w-0 h-11 bg-white border border-black rounded-[12px] px-5 text-sm font-bold focus:outline-none focus:border-2 focus:border-[#22c55e] focus:ring-2 focus:ring-[#22c55e] transition-all duration-300 ease-in-out disabled:bg-slate-50 disabled:text-black disabled:cursor-default bg-clip-padding relative z-0 ${rightElement ? 'rounded-r-none border-r-0' : ''} ${props.className || ''}`}
         />
         {rightElement && (

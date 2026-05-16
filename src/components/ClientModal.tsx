@@ -29,26 +29,6 @@ const InputField = (props: any) => {
       {label && <Label required={required}>{label}</Label>}
       <input 
         {...rest}
-        onClick={(e) => {
-          if (props.type === 'date' && 'showPicker' in e.currentTarget) {
-            try {
-              (e.currentTarget as any).showPicker();
-            } catch (err) {
-              console.debug('showPicker failed:', err);
-            }
-          }
-          props.onClick?.(e);
-        }}
-        onFocus={(e) => {
-          if (props.type === 'date' && 'showPicker' in e.currentTarget) {
-            try {
-              (e.currentTarget as any).showPicker();
-            } catch (err) {
-              console.debug('showPicker failed:', err);
-            }
-          }
-          props.onFocus?.(e);
-        }}
         className={`w-full min-w-0 h-11 bg-white border border-black rounded-[12px] px-5 text-sm font-bold focus:outline-none focus:border-2 focus:border-[#22c55e] focus:ring-2 focus:ring-[#22c55e] transition-all duration-300 ease-in-out disabled:bg-slate-50 disabled:text-black disabled:cursor-default overflow-hidden bg-clip-padding relative z-0 ${className || ''}`}
       />
     </div>
@@ -90,9 +70,10 @@ interface ClientModalProps {
   client?: Customer | null;
   reservations?: Reservation[];
   onRefresh?: () => void;
+  onConfirm?: () => void;
 }
 
-const DocSlot = ({ label, file, url, onUpload, isEditMode, disabled, className = "" }: any) => {
+const DocSlot = ({ label, file, url, onUpload, onRemove, isEditMode, disabled, className = "" }: any) => {
   const { t } = useTranslation();
   return (
     <div className={`flex flex-col gap-2 min-w-0 ${className}`}>
@@ -124,16 +105,28 @@ const DocSlot = ({ label, file, url, onUpload, isEditMode, disabled, className =
                 {file ? file.fileName : (url ? t('common.document', 'Document') : '')}
               </span>
             </div>
-            {url && (
-              <button
-                type="button"
-                onClick={() => window.open(getDrivePreviewUrl(url), '_blank')}
-                className="p-1.5 hover:bg-emerald-100/50 rounded text-emerald-600 transition-colors"
-                title={t('common.viewPdf', 'View PDF')}
-              >
-                <Eye className="w-3.5 h-3.5" />
-              </button>
-            )}
+            <div className="flex items-center gap-1 shrink-0 ml-2">
+              {url && (
+                <button
+                  type="button"
+                  onClick={() => window.open(getDrivePreviewUrl(url), '_blank')}
+                  className="p-1.5 hover:bg-emerald-100/50 rounded text-emerald-600 transition-colors"
+                  title={t('common.viewPdf', 'View PDF')}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {isEditMode && !disabled && (
+                <button
+                  type="button"
+                  onClick={onRemove}
+                  className="p-1.5 hover:bg-red-100 rounded text-red-500 transition-colors"
+                  title={t('common.remove', 'Remove')}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -141,7 +134,7 @@ const DocSlot = ({ label, file, url, onUpload, isEditMode, disabled, className =
   );
 };
 
-export default function ClientModal({ isOpen, onClose, mode, client, reservations = [], onRefresh }: ClientModalProps) {
+export default function ClientModal({ isOpen, onClose, mode, client, reservations = [], onRefresh, onConfirm }: ClientModalProps) {
   const { t } = useTranslation();
   const { setStatus } = useStatus();
   const { showToast, confirm: customConfirm } = useNotification();
@@ -161,7 +154,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
-  const [trustRank, setTrustRank] = useState('5');
+  const [trustRank, setTrustRank] = useState('0');
   const [notes, setNotes] = useState('');
   const [isBlacklisted, setIsBlacklisted] = useState(false);
 
@@ -191,7 +184,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
         setPhone(client.phone || '');
         setEmail(client.email || '');
         setAddress(client.address || '');
-        setTrustRank(client.trust_rank?.toString() || '5');
+        setTrustRank(client.trust_rank?.toString() || '0');
         setNotes(client.notes || '');
         setIsBlacklisted(client.is_blacklisted || false);
         setIdDocUrl(client.drive_id_photo || '');
@@ -212,7 +205,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
         setPhone('');
         setEmail('');
         setAddress('');
-        setTrustRank('5');
+        setTrustRank('0');
         setNotes('');
         setIsBlacklisted(false);
         setIdDocUrl('');
@@ -269,7 +262,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
         
         // If identity changed BUT no file is uploaded, we should still rename the folder
         if (oldFolderName !== folderName && !idDocFile && !licenseDocFile && !masterDocFile) {
-          await gasService.renameFolder(oldFolderName, folderName);
+          await gasService.renameClientFolder(oldFolderName, folderName);
         }
       }
 
@@ -277,10 +270,10 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       if (idDocFile) {
         setStatus(t('common.processing', 'Processing...'), 'processing');
         const oldId = getFileIdFromUrl(client?.drive_id_photo) || undefined;
-        const res = await gasService.uploadCarFile({
+        const res = await gasService.uploadClientFile({
           ...idDocFile,
-          carFolderName: folderName,
-          oldCarFolderName: oldFolderName,
+          clientFolderName: folderName,
+          oldClientFolderName: oldFolderName,
           oldFileId: oldId
         });
         if (res.status === 'success' && res.data.url) {
@@ -292,10 +285,10 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       if (licenseDocFile) {
         setStatus(t('common.processing', 'Processing...'), 'processing');
         const oldId = getFileIdFromUrl(client?.drive_license_front_photo) || undefined;
-        const res = await gasService.uploadCarFile({
+        const res = await gasService.uploadClientFile({
           ...licenseDocFile,
-          carFolderName: folderName,
-          oldCarFolderName: oldFolderName,
+          clientFolderName: folderName,
+          oldClientFolderName: oldFolderName,
           oldFileId: oldId
         });
         if (res.status === 'success' && res.data.url) {
@@ -307,10 +300,10 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       if (masterDocFile) {
         setStatus(t('common.processing', 'Processing...'), 'processing');
         const oldId = getFileIdFromUrl(client?.drive_contract_doc_id) || undefined;
-        const res = await gasService.uploadCarFile({
+        const res = await gasService.uploadClientFile({
           ...masterDocFile,
-          carFolderName: folderName,
-          oldCarFolderName: oldFolderName,
+          clientFolderName: folderName,
+          oldClientFolderName: oldFolderName,
           oldFileId: oldId
         });
         if (res.status === 'success' && res.data.url) {
@@ -321,7 +314,6 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       const payload = {
         name,
         national_id: nationalId,
-        id_card_number: nationalId,
         dob,
         nationality,
         license_number: licenseNumber,
@@ -354,6 +346,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       setStatus(t('common.actionCompleted', 'Action Completed'), 'success');
       showToast(t('common.success', 'Success'), 'success');
       if (onRefresh) onRefresh();
+      onConfirm?.();
       onClose();
     } catch (err: any) {
       console.error('Save error:', err);
@@ -440,55 +433,6 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
           )}
         </div>
       }
-      footer={
-        <div className="px-6 sm:px-10 py-8 bg-white border-t-2 border-black flex flex-col sm:flex-row justify-end items-center gap-4">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            {mode === 'edit' && !isEditMode && (
-              <button 
-                onClick={handleDelete}
-                className="w-12 h-12 bg-white border-2 border-red-500 rounded-[12px] flex items-center justify-center text-red-500 hover:bg-red-50 transition-all shadow-[2px_2px_0px_0px_rgba(239,68,68,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-50 overflow-hidden bg-clip-padding"
-                disabled={isSubmitting}
-                title={t('crm.modal.delete', 'Delete')}
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            )}
-            <button 
-              onClick={onClose}
-              className="w-full sm:w-40 h-12 px-8 bg-white border-2 border-black rounded-[12px] text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none overflow-hidden bg-clip-padding"
-              disabled={isSubmitting}
-            >
-              {isEditMode ? t('common.cancel', 'Cancel') : t('crm.modal.close', 'Close')}
-            </button>
-          </div>
-
-          {isEditMode && (
-            <div className="flex items-center gap-4 w-full sm:w-auto">
-              <AnimatePresence>
-                {showRequiredError && (
-                  <motion.span 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="text-red-500 font-black text-[10px] uppercase tracking-widest whitespace-nowrap"
-                  >
-                    {t('clientForm.fillRequiredFields', 'Please fill all required fields')}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              
-              <button 
-                onClick={handleSave}
-                disabled={isSubmitting}
-                className="w-full sm:w-48 h-12 bg-blue-600 border-2 border-black rounded-[12px] text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none disabled:bg-slate-400 disabled:border-slate-400 disabled:shadow-none overflow-hidden bg-clip-padding"
-              >
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                {isSubmitting ? t('common.processing', 'Processing...') : (mode === 'add' ? t('common.create', 'Create') : t('common.save', 'Save Changes'))}
-              </button>
-            </div>
-          )}
-        </div>
-      }
     >
       <div className="bg-slate-50/50 w-full py-4 sm:py-10">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 px-4 sm:px-10 w-full min-w-0">
@@ -539,6 +483,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
               file={idDocFile}
               url={idDocUrl}
               onUpload={(e: any) => handleFileSelect(e, 'id')}
+              onRemove={() => { setIdDocFile(null); setIdDocUrl(''); }}
               isEditMode={isEditMode}
               disabled={isSubmitting}
             />
@@ -547,6 +492,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
               file={licenseDocFile}
               url={licenseDocUrl}
               onUpload={(e: any) => handleFileSelect(e, 'license')}
+              onRemove={() => { setLicenseDocFile(null); setLicenseDocUrl(''); }}
               isEditMode={isEditMode}
               disabled={isSubmitting}
             />
@@ -555,6 +501,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
               file={masterDocFile}
               url={masterDocUrl}
               onUpload={(e: any) => handleFileSelect(e, 'master')}
+              onRemove={() => { setMasterDocFile(null); setMasterDocUrl(''); }}
               isEditMode={isEditMode}
               disabled={isSubmitting}
               className="sm:col-span-2"
@@ -682,6 +629,55 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
             </div>
           </ModalSection1>
         )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end items-center gap-4 px-4 sm:px-10 pt-8">
+          <div className="flex items-center gap-3">
+            {mode === 'edit' && !isEditMode && (
+              <button 
+                onClick={handleDelete}
+                className="w-12 h-12 bg-white border-2 border-red-500 rounded-[12px] flex items-center justify-center text-red-500 hover:bg-red-50 transition-all shadow-[2px_2px_0px_0px_rgba(239,68,68,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-50 overflow-hidden bg-clip-padding"
+                disabled={isSubmitting}
+                title={t('crm.modal.delete', 'Delete')}
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
+            <button 
+              onClick={onClose}
+              className="w-full sm:w-40 h-12 px-8 bg-white border-2 border-black rounded-[12px] text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none overflow-hidden bg-clip-padding"
+              disabled={isSubmitting}
+            >
+              {isEditMode ? t('common.cancel', 'Cancel') : t('crm.modal.close', 'Close')}
+            </button>
+          </div>
+
+          {isEditMode && (
+            <div className="flex items-center gap-4">
+              <AnimatePresence>
+                {showRequiredError && (
+                  <motion.span 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-red-500 font-black text-[10px] uppercase tracking-widest whitespace-nowrap"
+                  >
+                    {t('clientForm.fillRequiredFields', 'Please fill all required fields')}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              
+              <button 
+                onClick={handleSave}
+                disabled={isSubmitting}
+                className="w-full sm:w-48 h-12 bg-blue-600 border-2 border-black rounded-[12px] text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none disabled:bg-slate-400 disabled:border-slate-400 disabled:shadow-none overflow-hidden bg-clip-padding"
+              >
+                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                {isSubmitting ? t('common.processing', 'Processing...') : (mode === 'add' ? t('clientForm.confirm', 'Confirm') : t('common.save', 'Save Changes'))}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </BaseModal>
