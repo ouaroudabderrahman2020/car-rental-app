@@ -411,6 +411,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
+      disableClose={isSubmitting}
       maxWidth="max-w-[1300px]"
       title={
         <div className="flex items-center justify-between w-full h-full pr-12 transition-all">

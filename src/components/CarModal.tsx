@@ -831,6 +831,7 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
     <BaseModal 
       isOpen={isOpen} 
       onClose={onClose} 
+      disableClose={isSubmitting}
       title={
         <div className="flex justify-between items-center w-full pr-8">
           <div className="flex flex-col">
@@ -1210,21 +1211,13 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
 
         {/* Flowing Footer (not sticky) */}
         <div className="px-6 py-10 sm:px-10 bg-slate-50 border-t border-black/10 flex flex-col sm:flex-row justify-end items-center gap-3">
-          {isEditMode ? (
-            <button 
-              onClick={onClose}
-              className="w-full sm:w-40 h-12 bg-white border border-black rounded-[12px] text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-sm overflow-hidden bg-clip-padding"
-            >
-              {t('common.cancel')}
-            </button>
-          ) : (
-            <button 
-              onClick={onClose}
-              className="w-full sm:w-40 h-12 bg-white border border-black rounded-[12px] text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-sm overflow-hidden bg-clip-padding"
-            >
-              {t('common.close', 'Close')}
-            </button>
-          )}
+          <button 
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="w-full sm:w-40 h-12 bg-white border border-black rounded-[12px] text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden bg-clip-padding"
+          >
+            {isEditMode ? t('common.cancel') : t('common.close', 'Close')}
+          </button>
 
           {mode === 'edit' && isEditMode && (
             <button 

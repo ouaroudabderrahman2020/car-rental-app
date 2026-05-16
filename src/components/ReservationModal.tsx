@@ -684,6 +684,7 @@ export default function ReservationModal({
     <BaseModal 
       isOpen={isOpen} 
       onClose={onClose} 
+      disableClose={isSubmitting}
       title={isEdit ? t('editReservation.title', 'Edit Reservation') : t('reservations.form.title', 'New Reservation')}
     >
       <div className="bg-slate-50/50 w-full py-4 sm:py-6 lg:py-8">
@@ -748,7 +749,7 @@ export default function ReservationModal({
                     ).map(customer => (
                       <div 
                         key={customer.id} 
-                        className="px-6 py-4 text-sm font-bold border-b border-black/5 last:border-b-0 hover:bg-blue-50 cursor-pointer transition-colors group" 
+                        className="px-6 py-2 text-sm font-bold border-b border-black/5 last:border-b-0 hover:bg-blue-50 cursor-pointer transition-colors group" 
                         onClick={() => {
                           setSelectedCustomer(customer);
                           setClientName(customer.name);
@@ -759,8 +760,8 @@ export default function ReservationModal({
                           setIsClientSearchListActive(false);
                         }}
                       >
-                        <div className="flex flex-col gap-1">
-                          <span className="text-black group-hover:text-blue-600 transition-colors uppercase">{customer.name}</span>
+                        <div className="flex flex-col">
+                          <span className="text-black group-hover:text-blue-600 transition-colors uppercase text-[13px] leading-tight">{customer.name}</span>
                           <div className="flex items-center gap-4 text-[10px] text-black/40 font-black uppercase tracking-widest">
                             <span className="flex items-center gap-1.5"><CreditCard className="w-3 h-3" /> {customer.national_id || '---'}</span>
                             <span className="flex items-center gap-1.5"><Monitor className="w-3 h-3" /> {customer.license_number || '---'}</span>
@@ -1344,7 +1345,8 @@ export default function ReservationModal({
             <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 no-scrollbar">
               <button 
                 onClick={onClose}
-                className="flex-1 sm:flex-none sm:w-32 h-11 bg-white border-2 border-black/20 rounded-[12px] text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
+                disabled={isSubmitting}
+                className="flex-1 sm:flex-none sm:w-32 h-11 bg-white border-2 border-black/20 rounded-[12px] text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('common.cancel', 'Cancel')}
               </button>

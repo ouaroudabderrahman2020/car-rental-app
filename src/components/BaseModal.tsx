@@ -13,6 +13,7 @@ interface BaseModalProps {
   hideHeader?: boolean;
   headerBg?: string;
   noScroll?: boolean;
+  disableClose?: boolean;
 }
 
 export default function BaseModal({ 
@@ -24,7 +25,8 @@ export default function BaseModal({
   maxWidth = 'max-w-5xl',
   hideHeader = false,
   headerBg = 'bg-warm-accent',
-  noScroll = false
+  noScroll = false,
+  disableClose = false
 }: BaseModalProps) {
   const { t } = useTranslation();
   
@@ -60,7 +62,8 @@ export default function BaseModal({
             </div>
             <button 
               onClick={onClose} 
-              className="group p-2 -mr-2 text-black hover:bg-black/5 transition-colors active:scale-95"
+              disabled={disableClose}
+              className="group p-2 -mr-2 text-black hover:bg-black/5 transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               aria-label="Close"
             >
               <X className="w-6 h-6 sm:w-7 sm:h-7 transition-transform group-hover:rotate-90" />
