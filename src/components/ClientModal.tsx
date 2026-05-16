@@ -254,11 +254,11 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       let finalLicenseDocUrl = licenseDocUrl;
       let finalMasterDocUrl = masterDocUrl;
 
-      const folderName = `Client_${name.replace(/\s+/g, '_')}_${phone}`;
+      const folderName = `${name} ${nationalId}`.trim();
       let oldFolderName: string | undefined = undefined;
 
       if (mode === 'edit' && client) {
-        oldFolderName = `Client_${client.name.replace(/\s+/g, '_')}_${client.phone}`;
+        oldFolderName = `${client.name} ${client.national_id || client.id_card_number || ''}`.trim();
         
         // If identity changed BUT no file is uploaded, we should still rename the folder
         if (oldFolderName !== folderName && !idDocFile && !licenseDocFile && !masterDocFile) {
@@ -278,6 +278,8 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
         });
         if (res.status === 'success' && res.data.url) {
           finalIdDocUrl = res.data.url;
+          setIdDocUrl(res.data.url);
+          setIdDocFile(null);
         }
       }
 
@@ -293,6 +295,8 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
         });
         if (res.status === 'success' && res.data.url) {
           finalLicenseDocUrl = res.data.url;
+          setLicenseDocUrl(res.data.url);
+          setLicenseDocFile(null);
         }
       }
 
@@ -308,17 +312,19 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
         });
         if (res.status === 'success' && res.data.url) {
           finalMasterDocUrl = res.data.url;
+          setMasterDocUrl(res.data.url);
+          setMasterDocFile(null);
         }
       }
 
       const payload = {
         name,
         national_id: nationalId,
-        dob,
+        dob: dob || null,
         nationality,
         license_number: licenseNumber,
-        license_expiry: licenseExpiry,
-        license_issue: licenseIssue,
+        license_expiry: licenseExpiry || null,
+        license_issue: licenseIssue || null,
         phone,
         email,
         address,
@@ -372,6 +378,9 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
       setIsSubmitting(true);
       setStatus(t('common.processing', 'Processing...'), 'processing', 0);
       try {
+        const folderName = `${client.name} ${client.national_id || client.id_card_number || ''}`.trim();
+        await gasService.deleteClientFolder(folderName).catch(() => {});
+
         const { error } = await supabase
           .from('customers')
           .delete()
@@ -646,8 +655,8 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
             )}
             <button 
               onClick={onClose}
-              className="w-full sm:w-40 h-12 px-8 bg-white border-2 border-black rounded-[12px] text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none overflow-hidden bg-clip-padding"
               disabled={isSubmitting}
+              className="w-full sm:w-40 h-12 px-8 bg-white border-2 border-black rounded-[12px] text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-[1px] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden bg-clip-padding"
             >
               {isEditMode ? t('common.cancel', 'Cancel') : t('crm.modal.close', 'Close')}
             </button>
