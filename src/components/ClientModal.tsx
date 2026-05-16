@@ -328,7 +328,7 @@ export default function ClientModal({ isOpen, onClose, mode, client, reservation
         phone,
         email,
         address,
-        trust_rank: parseInt(trustRank) || 5,
+        trust_rank: parseInt(trustRank) || 0,
         notes,
         is_blacklisted: isBlacklisted,
         drive_id_photo: finalIdDocUrl,

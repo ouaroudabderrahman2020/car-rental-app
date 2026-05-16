@@ -211,7 +211,7 @@ export default function ClientDashboard() {
                                   {[1, 2, 3, 4, 5].map((star) => (
                                     <Star 
                                       key={star}
-                                      className={`w-3.5 h-3.5 ${star <= client.trust_rank ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} 
+                                      className={`w-3.5 h-3.5 ${star <= Number(client.trust_rank) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} 
                                     />
                                   ))}
                                 </div>

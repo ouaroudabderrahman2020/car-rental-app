@@ -535,7 +535,7 @@ export default function ReservationModal({
           national_id: clientId,
           license_number: clientLicense,
           phone: clientPhone || '',
-          trust_rank: '3',
+          trust_rank: 3,
           is_blacklisted: false
         }]);
 
