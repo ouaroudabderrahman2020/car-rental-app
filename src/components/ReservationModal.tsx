@@ -308,6 +308,8 @@ export default function ReservationModal({
       setClientPhone('');
       setClientId('');
       setClientLicense('');
+      setClientSearchQuery('');
+      setSelectedCustomer(null);
       setPrepayment('');
       setDepositType('');
       setDepositAmount('');
@@ -320,6 +322,7 @@ export default function ReservationModal({
       setNotes('');
       setRating(0);
       setSelectedCarId(null);
+      setRegistrationStatus(null);
       setDocFiles({
         vehicle_state: [],
         paper_contract: [],
@@ -342,14 +345,10 @@ export default function ReservationModal({
       if (cars) setAvailableCars(cars);
       if (customers) {
         setAllCustomers(customers);
-        if (clientId) {
-          const matched = customers.find(c => (c.national_id === clientId));
-          if (matched) setSelectedCustomer(matched);
-        }
       }
     };
     fetchData();
-  }, [isOpen, clientId]);
+  }, [isOpen]);
 
   const [duration, setDuration] = useState('0 Days, 0 Hours');
   const [totalPrice, setTotalPrice] = useState(0);
