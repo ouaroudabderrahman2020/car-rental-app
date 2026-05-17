@@ -255,6 +255,13 @@ export default function ReservationModal({
   const navigate = useNavigate();
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
+  // Reset to view-only locked mode on every open
+  useEffect(() => {
+    if (isOpen) {
+      setIsEditLocked(isEdit);
+    }
+  }, [isOpen, isEdit]);
+
   // Initial Data (Add or Edit)
   useEffect(() => {
     if (!isOpen) return;
@@ -282,6 +289,8 @@ export default function ReservationModal({
       setNotes(reservationData.notes || '');
       setRating(reservationData.rating || 0);
       setClientId(reservationData.customer_id || '');
+      setClientLicense(reservationData.license_number || reservationData.customer_license || '');
+      setClientSearchQuery(reservationData.customer_name || reservationData.client || '');
     } else if (initialData) {
       setCarBrand(initialData.carBrand || initialData.car?.brand || '');
       setCarModel(initialData.carModel || initialData.car?.model || '');
@@ -361,6 +370,21 @@ export default function ReservationModal({
     if (!carModel) setCarModel(car.model || '');
     if (!licensePlate) setLicensePlate(car.plate || '');
   }, [availableCars, isEdit, selectedCarId]);
+
+  // Fill customer data when allCustomers loads in edit mode
+  useEffect(() => {
+    if (!isEdit || !reservationData || allCustomers.length === 0) return;
+    const customerId = reservationData.customer_id;
+    if (!customerId) return;
+    const customer = allCustomers.find((c: any) => c.id === customerId || c.national_id === customerId);
+    if (!customer || selectedCustomer) return;
+    setSelectedCustomer(customer);
+    setClientName(customer.name);
+    setClientPhone(customer.phone_number || customer.phone || '');
+    setClientId(customer.national_id || '');
+    setClientLicense(customer.license_number || '');
+    setClientSearchQuery(customer.name);
+  }, [allCustomers, isEdit, reservationData, selectedCustomer]);
 
   const [duration, setDuration] = useState('0 Days, 0 Hours');
   const [totalPrice, setTotalPrice] = useState(0);
@@ -690,7 +714,26 @@ export default function ReservationModal({
       isOpen={isOpen} 
       onClose={onClose} 
       disableClose={isSubmitting}
-      title={isEdit ? t('editReservation.title', 'Edit Reservation') : t('reservations.form.title', 'New Reservation')}
+      title={
+        <div className="flex justify-between items-center w-full pr-8">
+          <div className="flex flex-col">
+            <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
+              {isEdit ? t('editReservation.title', 'Edit Reservation') : t('reservations.form.title', 'New Reservation')}
+            </h2>
+          </div>
+          <div className="flex items-center gap-4">
+            {isEdit && (
+              <button 
+                onClick={() => setIsEditLocked(!isEditLocked)}
+                className={`flex items-center gap-2 px-4 py-2 text-white font-bold text-[10px] uppercase tracking-widest transition-all rounded-[12px] ${isEditLocked ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-700 hover:bg-slate-800'}`}
+              >
+                {isEditLocked ? <Edit className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{isEditLocked ? t('editReservation.edit', 'Edit') : t('editReservation.lock', 'Lock')}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      }
     >
       <div className="bg-slate-50/50 w-full py-4 sm:py-6 lg:py-8">
         <div className="flex flex-wrap items-start justify-center lg:justify-start gap-8 px-4 sm:px-6 lg:px-8">
@@ -723,11 +766,12 @@ export default function ReservationModal({
                   }}
                   onFocus={() => clientSearchQuery.length > 0 && setIsClientSearchListActive(true)}
                   onBlur={() => setTimeout(() => setIsClientSearchListActive(false), 200)}
+                  disabled={isEdit && isEditLocked}
                   placeholder={t('reservations.form.searchPlaceholder', 'Type name, ID or license to search...')}
-                  className="w-full h-11 bg-white border-2 border-black rounded-[12px] pl-12 pr-12 text-sm font-bold focus:outline-none focus:border-[#22c55e] focus:ring-2 focus:ring-[#22c55e] transition-all duration-300 ease-in-out truncate"
+                  className="w-full h-11 bg-white border-2 border-black rounded-[12px] pl-12 pr-12 text-sm font-bold focus:outline-none focus:border-[#22c55e] focus:ring-2 focus:ring-[#22c55e] transition-all duration-300 ease-in-out truncate disabled:bg-slate-50 disabled:text-black/50 disabled:cursor-default"
                 />
               
-              {clientSearchQuery && (
+              {clientSearchQuery && !(isEdit && isEditLocked) && (
                 <button 
                   onClick={() => {
                     setClientSearchQuery('');
@@ -828,7 +872,8 @@ export default function ReservationModal({
                   <button 
                     onClick={() => setClientName(clientSearchQuery)}
                     type="button"
-                    className="h-11 px-4 bg-slate-50 border-2 border-black rounded-r-[12px] border-l-0 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center justify-center group"
+                    disabled={isEdit && isEditLocked}
+                    className="h-11 px-4 bg-slate-50 border-2 border-black rounded-r-[12px] border-l-0 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50 disabled:hover:text-inherit"
                     title="Copy from search"
                   >
                     <ClipboardPaste className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
@@ -847,7 +892,8 @@ export default function ReservationModal({
                   <button 
                     onClick={() => setClientId(clientSearchQuery)}
                     type="button"
-                    className="h-11 px-4 bg-slate-50 border-2 border-black rounded-r-[12px] border-l-0 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center justify-center group"
+                    disabled={isEdit && isEditLocked}
+                    className="h-11 px-4 bg-slate-50 border-2 border-black rounded-r-[12px] border-l-0 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50 disabled:hover:text-inherit"
                     title="Copy from search"
                   >
                     <ClipboardPaste className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
@@ -866,7 +912,8 @@ export default function ReservationModal({
                   <button 
                     onClick={() => setClientLicense(clientSearchQuery)}
                     type="button"
-                    className="h-11 px-4 bg-slate-50 border-2 border-black rounded-r-[12px] border-l-0 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center justify-center group"
+                    disabled={isEdit && isEditLocked}
+                    className="h-11 px-4 bg-slate-50 border-2 border-black rounded-r-[12px] border-l-0 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50 disabled:hover:text-inherit"
                     title="Copy from search"
                   >
                     <ClipboardPaste className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
@@ -883,7 +930,7 @@ export default function ReservationModal({
     {/* Reset Button */}
     <button
       onClick={handleResetCustomerSection}
-      disabled={isRegistering}
+      disabled={isRegistering || (isEdit && isEditLocked)}
       className="w-full sm:w-[120px] shrink min-w-0 h-11 px-6 rounded-[12px] text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all shadow-sm flex items-center justify-center gap-2 bg-white text-black hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <RotateCcw className="w-4 h-4 shrink-0" />
@@ -893,7 +940,7 @@ export default function ReservationModal({
     {/* Register Button */}
     <button
       onClick={handleRegisterClient}
-      disabled={!isRegisterEnabled || isRegistering}
+      disabled={!isRegisterEnabled || isRegistering || (isEdit && isEditLocked)}
       className={`w-full sm:w-[200px] shrink min-w-0 h-11 px-8 rounded-[12px] text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all shadow-sm flex items-center justify-center gap-3 ${
         !isRegisterEnabled 
           ? 'bg-slate-100 text-black/20 border-black/10 cursor-not-allowed' 
@@ -1357,7 +1404,7 @@ export default function ReservationModal({
                 {t('common.cancel', 'Cancel')}
               </button>
 
-              {isEdit && (
+              {isEdit && !isEditLocked && (
                 <button 
                   onClick={handleDelete}
                   className="flex-1 sm:flex-none sm:w-32 h-11 bg-red-50 text-red-600 border-2 border-red-200 rounded-[12px] text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-red-100 transition-all"
@@ -1400,12 +1447,16 @@ export default function ReservationModal({
               )}
 
               <button 
-                disabled={!isFormValid || isSubmitting || (isEdit && isEditLocked)}
-                onClick={() => handleFormSubmit()}
+                disabled={isSubmitting || (!isEditLocked && !isFormValid)}
+                onClick={isEdit && isEditLocked ? () => setIsEditLocked(false) : () => handleFormSubmit()}
                 className="flex-1 sm:w-56 h-12 bg-blue-600 text-white border-2 border-blue-600 rounded-[12px] text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-30"
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                {isSubmitting ? t('common.saving', 'Saving...') : (isEdit ? t('common.save', 'Save Changes') : t('common.confirm', 'Confirm'))}
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (isEdit && isEditLocked ? <Edit className="w-4 h-4" /> : <Check className="w-4 h-4" />)}
+                {isSubmitting ? t('common.saving', 'Saving...') : (
+                  isEdit && isEditLocked 
+                    ? t('editReservation.edit', 'Edit')
+                    : isEdit ? t('common.save', 'Save Changes') : t('common.confirm', 'Confirm')
+                )}
               </button>
             </div>
           </div>

@@ -23,7 +23,7 @@ const ModalSection1: React.FC<ModalSection1Props> = ({
         </h3>
         {extraHeader}
       </div>
-      <div className="px-3 sm:px-4 py-8 flex flex-col gap-6 w-full h-full min-w-0">
+      <div className="px-4 sm:px-6 py-8 flex flex-col gap-6 w-full h-full min-w-0">
         {children}
       </div>
       {footer && (
