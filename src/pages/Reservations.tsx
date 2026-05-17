@@ -3,6 +3,7 @@ import { Plus, ArrowRight, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import ReservationModal from '../components/ReservationModal';
+import ResDetails from '../components/ResDetails';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 /* removed FormSection import */
@@ -18,6 +19,8 @@ export default function Reservations() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<FormattedReservation | null>(null);
   const [initialData, setInitialData] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsReservation, setDetailsReservation] = useState<FormattedReservation | null>(null);
   const [activeReservations, setActiveReservations] = useState<FormattedReservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,7 +89,14 @@ export default function Reservations() {
   }, [i18n.language]);
 
   const handleOpenDetails = (res: FormattedReservation) => {
-    setSelectedReservation(res);
+    setDetailsReservation(res);
+    setIsDetailsOpen(true);
+  };
+
+  const handleEditFromDetails = () => {
+    if (!detailsReservation) return;
+    setIsDetailsOpen(false);
+    setSelectedReservation(detailsReservation);
     setModalMode('edit');
     setIsModalOpen(true);
   };
@@ -139,6 +149,15 @@ export default function Reservations() {
           }} 
           reservationData={selectedReservation}
           initialData={initialData}
+        />
+        <ResDetails
+          isOpen={isDetailsOpen}
+          onClose={() => {
+            setIsDetailsOpen(false);
+            setDetailsReservation(null);
+          }}
+          reservationData={detailsReservation}
+          onEdit={handleEditFromDetails}
         />
 
         <div className="max-w-[1440px] mx-auto pt-6 pb-12">
