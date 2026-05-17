@@ -876,39 +876,45 @@ export default function ReservationModal({
             </div>
           )}
 
-          <div className="border-t-2 border-black/5 mx-3" />
-          <div className="flex flex-col items-center gap-4 pt-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-              <button
-                  onClick={handleResetCustomerSection}
-                  disabled={isRegistering}
-                  className="w-full sm:w-auto sm:min-w-[120px] h-11 px-6 rounded-[12px] text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all shadow-sm flex items-center justify-center gap-2 bg-white text-black hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  {t('common.reset', 'Reset')}
-                </button>
-                <button
-                  onClick={handleRegisterClient}
-                  disabled={!isRegisterEnabled || isRegistering}
-                  className={`w-full sm:w-auto sm:min-w-[200px] h-11 px-8 rounded-[12px] text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all shadow-sm flex items-center justify-center gap-3 ${
-                    !isRegisterEnabled 
-                      ? 'bg-slate-100 text-black/20 border-black/10 cursor-not-allowed' 
-                      : 'bg-[#0066FF] text-white border-[#0066FF] hover:bg-blue-700 shadow-blue-100 shadow-lg'
-                  }`}
-                >
-                {isRegistering ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {t('common.processing', 'Processing...')}
-                  </>
-                ) : (
-                  <>
-                    <User className="w-4 h-4" />
-                    {t('reservations.form.registerClientButton', 'Register')}
-                  </>
-                )}
-              </button>
-            </div>
+        <div className="w-full flex flex-col items-center gap-4 pt-4">
+  {/* Added sm:flex-wrap to parent to allow safe wrapping if screen space vanishes */}
+  <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 w-full">
+    
+    {/* Reset Button */}
+    <button
+      onClick={handleResetCustomerSection}
+      disabled={isRegistering}
+      className="w-full sm:w-[120px] shrink min-w-0 h-11 px-6 rounded-[12px] text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all shadow-sm flex items-center justify-center gap-2 bg-white text-black hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <RotateCcw className="w-4 h-4 shrink-0" />
+      <span className="truncate">{t('common.reset', 'Reset')}</span>
+    </button>
+    
+    {/* Register Button */}
+    <button
+      onClick={handleRegisterClient}
+      disabled={!isRegisterEnabled || isRegistering}
+      className={`w-full sm:w-[200px] shrink min-w-0 h-11 px-8 rounded-[12px] text-[10px] font-black uppercase tracking-widest border-2 border-black transition-all shadow-sm flex items-center justify-center gap-3 ${
+        !isRegisterEnabled 
+          ? 'bg-slate-100 text-black/20 border-black/10 cursor-not-allowed' 
+          : 'bg-[#0066FF] text-white border-[#0066FF] hover:bg-blue-700 shadow-blue-100 shadow-lg'
+      }`}
+    >
+      {isRegistering ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+          <span className="truncate">{t('common.processing', 'Processing...')}</span>
+        </>
+      ) : (
+        <>
+          <User className="w-4 h-4 shrink-0" />
+          <span className="truncate">{t('reservations.form.registerClientButton', 'Register')}</span>
+        </>
+      )}
+    </button>
+
+  </div>
+
 
             {registrationStatus && (
               <div className={`flex items-center gap-2 px-4 py-2 rounded-[12px] border-2 text-[10px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-2 duration-300 ${
