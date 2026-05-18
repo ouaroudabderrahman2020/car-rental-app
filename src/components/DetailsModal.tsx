@@ -1,4 +1,5 @@
 import React from 'react';
+import { Edit } from 'lucide-react';
 import BaseModal from './BaseModal';
 
 interface DetailsModalProps {
@@ -13,18 +14,16 @@ interface DetailsModalProps {
   onEdit?: () => void;
 }
 
-import { Edit } from 'lucide-react';
-
 export default function DetailsModal({ isOpen, onClose, title, sections, onEdit }: DetailsModalProps) {
   return (
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      maxWidth="max-w-2xl"
+      maxWidth="max-w-4xl"
       title={
         <div className="flex justify-between items-center w-full pr-8">
           <div className="flex items-center gap-3">
-            <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
+            <h2 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-[0.2em]">
               {title}
             </h2>
           </div>
@@ -40,15 +39,16 @@ export default function DetailsModal({ isOpen, onClose, title, sections, onEdit 
         </div>
       }
     >
-      <div className="px-5 sm:px-6 py-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-        {sections.map((section, sIdx) => (
-          <div
-            key={sIdx}
-            className="bg-amber-50/95 border border-amber-200/80 rounded-xl p-5 sm:p-6 shadow-sm mb-4 last:mb-0"
-          >
+      <div className="p-1 sm:p-2 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {sections.map((section, sIdx) => (
+            <div
+              key={sIdx}
+              className="bg-slate-50/80 border border-slate-200/85 rounded-xl p-5 sm:p-6 shadow-sm flex-1 min-w-[320px]"
+            >
             {section.title && (
-              <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-amber-900 uppercase pb-3 mb-4 border-b border-amber-900/10">
-                {section.icon && <span className="shrink-0">{section.icon}</span>}
+              <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-900 uppercase pb-3 mb-4 border-b border-slate-200">
+                {section.icon && <span className="shrink-0 text-indigo-600">{section.icon}</span>}
                 {section.title}
               </div>
             )}
@@ -57,19 +57,20 @@ export default function DetailsModal({ isOpen, onClose, title, sections, onEdit 
               {section.fields.map((field, fIdx) => (
                 <div
                   key={fIdx}
-                  className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-0 py-2.5 border-b border-amber-900/5 last:border-0"
+                  className="flex items-baseline py-2 border-b border-slate-100 last:border-0 gap-2 w-full min-w-0"
                 >
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-900 sm:min-w-[140px] sm:pr-3 shrink-0">
-                    {field.label}
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap shrink-0">
+                    {field.label} :
                   </span>
-                  <span className="text-sm font-semibold text-amber-950/90 sm:before:hidden before:content-[':_'] before:mr-1">
+                  <span className="text-sm font-semibold text-slate-900 break-words flex-grow min-w-0">
                     {field.value}
                   </span>
                 </div>
               ))}
             </div>
           </div>
-        ))}
+          ))}
+        </div>
       </div>
     </BaseModal>
   );

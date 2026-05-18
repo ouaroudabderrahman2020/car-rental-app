@@ -24,7 +24,7 @@ export default function BaseModal({
   footer,
   maxWidth = 'max-w-5xl',
   hideHeader = false,
-  headerBg = 'bg-warm-accent',
+  headerBg = 'bg-slate-100',
   noScroll = false,
   disableClose = false
 }: BaseModalProps) {
@@ -56,14 +56,14 @@ export default function BaseModal({
       >
         {/* Header */}
         {!hideHeader && (
-          <div className={`sticky top-0 z-50 px-6 py-2 sm:px-8 ${headerBg} flex justify-between items-center shrink-0 border-b-2 border-slate-100 overflow-hidden bg-clip-padding`}>
+          <div className={`sticky top-0 z-50 px-6 py-2 sm:px-8 ${headerBg} flex justify-between items-center shrink-0 border-b border-slate-200 overflow-hidden bg-clip-padding`}>
             <div className="flex-1">
-              <div className="text-lg sm:text-xl font-black text-black uppercase tracking-widest">{title}</div>
+              <div className="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-widest">{title}</div>
             </div>
             <button 
               onClick={onClose} 
               disabled={disableClose}
-              className="group p-2 -mr-2 text-black hover:bg-black/5 transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="group p-2 -mr-2 text-slate-900 hover:bg-slate-200/50 transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               aria-label="Close"
             >
               <X className="w-6 h-6 sm:w-7 sm:h-7 transition-transform group-hover:rotate-90" />
