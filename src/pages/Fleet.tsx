@@ -1,8 +1,9 @@
-import { Plus, Car as CarIcon, Loader2 } from 'lucide-react';
+import { Plus, Car as CarIcon, Loader2, Fuel, Gauge, Calendar, Shield, Settings, ClipboardList } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import CarModal from '../components/CarModal';
+import DetailsModal from '../components/DetailsModal';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 /* removed FormSection import */
@@ -18,6 +19,8 @@ export default function Fleet() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<FormattedCar | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsCar, setDetailsCar] = useState<FormattedCar | null>(null);
   const [fleetData, setFleetData] = useState<FormattedCar[]>(() => {
     const cached = localStorage.getItem('fleet_cache');
     return cached ? JSON.parse(cached) : [];
@@ -75,7 +78,14 @@ export default function Fleet() {
   }, [i18n.language]);
 
   const handleOpenDetails = (car: FormattedCar) => {
-    setSelectedCar(car);
+    setDetailsCar(car);
+    setIsDetailsOpen(true);
+  };
+
+  const handleEditFromDetails = () => {
+    if (!detailsCar) return;
+    setIsDetailsOpen(false);
+    setSelectedCar(detailsCar);
     setModalMode('edit');
     setIsModalOpen(true);
   };
@@ -156,6 +166,68 @@ export default function Fleet() {
           onClose={() => {
             setIsModalOpen(false);
           }}
+        />
+        <DetailsModal
+          isOpen={isDetailsOpen}
+          onClose={() => {
+            setIsDetailsOpen(false);
+            setDetailsCar(null);
+          }}
+          title={`${detailsCar?.brand || ''} ${detailsCar?.model || ''}`}
+          onEdit={handleEditFromDetails}
+          sections={detailsCar ? [
+            {
+              title: 'Basic Info',
+              icon: <Settings className="w-4 h-4" />,
+              fields: [
+                { label: 'Brand', value: detailsCar.brand },
+                { label: 'Model', value: detailsCar.model },
+                { label: 'Plate', value: detailsCar.plate },
+                { label: 'Color', value: detailsCar.color || '---' },
+                { label: 'Status', value: detailsCar.status },
+                { label: 'Daily Rate', value: `$${detailsCar.daily_rate} / day` },
+              ],
+            },
+            {
+              title: 'Technical Details',
+              icon: <Gauge className="w-4 h-4" />,
+              fields: [
+                { label: 'Fuel Type', value: detailsCar.fuel_type || '---' },
+                { label: 'Transmission', value: detailsCar.transmission || '---' },
+                { label: 'Seats', value: detailsCar.seats?.toString() || '---' },
+                { label: 'Odometer', value: `${detailsCar.odometer?.toLocaleString() || '0'} km` },
+                { label: 'GPS SIM', value: detailsCar.gps_sim || '---' },
+              ],
+            },
+            {
+              title: 'Registration & Insurance',
+              icon: <Shield className="w-4 h-4" />,
+              fields: [
+                { label: 'Registration Expiry', value: detailsCar.registration_expiry ? new Date(detailsCar.registration_expiry).toLocaleDateString() : '---' },
+                { label: 'Insurance Expiry', value: detailsCar.insurance_expiry ? new Date(detailsCar.insurance_expiry).toLocaleDateString() : '---' },
+                { label: 'Tech Inspection Expiry', value: detailsCar.tech_inspection_expiry ? new Date(detailsCar.tech_inspection_expiry).toLocaleDateString() : '---' },
+                { label: 'Tax Renewal Expiry', value: detailsCar.tax_renewal_expiry ? new Date(detailsCar.tax_renewal_expiry).toLocaleDateString() : '---' },
+                { label: 'Vignette Expiry', value: detailsCar.vignette_expiry ? new Date(detailsCar.vignette_expiry).toLocaleDateString() : '---' },
+              ],
+            },
+            {
+              title: 'Dates',
+              icon: <Calendar className="w-4 h-4" />,
+              fields: [
+                { label: 'First Use Date', value: detailsCar.first_use_date ? new Date(detailsCar.first_use_date).toLocaleDateString() : '---' },
+                { label: 'Added On', value: detailsCar.created_at ? new Date(detailsCar.created_at).toLocaleDateString() : '---' },
+              ],
+            },
+            {
+              title: 'Essentials & Maintenance',
+              icon: <ClipboardList className="w-4 h-4" />,
+              fields: [
+                { label: 'Essentials', value: detailsCar.essentials?.length ? detailsCar.essentials.filter((e: any) => e.checked).map((e: any) => e.name).join(', ') : 'None' },
+                { label: 'Maintenance Intervals', value: detailsCar.intervals?.length ? detailsCar.intervals.map((i: any) => `${i.type}: ${i.value}`).join(' | ') : 'None' },
+                { label: 'Notes', value: detailsCar.notes || '---' },
+              ],
+            },
+          ] : []}
         />
 
       {/* Fleet Grid */}
