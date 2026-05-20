@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Gauge, Calendar, Shield, Settings, ClipboardList } from 'lucide-react';
 import { FormattedCar } from '../types';
 
@@ -6,58 +7,59 @@ interface CarDetailsViewProps {
 }
 
 export default function CarDetailsView({ car }: CarDetailsViewProps) {
+  const { t } = useTranslation();
   const formatDate = (val?: string) => (val ? new Date(val).toLocaleDateString() : '---');
 
   const sections = [
     {
-      title: 'Basic Info',
+      title: t('carDetailsView.basicInfo', 'Basic Info'),
       icon: <Settings className="w-4 h-4" />,
       fields: [
-        { label: 'Brand', value: car.brand },
-        { label: 'Model', value: car.model },
-        { label: 'Plate', value: car.plate },
-        { label: 'Color', value: car.color || '---' },
-        { label: 'Status', value: car.status },
-        { label: 'Daily Rate', value: `$${car.daily_rate} / day` },
+        { label: t('carDetailsView.fields.brand', 'Brand'), value: car.brand },
+        { label: t('carDetailsView.fields.model', 'Model'), value: car.model },
+        { label: t('carDetailsView.fields.plate', 'Plate'), value: car.plate },
+        { label: t('carDetailsView.fields.color', 'Color'), value: car.color || '---' },
+        { label: t('carDetailsView.fields.status', 'Status'), value: car.status },
+        { label: t('carDetailsView.fields.dailyRate', 'Daily Rate'), value: `$${car.daily_rate} / day` },
       ],
     },
     {
-      title: 'Technical Details',
+      title: t('carDetailsView.technicalDetails', 'Technical Details'),
       icon: <Gauge className="w-4 h-4" />,
       fields: [
-        { label: 'Fuel Type', value: car.fuel_type || '---' },
-        { label: 'Transmission', value: car.transmission || '---' },
-        { label: 'Seats', value: car.seats?.toString() || '---' },
-        { label: 'Odometer', value: `${car.odometer?.toLocaleString() || '0'} km` },
-        { label: 'GPS SIM', value: car.gps_sim || '---' },
+        { label: t('carDetailsView.fields.fuelType', 'Fuel Type'), value: car.fuel_type || '---' },
+        { label: t('carDetailsView.fields.transmission', 'Transmission'), value: car.transmission || '---' },
+        { label: t('carDetailsView.fields.seats', 'Seats'), value: car.seats?.toString() || '---' },
+        { label: t('carDetailsView.fields.odometer', 'Odometer'), value: `${car.odometer?.toLocaleString() || '0'} km` },
+        { label: t('carDetailsView.fields.gpsSim', 'GPS SIM'), value: car.gps_sim || '---' },
       ],
     },
     {
-      title: 'Registration & Insurance',
+      title: t('carDetailsView.registrationInsurance', 'Registration & Insurance'),
       icon: <Shield className="w-4 h-4" />,
       fields: [
-        { label: 'Registration Expiry', value: formatDate(car.registration_expiry) },
-        { label: 'Insurance Expiry', value: formatDate(car.insurance_expiry) },
-        { label: 'Tech Inspection Expiry', value: formatDate(car.tech_inspection_expiry) },
-        { label: 'Tax Renewal Expiry', value: formatDate(car.tax_renewal_expiry) },
-        { label: 'Vignette Expiry', value: formatDate(car.vignette_expiry) },
+        { label: t('carDetailsView.fields.registrationExpiry', 'Registration Expiry'), value: formatDate(car.registration_expiry) },
+        { label: t('carDetailsView.fields.insuranceExpiry', 'Insurance Expiry'), value: formatDate(car.insurance_expiry) },
+        { label: t('carDetailsView.fields.techInspectionExpiry', 'Tech Inspection Expiry'), value: formatDate(car.tech_inspection_expiry) },
+        { label: t('carDetailsView.fields.taxRenewalExpiry', 'Tax Renewal Expiry'), value: formatDate(car.tax_renewal_expiry) },
+        { label: t('carDetailsView.fields.vignetteExpiry', 'Vignette Expiry'), value: formatDate(car.vignette_expiry) },
       ],
     },
     {
-      title: 'Dates',
+      title: t('carDetailsView.dates', 'Dates'),
       icon: <Calendar className="w-4 h-4" />,
       fields: [
-        { label: 'First Use Date', value: formatDate(car.first_use_date) },
-        { label: 'Added On', value: formatDate(car.created_at) },
+        { label: t('carDetailsView.fields.firstUseDate', 'First Use Date'), value: formatDate(car.first_use_date) },
+        { label: t('carDetailsView.fields.addedOn', 'Added On'), value: formatDate(car.created_at) },
       ],
     },
     {
-      title: 'Essentials & Maintenance',
+      title: t('carDetailsView.essentialsMaintenance', 'Essentials & Maintenance'),
       icon: <ClipboardList className="w-4 h-4" />,
       fields: [
-        { label: 'Essentials', value: car.essentials?.length ? car.essentials.filter((e: any) => e.checked).map((e: any) => e.name).join(', ') : 'None' },
-        { label: 'Maintenance Intervals', value: car.intervals?.length ? car.intervals.map((i: any) => `${i.type}: ${i.value}`).join(' | ') : 'None' },
-        { label: 'Notes', value: car.notes || '---' },
+        { label: t('carDetailsView.fields.essentials', 'Essentials'), value: car.essentials?.length ? car.essentials.filter((e: any) => e.checked).map((e: any) => e.name).join(', ') : 'None' },
+        { label: t('carDetailsView.fields.maintenanceIntervals', 'Maintenance Intervals'), value: car.intervals?.length ? car.intervals.map((i: any) => `${i.type}: ${i.value}`).join(' | ') : 'None' },
+        { label: t('carDetailsView.fields.notes', 'Notes'), value: car.notes || '---' },
       ],
     },
   ];
