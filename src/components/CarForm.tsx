@@ -43,7 +43,7 @@ const InputField = (props: any) => {
   return (
     <input
       {...rest}
-      className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 ${props.className || ''}`}
+      className={`w-full bg-slate-50 border border-slate-200 rounded-[12px] px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 ${props.className || ''}`}
     />
   );
 };
@@ -53,7 +53,7 @@ const SelectField = (props: any) => {
   return (
     <select
       {...rest}
-      className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_12px_center] bg-no-repeat ${props.className || ''}`}
+      className={`w-full bg-slate-50 border border-slate-200 rounded-[12px] px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_12px_center] bg-no-repeat ${props.className || ''}`}
     >
       {children}
     </select>
@@ -65,7 +65,7 @@ const TextareaField = (props: any) => {
   return (
     <textarea
       {...rest}
-      className={`w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 resize-none ${props.className || ''}`}
+      className={`w-full bg-slate-50 border border-slate-200 rounded-[12px] px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 resize-none ${props.className || ''}`}
     />
   );
 };
@@ -91,7 +91,7 @@ const ImageField = ({ label, value, onChange }: { label: string; value: string; 
       />
       <div
         onClick={() => inputRef.current?.click()}
-        className="w-full aspect-video border border-slate-200 rounded-lg bg-white flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all overflow-hidden"
+        className="w-full aspect-video border border-slate-200 rounded-[12px] bg-white flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all overflow-hidden"
       >
         {value ? (
           value.startsWith('data:') ? (
@@ -145,13 +145,13 @@ const FileField = ({ label, value, onChange, isPdf }: { label: string; value: st
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="h-10 px-4 bg-white border border-slate-200 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all w-full"
+          className="h-10 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all w-full"
         >
           <Upload className="w-3.5 h-3.5" />
           {t('clientForm.uploadFile', 'Upload')}
         </button>
         {value && (
-          <div className="flex items-center justify-between px-3 h-10 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between px-3 h-10 bg-blue-50 border border-blue-200 rounded-[12px]">
             <div className="flex items-center gap-2 min-w-0">
               <FileText className="w-4 h-4 text-blue-600 shrink-0" />
               <span className="text-[10px] font-bold text-blue-900 truncate">
@@ -282,7 +282,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
         {
           label: t('carForm.transmission', 'Transmission'),
           input: (
-            <div className="flex bg-white border border-slate-200 rounded-lg overflow-hidden">
+            <div className="flex bg-white border border-slate-200 rounded-[12px] overflow-hidden">
               {TRANSMISSIONS.map((trans, index) => (
                 <button key={trans} type="button" onClick={() => set('transmission', trans)} className={`flex-1 font-bold text-xs uppercase tracking-wider py-2 transition-all ${index !== 0 ? 'border-l border-slate-200' : ''} ${(car?.transmission || '') === trans ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}>{t(`carForm.trans${trans}`, trans)}</button>
               ))}
@@ -320,11 +320,11 @@ export default function CarForm({ car, onChange }: CarFormProps) {
         {sections.map((section, sIdx) => (
           <div
             key={sIdx}
-            className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"
+            className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm"
             style={{ flexBasis: '300px', flexShrink: 1, minWidth: '250px', maxWidth: '100%' }}
           >
             {section.title && (
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-xl">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
                 {section.icon && <span className="shrink-0 text-slate-500">{section.icon}</span>}
                 {section.title}
               </div>
