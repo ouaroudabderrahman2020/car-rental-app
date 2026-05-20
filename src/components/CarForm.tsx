@@ -327,7 +327,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
                 {section.title}
               </div>
             )}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-9">
               {section.fields.map((field, fIdx) => (
                 <div key={fIdx} className="w-full flex flex-col">
                   <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#0066FF] mb-1.5">
