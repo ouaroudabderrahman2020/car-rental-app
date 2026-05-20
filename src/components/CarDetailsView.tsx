@@ -64,11 +64,12 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
 
   return (
     <div className="p-1 sm:p-2 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="flex flex-wrap gap-6">
         {sections.map((section, sIdx) => (
           <div
             key={sIdx}
-            className="bg-slate-50/80 border border-slate-200/85 rounded-xl p-5 sm:p-6 shadow-sm flex-1 min-w-[320px]"
+            className="bg-slate-50/80 border border-slate-200/85 rounded-xl p-6 shadow-sm flex-shrink-0"
+            style={{ width: 'max-content', minWidth: 'min(100%, max-content)' }}
           >
             {section.title && (
               <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-900 uppercase pb-3 mb-4 border-b border-slate-200">
@@ -77,11 +78,11 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
               </div>
             )}
 
-            <div className="flex flex-col gap-0">
+            <div className="flex flex-col gap-0 flex-wrap">
               {section.fields.map((field, fIdx) => (
                 <div
                   key={fIdx}
-                  className="flex items-baseline py-2 border-b border-slate-100 last:border-0 gap-2 w-full min-w-0"
+                  className="flex items-baseline py-2 border-b border-slate-100 last:border-0 gap-2 w-full min-w-0 flex-wrap"
                 >
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap shrink-0">
                     {field.label} :
