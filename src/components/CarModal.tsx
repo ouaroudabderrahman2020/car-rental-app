@@ -766,7 +766,6 @@ export default function CarModal({ isOpen, onClose, mode, carData, onOptimisticU
     <BaseModal 
       isOpen={isOpen} 
       onClose={onClose} 
-      disableClose={isSubmitting}
       title={
         <div className="flex justify-between items-center w-full pr-8">
           <div className="flex flex-col">

@@ -69,8 +69,6 @@ export default function Tools() {
         isOpen={!!selectedTool} 
         onClose={() => setSelectedTool(null)} 
         title={getToolTitle()}
-        maxWidth={selectedTool === 'Image to PDF' ? 'max-w-4xl' : 'max-w-2xl'}
-        noScroll={true}
       >
         <div className="h-[80vh] flex items-center justify-center p-2 sm:p-4 overflow-hidden">
           {renderTool()}

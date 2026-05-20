@@ -713,7 +713,6 @@ export default function ReservationModal({
     <BaseModal 
       isOpen={isOpen} 
       onClose={onClose} 
-      disableClose={isSubmitting}
       title={
         <div className="flex justify-between items-center w-full pr-8">
           <div className="flex flex-col">
@@ -1279,7 +1278,6 @@ export default function ReservationModal({
               isOpen={isCarSelectorOpen}
               onClose={() => setIsCarSelectorOpen(false)}
               title={t('reservations.form.selectCar', 'Select Car')}
-              maxWidth="max-w-5xl"
             >
               <div className="p-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

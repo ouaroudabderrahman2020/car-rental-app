@@ -70,7 +70,6 @@ export default function ResDetails({ isOpen, onClose, reservationData, onEdit }:
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      maxWidth="max-w-3xl"
       title={
         <div className="flex justify-between items-center w-full pr-8">
           <div className="flex items-center gap-3">
