@@ -67,7 +67,7 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
   ];
 
   return (
-    <div className="p-1 sm:p-2 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
+    <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
       <div className="flex flex-wrap gap-6">
         {sections.map((section, sIdx) => (
           <div
