@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import CarForm from '../components/CarForm';
 import BaseModal from '../components/BaseModal';
-import CarDetailsView from '../components/CarDetailsView';
+import Cardetails from '../components/cardetails';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 import { supabase } from '../lib/supabase';
@@ -286,7 +286,7 @@ export default function Fleet() {
             </div>
           }
         >
-          {detailsCar && <CarDetailsView car={detailsCar} />}
+          {detailsCar && <Cardetails car={detailsCar} />}
         </BaseModal>
 
       {/* Fleet Grid */}

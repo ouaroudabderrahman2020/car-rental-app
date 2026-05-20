@@ -2,11 +2,11 @@ import { useTranslation } from 'react-i18next';
 import { Settings, FileText, Calendar, Gauge } from 'lucide-react';
 import { FormattedCar } from '../types';
 
-interface CarDetailsViewProps {
+interface CardetailsProps {
   car: FormattedCar;
 }
 
-export default function CarDetailsView({ car }: CarDetailsViewProps) {
+export default function Cardetails({ car }: CardetailsProps) {
   const { t } = useTranslation();
   const formatDate = (val?: string) => (val ? new Date(val).toLocaleDateString() : '---');
 
