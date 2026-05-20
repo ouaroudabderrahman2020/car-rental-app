@@ -39,43 +39,34 @@ interface CarFormProps {
 }
 
 const InputField = (props: any) => {
-  const { label, ...rest } = props;
+  const { label: _, ...rest } = props;
   return (
-    <div className="flex flex-col">
-      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{label}</span>
-      <input
-        {...rest}
-        className={`w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50 disabled:text-slate-500 ${props.className || ''}`}
-      />
-    </div>
+    <input
+      {...rest}
+      className={`w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50 disabled:text-slate-500 ${props.className || ''}`}
+    />
   );
 };
 
 const SelectField = (props: any) => {
-  const { label, children, ...rest } = props;
+  const { label: _, children, ...rest } = props;
   return (
-    <div className="flex flex-col">
-      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{label}</span>
-      <select
-        {...rest}
-        className={`w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50 disabled:text-slate-500 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_12px_center] bg-no-repeat ${props.className || ''}`}
-      >
-        {children}
-      </select>
-    </div>
+    <select
+      {...rest}
+      className={`w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50 disabled:text-slate-500 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_12px_center] bg-no-repeat ${props.className || ''}`}
+    >
+      {children}
+    </select>
   );
 };
 
 const TextareaField = (props: any) => {
-  const { label, ...rest } = props;
+  const { label: _, ...rest } = props;
   return (
-    <div className="flex flex-col">
-      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">{label}</span>
-      <textarea
-        {...rest}
-        className={`w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50 disabled:text-slate-500 resize-none ${props.className || ''}`}
-      />
-    </div>
+    <textarea
+      {...rest}
+      className={`w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50 disabled:text-slate-500 resize-none ${props.className || ''}`}
+    />
   );
 };
 
@@ -232,56 +223,15 @@ export default function CarForm({ car, onChange }: CarFormProps) {
       title: t('carDetailsView.basicInfo', 'Basic Info'),
       icon: <Settings className="w-4 h-4" />,
       fields: [
-        {
-          label: t('carDetailsView.fields.brand', 'Brand'),
-          input: (
-            <InputField
-              label=""
-              type="text"
-              value={car?.brand || ''}
-              onChange={(e: any) => set('brand', e.target.value)}
-              placeholder={t('carForm.placeholder', 'Enter...')}
-            />
-          ),
-        },
-        {
-          label: t('carDetailsView.fields.model', 'Model'),
-          input: (
-            <InputField
-              label=""
-              type="text"
-              value={car?.model || ''}
-              onChange={(e: any) => set('model', e.target.value)}
-              placeholder={t('carForm.placeholder', 'Enter...')}
-            />
-          ),
-        },
-        {
-          label: t('carDetailsView.fields.plate', 'Plate'),
-          input: (
-            <InputField
-              label=""
-              type="text"
-              value={car?.plate || ''}
-              onChange={(e: any) => set('plate', e.target.value)}
-              placeholder={t('carForm.placeholder', 'Enter...')}
-              className="uppercase"
-            />
-          ),
-        },
+        { label: t('carDetailsView.fields.brand', 'Brand'), input: <InputField type="text" value={car?.brand || ''} onChange={(e: any) => set('brand', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('carDetailsView.fields.model', 'Model'), input: <InputField type="text" value={car?.model || ''} onChange={(e: any) => set('model', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('carDetailsView.fields.plate', 'Plate'), input: <InputField type="text" value={car?.plate || ''} onChange={(e: any) => set('plate', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} className="uppercase" /> },
         {
           label: t('carDetailsView.fields.color', 'Color'),
           input: (
             <div className="flex flex-wrap gap-2">
               {colors.map((c) => (
-                <button
-                  key={c.name}
-                  type="button"
-                  onClick={() => set('color', c.name)}
-                  className={`w-8 h-8 rounded-full border transition-all ${c.border} ${(car?.color || '').toLowerCase() === c.name ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`}
-                  style={{ backgroundColor: c.hex }}
-                  title={c.name}
-                />
+                <button key={c.name} type="button" onClick={() => set('color', c.name)} className={`w-8 h-8 rounded-full border transition-all ${c.border} ${(car?.color || '').toLowerCase() === c.name ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`} style={{ backgroundColor: c.hex }} title={c.name} />
               ))}
             </div>
           ),
@@ -291,15 +241,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           input: (
             <div className="flex items-center gap-1">
               <span className="text-sm font-semibold text-slate-500">$</span>
-              <div className="flex-1">
-                <InputField
-                  label=""
-                  type="number"
-                  value={car?.daily_rate || ''}
-                  onChange={(e: any) => set('daily_rate', parseFloat(e.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
+              <div className="flex-1"><InputField type="number" value={car?.daily_rate || ''} onChange={(e: any) => set('daily_rate', parseFloat(e.target.value) || 0)} placeholder="0" /></div>
               <span className="text-xs text-slate-500 whitespace-nowrap">/ day</span>
             </div>
           ),
@@ -308,235 +250,64 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           label: t('carDetailsView.fields.odometer', 'Odometer'),
           input: (
             <div className="flex items-center gap-1">
-              <div className="flex-1">
-                <InputField
-                  label=""
-                  type="number"
-                  value={car?.odometer || ''}
-                  onChange={(e: any) => set('odometer', parseInt(e.target.value) || 0)}
-                  placeholder="0"
-                />
-              </div>
+              <div className="flex-1"><InputField type="number" value={car?.odometer || ''} onChange={(e: any) => set('odometer', parseInt(e.target.value) || 0)} placeholder="0" /></div>
               <span className="text-xs text-slate-500 whitespace-nowrap">km</span>
             </div>
           ),
         },
-        {
-          label: t('carDetailsView.fields.status', 'Status'),
-          input: (
-            <SelectField
-              label=""
-              value={car?.status || ''}
-              onChange={(e: any) => set('status', e.target.value)}
-            >
-              {CAR_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </SelectField>
-          ),
-        },
+        { label: t('carDetailsView.fields.status', 'Status'), input: <SelectField value={car?.status || ''} onChange={(e: any) => set('status', e.target.value)}>{CAR_STATUSES.map((s) => (<option key={s} value={s}>{s}</option>))}</SelectField> },
       ],
     },
     {
       title: 'Documents',
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        {
-          label: t('carForm.uploadImage', 'Vehicle Image'),
-          input: <ImageField label="Vehicle Image" value={car?.image_url || ''} onChange={(v) => set('image_url', v)} />,
-        },
-        {
-          label: t('carForm.registrationCard', 'Registration Card'),
-          input: <FileField label="Registration Card" value={car?.registration_card_url || ''} onChange={(v) => set('registration_card_url', v)} />,
-        },
-        {
-          label: t('carForm.insurance', 'Insurance'),
-          input: <FileField label="Insurance" value={car?.insurance_url || ''} onChange={(v) => set('insurance_url', v)} />,
-        },
-        {
-          label: t('carForm.vignette', 'Vignette'),
-          input: <FileField label="Vignette" value={car?.vignette_url || ''} onChange={(v) => set('vignette_url', v)} />,
-        },
-        {
-          label: t('carForm.pdfLabel', 'All-in-one Documentation'),
-          input: <FileField label="Documentation" value={car?.documentation_url || ''} onChange={(v) => set('documentation_url', v)} isPdf />,
-        },
+        { label: t('carForm.uploadImage', 'Vehicle Image'), input: <ImageField label="Vehicle Image" value={car?.image_url || ''} onChange={(v) => set('image_url', v)} /> },
+        { label: t('carForm.registrationCard', 'Registration Card'), input: <FileField label="Registration Card" value={car?.registration_card_url || ''} onChange={(v) => set('registration_card_url', v)} /> },
+        { label: t('carForm.insurance', 'Insurance'), input: <FileField label="Insurance" value={car?.insurance_url || ''} onChange={(v) => set('insurance_url', v)} /> },
+        { label: t('carForm.vignette', 'Vignette'), input: <FileField label="Vignette" value={car?.vignette_url || ''} onChange={(v) => set('vignette_url', v)} /> },
+        { label: t('carForm.pdfLabel', 'All-in-one Documentation'), input: <FileField label="Documentation" value={car?.documentation_url || ''} onChange={(v) => set('documentation_url', v)} isPdf /> },
       ],
     },
     {
       title: t('carForm.otherDetails', 'Other Details'),
       icon: <Calendar className="w-4 h-4" />,
       fields: [
-        {
-          label: t('carForm.firstUse', 'First Use'),
-          input: (
-            <InputField
-              label=""
-              type="date"
-              value={car?.first_use_date || ''}
-              onChange={(e: any) => set('first_use_date', e.target.value)}
-            />
-          ),
-        },
-        {
-          label: t('carForm.registrationExpir', 'Registration Expir'),
-          input: (
-            <InputField
-              label=""
-              type="date"
-              value={car?.registration_expiry || ''}
-              onChange={(e: any) => set('registration_expiry', e.target.value)}
-            />
-          ),
-        },
-        {
-          label: t('carForm.insuranceExpir', 'Insurance Expir'),
-          input: (
-            <InputField
-              label=""
-              type="date"
-              value={car?.insurance_expiry || ''}
-              onChange={(e: any) => set('insurance_expiry', e.target.value)}
-            />
-          ),
-        },
-        {
-          label: t('carForm.vignetteExpir', 'Vignette Expir'),
-          input: (
-            <InputField
-              label=""
-              type="date"
-              value={car?.vignette_expiry || ''}
-              onChange={(e: any) => set('vignette_expiry', e.target.value)}
-            />
-          ),
-        },
+        { label: t('carForm.firstUse', 'First Use'), input: <InputField type="date" value={car?.first_use_date || ''} onChange={(e: any) => set('first_use_date', e.target.value)} /> },
+        { label: t('carForm.registrationExpir', 'Registration Expir'), input: <InputField type="date" value={car?.registration_expiry || ''} onChange={(e: any) => set('registration_expiry', e.target.value)} /> },
+        { label: t('carForm.insuranceExpir', 'Insurance Expir'), input: <InputField type="date" value={car?.insurance_expiry || ''} onChange={(e: any) => set('insurance_expiry', e.target.value)} /> },
+        { label: t('carForm.vignetteExpir', 'Vignette Expir'), input: <InputField type="date" value={car?.vignette_expiry || ''} onChange={(e: any) => set('vignette_expiry', e.target.value)} /> },
         {
           label: t('carForm.transmission', 'Transmission'),
           input: (
             <div className="flex bg-white border border-slate-200 rounded-lg overflow-hidden">
               {TRANSMISSIONS.map((trans, index) => (
-                <button
-                  key={trans}
-                  type="button"
-                  onClick={() => set('transmission', trans)}
-                  className={`flex-1 font-bold text-xs uppercase tracking-wider py-2 transition-all ${index !== 0 ? 'border-l border-slate-200' : ''} ${(car?.transmission || '') === trans ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-                >
-                  {trans}
-                </button>
+                <button key={trans} type="button" onClick={() => set('transmission', trans)} className={`flex-1 font-bold text-xs uppercase tracking-wider py-2 transition-all ${index !== 0 ? 'border-l border-slate-200' : ''} ${(car?.transmission || '') === trans ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}>{trans}</button>
               ))}
             </div>
           ),
         },
-        {
-          label: t('carForm.fuelType', 'Fuel Type'),
-          input: (
-            <SelectField
-              label=""
-              value={car?.fuel_type || ''}
-              onChange={(e: any) => set('fuel_type', e.target.value)}
-            >
-              <option value="">---</option>
-              {FUEL_TYPES.map((ft) => (
-                <option key={ft} value={ft}>{ft}</option>
-              ))}
-            </SelectField>
-          ),
-        },
-        {
-          label: t('carForm.gpsSim', 'GPS Sim'),
-          input: (
-            <InputField
-              label=""
-              type="text"
-              value={car?.gps_sim || ''}
-              onChange={(e: any) => set('gps_sim', e.target.value)}
-              placeholder={t('carForm.placeholder', 'Enter...')}
-            />
-          ),
-        },
-        {
-          label: t('carForm.seats', 'Seats'),
-          input: (
-            <InputField
-              label=""
-              type="number"
-              value={car?.seats || ''}
-              onChange={(e: any) => set('seats', parseInt(e.target.value) || 0)}
-              placeholder="0"
-            />
-          ),
-        },
+        { label: t('carForm.fuelType', 'Fuel Type'), input: <SelectField value={car?.fuel_type || ''} onChange={(e: any) => set('fuel_type', e.target.value)}><option value="">---</option>{FUEL_TYPES.map((ft) => (<option key={ft} value={ft}>{ft}</option>))}</SelectField> },
+        { label: t('carForm.gpsSim', 'GPS Sim'), input: <InputField type="text" value={car?.gps_sim || ''} onChange={(e: any) => set('gps_sim', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('carForm.seats', 'Seats'), input: <InputField type="number" value={car?.seats || ''} onChange={(e: any) => set('seats', parseInt(e.target.value) || 0)} placeholder="0" /> },
         {
           label: t('carForm.essentials', 'Essentials'),
           input: (
             <div className="w-full">
-              <ItemSection
-                items={car?.essentials?.filter((e: EssentialItem) => e.checked).map((e: EssentialItem) => e.name) || []}
-                onChange={(names: string[]) => {
-                  set('essentials', names.map((name) => ({ id: name, name, checked: true })));
-                }}
-                isEdit
-                disabled={false}
-              />
+              <ItemSection items={car?.essentials?.filter((e: EssentialItem) => e.checked).map((e: EssentialItem) => e.name) || []} onChange={(names: string[]) => { set('essentials', names.map((name) => ({ id: name, name, checked: true }))); }} isEdit disabled={false} />
             </div>
           ),
         },
-        {
-          label: t('carForm.notes', 'Notes'),
-          input: (
-            <TextareaField
-              label=""
-              value={car?.notes || ''}
-              onChange={(e: any) => set('notes', e.target.value)}
-              placeholder={t('carForm.placeholder', 'Enter...')}
-              rows={3}
-            />
-          ),
-        },
+        { label: t('carForm.notes', 'Notes'), input: <TextareaField value={car?.notes || ''} onChange={(e: any) => set('notes', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} rows={3} /> },
       ],
     },
     {
       title: t('carForm.maintenance', 'Maintenance'),
       icon: <Gauge className="w-4 h-4" />,
       fields: [
-        {
-          label: t('carForm.maintenanceType', 'Select Maintenance Category'),
-          input: (
-            <SelectField
-              label=""
-              value={selectedService}
-              onChange={(e: any) => setSelectedService(e.target.value)}
-            >
-              {serviceOptions.map((opt) => (
-                <option key={opt.key} value={opt.value}>{opt.value}</option>
-              ))}
-            </SelectField>
-          ),
-        },
-        {
-          label: t('carForm.intervalValue', 'Interval Value'),
-          input: (
-            <InputField
-              label=""
-              type="number"
-              value={currentInterval?.value || ''}
-              onChange={(e: any) => updateInterval('value', e.target.value)}
-              placeholder={t('carForm.placeholder', 'Enter...')}
-            />
-          ),
-        },
-        {
-          label: t('carForm.lastCompleted', 'Last Completed'),
-          input: (
-            <InputField
-              label=""
-              type="date"
-              value={currentInterval?.lastCompleted || ''}
-              onChange={(e: any) => updateInterval('lastCompleted', e.target.value)}
-            />
-          ),
-        },
+        { label: t('carForm.maintenanceType', 'Select Maintenance Category'), input: <SelectField value={selectedService} onChange={(e: any) => setSelectedService(e.target.value)}>{serviceOptions.map((opt) => (<option key={opt.key} value={opt.value}>{opt.value}</option>))}</SelectField> },
+        { label: t('carForm.intervalValue', 'Interval Value'), input: <InputField type="number" value={currentInterval?.value || ''} onChange={(e: any) => updateInterval('value', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('carForm.lastCompleted', 'Last Completed'), input: <InputField type="date" value={currentInterval?.lastCompleted || ''} onChange={(e: any) => updateInterval('lastCompleted', e.target.value)} /> },
       ],
     },
   ];
@@ -558,7 +329,10 @@ export default function CarForm({ car, onChange }: CarFormProps) {
             )}
             <div className="flex flex-col gap-3">
               {section.fields.map((field, fIdx) => (
-                <div key={fIdx} className="w-full">
+                <div key={fIdx} className="w-full flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#0066FF] mb-1.5">
+                    {field.label}
+                  </span>
                   {field.input}
                 </div>
               ))}
