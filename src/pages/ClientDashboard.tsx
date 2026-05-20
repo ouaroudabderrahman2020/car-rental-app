@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase';
 import { Customer, Reservation } from '../types';
 import Layout from '../components/Layout';
 import ClientModal from '../components/ClientModal';
+import BaseModal from '../components/BaseModal';
+import ClientDetailsView from '../components/ClientDetailsView';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 /* removed FormSection import */
@@ -22,6 +24,8 @@ export default function ClientDashboard() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Customer | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsClient, setDetailsClient] = useState<Customer | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -95,7 +99,14 @@ export default function ClientDashboard() {
   }, [enrichedClients, searchTerm]);
 
   const handleOpenDetails = (client: Customer) => {
-    setSelectedClient(client);
+    setDetailsClient(client);
+    setIsDetailsOpen(true);
+  };
+
+  const handleEditFromDetails = () => {
+    if (!detailsClient) return;
+    setIsDetailsOpen(false);
+    setSelectedClient(detailsClient);
     setModalMode('edit');
     setIsModalOpen(true);
   };
@@ -227,6 +238,36 @@ export default function ClientDashboard() {
             </div>
           </Section2>
         </div>
+
+        <BaseModal
+          isOpen={isDetailsOpen}
+          onClose={() => {
+            setIsDetailsOpen(false);
+            setDetailsClient(null);
+          }}
+          title={
+            <div className="flex justify-between items-center w-full pr-8">
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
+                  Client Profile
+                </h2>
+                {detailsClient?.is_blacklisted && (
+                  <span className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest border border-black rounded-sm shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">Blacklisted</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleEditFromDetails}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          }
+        >
+          {detailsClient && <ClientDetailsView client={detailsClient} />}
+        </BaseModal>
 
         <ClientModal 
           isOpen={isModalOpen}
