@@ -24,12 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6 # Updated from v4
       
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22 # Updated from 20 to use current Node LTS
           cache: 'npm'
           
       - name: Install dependencies
@@ -43,7 +43,7 @@ jobs:
           VITE_GAS_WEB_APP_URL: ${{ secrets.VITE_GAS_WEB_APP_URL }}
           
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5 # Updated from v4
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
