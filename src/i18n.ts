@@ -97,6 +97,7 @@ const resources = {
         dataDeleted: "Data Deleted",
         remove: "Remove",
         removeImage: "Remove Image",
+        attached: "Attached",
         ready: "READY",
         clickToView: "CLICK TO VIEW",
         days: {

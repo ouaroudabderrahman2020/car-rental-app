@@ -25,14 +25,14 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
       ],
     },
     {
-      title: 'Documents',
+      title: t('carForm.documents', 'Documents'),
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.uploadImage', 'Vehicle Image'), value: car.image_url ? 'Attached' : '---' },
-        { label: t('carForm.registrationCard', 'Registration Card'), value: car.registration_card_url ? 'Attached' : '---' },
-        { label: t('carForm.insurance', 'Insurance'), value: car.insurance_url ? 'Attached' : '---' },
-        { label: t('carForm.vignette', 'Vignette'), value: car.vignette_url ? 'Attached' : '---' },
-        { label: t('carForm.pdfLabel', 'Documentation'), value: car.documentation_url ? 'Attached' : '---' },
+        { label: t('carForm.uploadImage', 'Vehicle Image'), value: car.image_url ? t('common.attached', 'Attached') : '---' },
+        { label: t('carForm.registrationCard', 'Registration Card'), value: car.registration_card_url ? t('common.attached', 'Attached') : '---' },
+        { label: t('carForm.insurance', 'Insurance'), value: car.insurance_url ? t('common.attached', 'Attached') : '---' },
+        { label: t('carForm.vignette', 'Vignette'), value: car.vignette_url ? t('common.attached', 'Attached') : '---' },
+        { label: t('carForm.pdfLabel', 'Documentation'), value: car.documentation_url ? t('common.attached', 'Attached') : '---' },
       ],
     },
     {
@@ -60,9 +60,9 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
       fields: car.intervals?.length
         ? car.intervals.map((i: any) => ({
             label: i.type,
-            value: `${i.value || '---'}${i.lastCompleted ? ` (Last: ${formatDate(i.lastCompleted)})` : ''}`,
+            value: `${i.value || '---'}${i.lastCompleted ? ` (${t('carForm.lastCompleted', 'Last')}: ${formatDate(i.lastCompleted)})` : ''}`,
           }))
-        : [{ label: t('carForm.maintenance', 'Maintenance'), value: 'No intervals set' }],
+        : [{ label: t('carForm.maintenance', 'Maintenance'), value: t('carForm.noIntervals', 'No intervals set') }],
     },
   ];
 

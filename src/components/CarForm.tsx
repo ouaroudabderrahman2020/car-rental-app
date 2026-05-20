@@ -71,6 +71,7 @@ const TextareaField = (props: any) => {
 };
 
 const ImageField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -98,13 +99,13 @@ const ImageField = ({ label, value, onChange }: { label: string; value: string; 
           ) : (
             <div className="flex flex-col items-center gap-2">
               <FileText className="w-8 h-8 text-blue-600" />
-              <span className="text-[10px] font-bold text-slate-400">File linked</span>
+              <span className="text-[10px] font-bold text-slate-400">{t('carForm.fileLinked', 'File linked')}</span>
             </div>
           )
         ) : (
           <>
             <Upload className="w-8 h-8 text-slate-300" />
-            <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Upload</p>
+            <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('clientForm.uploadFile', 'Upload')}</p>
           </>
         )}
       </div>
@@ -114,7 +115,7 @@ const ImageField = ({ label, value, onChange }: { label: string; value: string; 
           onClick={(e) => { e.stopPropagation(); onChange(''); }}
           className="mt-1 text-[9px] font-bold text-red-500 uppercase tracking-wider flex items-center gap-1 hover:underline"
         >
-          <Trash2 className="w-3 h-3" /> Remove
+          <Trash2 className="w-3 h-3" /> {t('common.remove', 'Remove')}
         </button>
       )}
     </div>
@@ -122,6 +123,7 @@ const ImageField = ({ label, value, onChange }: { label: string; value: string; 
 };
 
 const FileField = ({ label, value, onChange, isPdf }: { label: string; value: string; onChange: (v: string) => void; isPdf?: boolean }) => {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -146,14 +148,14 @@ const FileField = ({ label, value, onChange, isPdf }: { label: string; value: st
           className="h-10 px-4 bg-white border border-slate-200 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all w-full"
         >
           <Upload className="w-3.5 h-3.5" />
-          Upload
+          {t('clientForm.uploadFile', 'Upload')}
         </button>
         {value && (
           <div className="flex items-center justify-between px-3 h-10 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center gap-2 min-w-0">
               <FileText className="w-4 h-4 text-blue-600 shrink-0" />
               <span className="text-[10px] font-bold text-blue-900 truncate">
-                {isPdf ? 'DOCUMENTATION' : label.toUpperCase()}
+                {isPdf ? t('carForm.pdfLabel', 'Documentation') : label.toUpperCase()}
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -231,7 +233,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           input: (
             <div className="flex flex-wrap gap-2">
               {colors.map((c) => (
-                <button key={c.name} type="button" onClick={() => set('color', c.name)} className={`w-8 h-8 rounded-full border transition-all ${c.border} ${(car?.color || '').toLowerCase() === c.name ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`} style={{ backgroundColor: c.hex }} title={c.name} />
+                <button key={c.name} type="button" onClick={() => set('color', c.name)} className={`w-8 h-8 rounded-full border transition-all ${c.border} ${(car?.color || '').toLowerCase() === c.name ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`} style={{ backgroundColor: c.hex }} title={t(`carForm.color${c.name.charAt(0).toUpperCase() + c.name.slice(1)}`, c.name)} />
               ))}
             </div>
           ),
@@ -242,7 +244,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
             <div className="flex items-center gap-1">
               <span className="text-sm font-semibold text-slate-500">$</span>
               <div className="flex-1"><InputField type="number" value={car?.daily_rate || ''} onChange={(e: any) => set('daily_rate', parseFloat(e.target.value) || 0)} placeholder="0" /></div>
-              <span className="text-xs text-slate-500 whitespace-nowrap">/ day</span>
+              <span className="text-xs text-slate-500 whitespace-nowrap">{t('common.perDay')}</span>
             </div>
           ),
         },
@@ -251,15 +253,15 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           input: (
             <div className="flex items-center gap-1">
               <div className="flex-1"><InputField type="number" value={car?.odometer || ''} onChange={(e: any) => set('odometer', parseInt(e.target.value) || 0)} placeholder="0" /></div>
-              <span className="text-xs text-slate-500 whitespace-nowrap">km</span>
+              <span className="text-xs text-slate-500 whitespace-nowrap">{t('carForm.odometerUnit', 'km')}</span>
             </div>
           ),
         },
-        { label: t('carDetailsView.fields.status', 'Status'), input: <SelectField value={car?.status || ''} onChange={(e: any) => set('status', e.target.value)}>{CAR_STATUSES.map((s) => (<option key={s} value={s}>{s}</option>))}</SelectField> },
+        { label: t('carDetailsView.fields.status', 'Status'), input: <SelectField value={car?.status || ''} onChange={(e: any) => set('status', e.target.value)}>{CAR_STATUSES.map((s) => (<option key={s} value={s}>{t(`common.${s === 'In Maintenance' ? 'maintenance' : s.toLowerCase()}`, s)}</option>))}</SelectField> },
       ],
     },
     {
-      title: 'Documents',
+      title: t('carForm.documents', 'Documents'),
       icon: <FileText className="w-4 h-4" />,
       fields: [
         { label: t('carForm.uploadImage', 'Vehicle Image'), input: <ImageField label="Vehicle Image" value={car?.image_url || ''} onChange={(v) => set('image_url', v)} /> },
@@ -282,12 +284,12 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           input: (
             <div className="flex bg-white border border-slate-200 rounded-lg overflow-hidden">
               {TRANSMISSIONS.map((trans, index) => (
-                <button key={trans} type="button" onClick={() => set('transmission', trans)} className={`flex-1 font-bold text-xs uppercase tracking-wider py-2 transition-all ${index !== 0 ? 'border-l border-slate-200' : ''} ${(car?.transmission || '') === trans ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}>{trans}</button>
+                <button key={trans} type="button" onClick={() => set('transmission', trans)} className={`flex-1 font-bold text-xs uppercase tracking-wider py-2 transition-all ${index !== 0 ? 'border-l border-slate-200' : ''} ${(car?.transmission || '') === trans ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}>{t(`carForm.trans${trans}`, trans)}</button>
               ))}
             </div>
           ),
         },
-        { label: t('carForm.fuelType', 'Fuel Type'), input: <SelectField value={car?.fuel_type || ''} onChange={(e: any) => set('fuel_type', e.target.value)}><option value="">---</option>{FUEL_TYPES.map((ft) => (<option key={ft} value={ft}>{ft}</option>))}</SelectField> },
+        { label: t('carForm.fuelType', 'Fuel Type'), input: <SelectField value={car?.fuel_type || ''} onChange={(e: any) => set('fuel_type', e.target.value)}><option value="">---</option>{FUEL_TYPES.map((ft) => (<option key={ft} value={ft}>{t(`carForm.fuel${ft}`, ft)}</option>))}</SelectField> },
         { label: t('carForm.gpsSim', 'GPS Sim'), input: <InputField type="text" value={car?.gps_sim || ''} onChange={(e: any) => set('gps_sim', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
         { label: t('carForm.seats', 'Seats'), input: <InputField type="number" value={car?.seats || ''} onChange={(e: any) => set('seats', parseInt(e.target.value) || 0)} placeholder="0" /> },
         {
@@ -305,7 +307,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
       title: t('carForm.maintenance', 'Maintenance'),
       icon: <Gauge className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.maintenanceType', 'Select Maintenance Category'), input: <SelectField value={selectedService} onChange={(e: any) => setSelectedService(e.target.value)}>{serviceOptions.map((opt) => (<option key={opt.key} value={opt.value}>{opt.value}</option>))}</SelectField> },
+        { label: t('carForm.maintenanceType', 'Select Maintenance Category'), input: <SelectField value={selectedService} onChange={(e: any) => setSelectedService(e.target.value)}>{serviceOptions.map((opt) => (<option key={opt.key} value={opt.value}>{t(`carForm.serviceOptions.${opt.key}`, opt.value)}</option>))}</SelectField> },
         { label: t('carForm.intervalValue', 'Interval Value'), input: <InputField type="number" value={currentInterval?.value || ''} onChange={(e: any) => updateInterval('value', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
         { label: t('carForm.lastCompleted', 'Last Completed'), input: <InputField type="date" value={currentInterval?.lastCompleted || ''} onChange={(e: any) => updateInterval('lastCompleted', e.target.value)} /> },
       ],
