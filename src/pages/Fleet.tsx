@@ -1,18 +1,16 @@
-import { Plus, Car as CarIcon, Loader2, Edit } from 'lucide-react';
+import { Plus, Car as CarIcon, Loader2, Edit, Check } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
-import CarModal from '../components/CarModal';
+import CarForm from '../components/CarForm';
 import BaseModal from '../components/BaseModal';
 import CarDetailsView from '../components/CarDetailsView';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
-/* removed FormSection import */
 import { supabase } from '../lib/supabase';
 import { getDriveImageUrl } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
-import { Car, FormattedCar } from '../types';
-import { CAR_STATUSES } from '../constants';
+import { FormattedCar } from '../types';
 
 export default function Fleet() {
   const { t, i18n } = useTranslation();
@@ -20,6 +18,8 @@ export default function Fleet() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<FormattedCar | null>(null);
+  const [formData, setFormData] = useState<Partial<FormattedCar>>({});
+  const [isSaving, setIsSaving] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [detailsCar, setDetailsCar] = useState<FormattedCar | null>(null);
   const [fleetData, setFleetData] = useState<FormattedCar[]>(() => {
@@ -83,18 +83,80 @@ export default function Fleet() {
     setIsDetailsOpen(true);
   };
 
-  const handleEditFromDetails = () => {
-    if (!detailsCar) return;
-    setIsDetailsOpen(false);
-    setSelectedCar(detailsCar);
-    setModalMode('edit');
+  const handleAddCar = () => {
+    setSelectedCar(null);
+    setFormData({});
+    setModalMode('add');
     setIsModalOpen(true);
   };
 
-  const handleAddCar = () => {
-    setSelectedCar(null);
-    setModalMode('add');
-    setIsModalOpen(true);
+  const handleSave = async () => {
+    if (!formData.brand || !formData.model || !formData.plate) {
+      setStatus('Brand, Model and Plate are required', 'error');
+      return;
+    }
+
+    setIsSaving(true);
+    setStatus(t('common.processing'), 'processing', 0);
+
+    try {
+      const payload = {
+        brand: formData.brand,
+        model: formData.model,
+        plate: formData.plate,
+        color: formData.color || null,
+        fuel_type: formData.fuel_type || null,
+        transmission: formData.transmission || null,
+        odometer: formData.odometer || 0,
+        daily_rate: formData.daily_rate || 0,
+        status: formData.status || 'Available',
+        gps_sim: formData.gps_sim || null,
+        seats: formData.seats || 5,
+        notes: formData.notes || null,
+        registration_expiry: formData.registration_expiry || null,
+        insurance_expiry: formData.insurance_expiry || null,
+        tech_inspection_expiry: formData.tech_inspection_expiry || null,
+        tax_renewal_expiry: formData.tax_renewal_expiry || null,
+        vignette_expiry: formData.vignette_expiry || null,
+        first_use_date: formData.first_use_date || null,
+        image_url: formData.image_url || '',
+        documentation_url: formData.documentation_url || '',
+        registration_card_url: formData.registration_card_url || '',
+        insurance_url: formData.insurance_url || '',
+        vignette_url: formData.vignette_url || '',
+        essentials: formData.essentials || [],
+        intervals: formData.intervals || [],
+      };
+
+      if (modalMode === 'edit' && selectedCar?.id) {
+        const { data, error } = await supabase
+          .from('cars')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', selectedCar.id)
+          .select()
+          .single();
+        if (error) throw error;
+        handleOptimisticUpdate(data);
+      } else {
+        const { data, error } = await supabase
+          .from('cars')
+          .insert([payload])
+          .select()
+          .single();
+        if (error) throw error;
+        handleOptimisticUpdate(data);
+      }
+
+      setStatus(t('common.actionCompleted'), 'success');
+      setIsModalOpen(false);
+      setSelectedCar(null);
+      setFormData({});
+    } catch (error: any) {
+      console.error('Save error:', error);
+      setStatus(`${t('common.error')}: ${error.message || ''}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleOptimisticUpdate = (car: any) => {
@@ -125,14 +187,6 @@ export default function Fleet() {
     });
   };
 
-  const handleOptimisticDelete = (id: string) => {
-    setFleetData(prev => {
-      const next = prev.filter(c => c.id !== id);
-      localStorage.setItem('fleet_cache', JSON.stringify(next));
-      return next;
-    });
-  };
-
   const filteredFleet = useMemo(() => {
     return fleetData.filter(car => {
       const matchesSearch = car.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -158,16 +212,50 @@ export default function Fleet() {
           }
           className="p-6 md:p-10"
         />
-        <CarModal 
+        <BaseModal
           isOpen={isModalOpen}
-          mode={modalMode}
-          carData={selectedCar}
-          onOptimisticUpdate={handleOptimisticUpdate}
-          onOptimisticDelete={handleOptimisticDelete}
           onClose={() => {
             setIsModalOpen(false);
+            setSelectedCar(null);
+            setFormData({});
           }}
-        />
+          title={
+            <div className="flex justify-between items-center w-full pr-8">
+              <div className="flex flex-col">
+                <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
+                  {modalMode === 'add' ? t('carForm.title', 'Add Vehicle') : t('carDetails.title', 'Edit Vehicle')}
+                </h2>
+              </div>
+            </div>
+          }
+        >
+          <CarForm car={selectedCar} onChange={setFormData} />
+          <div className="px-6 py-6 sm:px-10 bg-slate-50 border-t border-black/10 flex flex-col sm:flex-row justify-end items-center gap-3">
+            <button
+              onClick={() => {
+                setIsModalOpen(false);
+                setSelectedCar(null);
+                setFormData({});
+              }}
+              disabled={isSaving}
+              className="w-full sm:w-40 h-12 bg-white border border-black rounded-[12px] text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden bg-clip-padding"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              disabled={isSaving}
+              onClick={handleSave}
+              className="w-full sm:w-40 h-12 bg-blue-600 border border-blue-600 rounded-[12px] text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm disabled:opacity-50 overflow-hidden bg-clip-padding"
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              {isSaving ? t('carForm.processing', 'Processing...') : t('carForm.confirm', 'Save')}
+            </button>
+          </div>
+        </BaseModal>
         <BaseModal
           isOpen={isDetailsOpen}
           onClose={() => {
@@ -182,7 +270,14 @@ export default function Fleet() {
                 </h2>
               </div>
               <button
-                onClick={handleEditFromDetails}
+                onClick={() => {
+                  if (!detailsCar) return;
+                  setIsDetailsOpen(false);
+                  setSelectedCar(detailsCar);
+                  setFormData({ ...detailsCar });
+                  setModalMode('edit');
+                  setIsModalOpen(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
               >
                 <Edit className="w-3.5 h-3.5" />

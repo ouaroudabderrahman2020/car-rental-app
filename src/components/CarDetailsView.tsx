@@ -70,11 +70,11 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
         {sections.map((section, sIdx) => (
           <div
             key={sIdx}
-            className="bg-slate-50/80 border border-slate-200/85 rounded-xl p-6 shadow-sm"
+            className="bg-blue-50/60 border border-blue-200/85 rounded-xl p-6 shadow-sm"
             style={{ flexBasis: '300px', flexShrink: 1, minWidth: '250px', maxWidth: '100%' }}
           >
             {section.title && (
-              <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-900 uppercase pb-3 mb-4 border-b border-slate-200">
+              <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-900 uppercase pb-3 mb-4 border-b border-blue-200 bg-blue-100/50 -mx-6 -mt-6 px-6 pt-5 rounded-t-xl">
                 {section.icon && <span className="shrink-0 text-indigo-600">{section.icon}</span>}
                 {section.title}
               </div>
