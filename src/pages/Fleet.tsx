@@ -229,7 +229,7 @@ export default function Fleet() {
             </div>
           }
         >
-          <CarForm car={selectedCar} onChange={setFormData} />
+          <CarForm car={formData} onChange={setFormData} />
           <div className="px-6 py-6 sm:px-10 bg-slate-50 border-t border-black/10 flex flex-col sm:flex-row justify-end items-center gap-3">
             <button
               onClick={() => {
