@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Settings, FileText, Calendar, Gauge, Upload, Monitor, Trash2 } from 'lucide-react';
 import { FormattedCar, MaintenanceInterval, EssentialItem } from '../types';
-import { FUEL_TYPES, CAR_STATUSES, TRANSMISSIONS } from '../constants';
+import { FUEL_TYPES, TRANSMISSIONS } from '../constants';
 import ItemSection from './itemSection';
 
 const colors = [
@@ -257,7 +257,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
             </div>
           ),
         },
-        { label: t('carDetailsView.fields.status', 'Status'), input: <SelectField value={car?.status || ''} onChange={(e: any) => set('status', e.target.value)}>{CAR_STATUSES.map((s) => (<option key={s} value={s}>{t(`common.${s === 'In Maintenance' ? 'maintenance' : s.toLowerCase()}`, s)}</option>))}</SelectField> },
+        { label: t('carDetailsView.fields.status', 'Status'), input: <SelectField value={car?.status || ''} onChange={(e: any) => set('status', e.target.value)}>{['available', 'unavailable', 'in maintenance'].map((s) => (<option key={s} value={s}>{t(`common.${s === 'in maintenance' ? 'maintenance' : s}`, s)}</option>))}</SelectField> },
       ],
     },
     {

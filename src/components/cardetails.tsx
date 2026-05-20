@@ -72,26 +72,22 @@ export default function Cardetails({ car }: CardetailsProps) {
         {sections.map((section, sIdx) => (
           <div
             key={sIdx}
-            className="bg-blue-50/60 border border-blue-200/85 rounded-xl p-6 shadow-sm"
+            className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm"
             style={{ flexBasis: '300px', flexShrink: 1, minWidth: '250px', maxWidth: '100%' }}
           >
             {section.title && (
-              <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-900 uppercase pb-3 mb-4 border-b border-blue-200 bg-blue-100/50 -mx-6 -mt-6 px-6 pt-5 rounded-t-xl">
-                {section.icon && <span className="shrink-0 text-indigo-600">{section.icon}</span>}
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+                {section.icon && <span className="shrink-0 text-slate-500">{section.icon}</span>}
                 {section.title}
               </div>
             )}
-
-            <div className="flex flex-col gap-0">
+            <div className="flex flex-col gap-4">
               {section.fields.map((field, fIdx) => (
-                <div
-                  key={fIdx}
-                  className="flex flex-row flex-wrap items-baseline py-2 border-b border-slate-100 last:border-0 gap-2 w-full whitespace-normal"
-                >
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap shrink-0">
-                    {field.label} :
+                <div key={fIdx} className="w-full flex flex-col">
+                  <span className="text-xs font-semibold text-slate-600 mb-1">
+                    {field.label}
                   </span>
-                  <span className="text-sm font-semibold text-slate-900 whitespace-normal">
+                  <span className="text-sm font-semibold text-slate-900">
                     {field.value}
                   </span>
                 </div>

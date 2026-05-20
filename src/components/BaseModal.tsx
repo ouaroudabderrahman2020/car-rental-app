@@ -6,9 +6,10 @@ interface BaseModalProps {
   onClose: () => void;
   title: React.ReactNode;
   children: React.ReactNode;
+  actions?: React.ReactNode;
 }
 
-export default function BaseModal({ isOpen, onClose, title, children }: BaseModalProps) {
+export default function BaseModal({ isOpen, onClose, title, children, actions }: BaseModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -20,15 +21,18 @@ export default function BaseModal({ isOpen, onClose, title, children }: BaseModa
         onClick={(e) => e.stopPropagation()}
         className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col relative max-h-[calc(100vh-64px)] overflow-y-auto black-scrollbar bg-clip-padding"
       >
-        <div className="sticky top-0 z-50 px-6 py-2 sm:px-8 bg-blue-50 flex justify-between items-center shrink-0 border-b border-blue-200 bg-clip-padding">
+        <div className="sticky top-0 z-50 px-6 py-2 sm:px-8 bg-blue-50 flex items-center shrink-0 border-b border-blue-200 bg-clip-padding">
           <div className="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-widest">{title}</div>
-          <button
-            onClick={onClose}
-            className="group p-2 -mr-2 text-slate-900 hover:bg-slate-200/50 transition-colors active:scale-95"
-            aria-label="Close"
-          >
-            <X className="w-6 h-6 sm:w-7 sm:h-7 transition-transform group-hover:rotate-90" />
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {actions}
+            <button
+              onClick={onClose}
+              className="group p-2 -mr-2 text-slate-900 hover:bg-slate-200/50 transition-colors active:scale-95"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6 sm:w-7 sm:h-7 transition-transform group-hover:rotate-90" />
+            </button>
+          </div>
         </div>
         <div className="flex-1 flex flex-col min-h-0">{children}</div>
       </motion.div>
