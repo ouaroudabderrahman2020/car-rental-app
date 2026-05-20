@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, ArrowRight, Loader2 } from 'lucide-react';
+import { Plus, ArrowRight, Loader2, Edit } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import ReservationModal from '../components/ReservationModal';
-import ResDetails from '../components/ResDetails';
+import BaseModal from '../components/BaseModal';
+import ReservationDetailsView from '../components/ReservationDetailsView';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 /* removed FormSection import */
@@ -150,15 +151,33 @@ export default function Reservations() {
           reservationData={selectedReservation}
           initialData={initialData}
         />
-        <ResDetails
+        <BaseModal
           isOpen={isDetailsOpen}
           onClose={() => {
             setIsDetailsOpen(false);
             setDetailsReservation(null);
           }}
-          reservationData={detailsReservation}
-          onEdit={handleEditFromDetails}
-        />
+          title={
+            <div className="flex justify-between items-center w-full pr-8">
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
+                  Reservation Details
+                </h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleEditFromDetails}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Edit</span>
+                </button>
+              </div>
+            </div>
+          }
+        >
+          {detailsReservation && <ReservationDetailsView reservation={detailsReservation} />}
+        </BaseModal>
 
         <div className="max-w-[1440px] mx-auto pt-6 pb-12">
           <Section2>
