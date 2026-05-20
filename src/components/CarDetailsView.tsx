@@ -68,8 +68,8 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
         {sections.map((section, sIdx) => (
           <div
             key={sIdx}
-            className="bg-slate-50/80 border border-slate-200/85 rounded-xl p-6 shadow-sm flex-shrink-0"
-            style={{ width: 'max-content', minWidth: 'min(100%, max-content)' }}
+            className="bg-slate-50/80 border border-slate-200/85 rounded-xl p-6 shadow-sm"
+            style={{ flexBasis: '300px', flexShrink: 1, maxWidth: '100%' }}
           >
             {section.title && (
               <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-900 uppercase pb-3 mb-4 border-b border-slate-200">
@@ -78,16 +78,16 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
               </div>
             )}
 
-            <div className="flex flex-col gap-0 flex-wrap">
+            <div className="flex flex-col gap-0">
               {section.fields.map((field, fIdx) => (
                 <div
                   key={fIdx}
-                  className="flex items-baseline py-2 border-b border-slate-100 last:border-0 gap-2 w-full min-w-0 flex-wrap"
+                  className="flex flex-row flex-wrap items-baseline py-2 border-b border-slate-100 last:border-0 gap-2 w-full whitespace-normal"
                 >
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap shrink-0">
                     {field.label} :
                   </span>
-                  <span className="text-sm font-semibold text-slate-900 break-words flex-grow min-w-0">
+                  <span className="text-sm font-semibold text-slate-900 whitespace-normal">
                     {field.value}
                   </span>
                 </div>
