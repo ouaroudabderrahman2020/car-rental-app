@@ -69,7 +69,7 @@ export default function CarDetailsView({ car }: CarDetailsViewProps) {
           <div
             key={sIdx}
             className="bg-slate-50/80 border border-slate-200/85 rounded-xl p-6 shadow-sm"
-            style={{ flexBasis: '300px', flexShrink: 1, maxWidth: '100%' }}
+            style={{ flexBasis: '300px', flexShrink: 1, minWidth: '250px', maxWidth: '100%' }}
           >
             {section.title && (
               <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-900 uppercase pb-3 mb-4 border-b border-slate-200">
