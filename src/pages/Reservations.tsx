@@ -14,12 +14,17 @@ import { useStatus } from '../contexts/StatusContext';
 import { useReservations } from '../hooks/useReservations';
 
 const defaultFormData: ReservationFormData = {
+  clientSearchQuery: '',
   clientName: '', clientPhone: '', clientId: '', clientLicense: '',
   pickupDate: '', returnDate: '', extendedReturnDate: '',
   dailyRate: 0, prepayment: 0, prepaymentType: 'fully_paid',
   depositType: '', depositAmount: 0,
   odometerOut: '', odometerIn: '', fuelOut: '', fuelIn: '',
   cleanedBefore: '', includedItems: [], notes: '',
+  carBrand: '', carModel: '', licensePlate: '',
+  totalPrice: 0, balanceDue: 0, duration: '',
+  reservationStateLabel: '', reservationStateColor: '',
+  selectedCarId: null,
 };
 
 export default function Reservations() {
@@ -41,6 +46,7 @@ export default function Reservations() {
   const [editReservationId, setEditReservationId] = useState<string | null>(null);
 
   const mapReservationToForm = (res: FormattedReservation): ReservationFormData => ({
+    clientSearchQuery: res.customer_name || '',
     clientName: res.customer_name || '',
     clientPhone: res.customer_phone || '',
     clientId: (res as any).customer_id || '',
@@ -60,6 +66,15 @@ export default function Reservations() {
     cleanedBefore: res.cleaned_before || '',
     includedItems: res.included_items || [],
     notes: res.notes || '',
+    carBrand: res.car?.brand || '',
+    carModel: res.car?.model || '',
+    licensePlate: res.car?.plate || '',
+    totalPrice: res.total_price || 0,
+    balanceDue: (res.total_price || 0) - (res.prepayment || 0),
+    duration: '',
+    reservationStateLabel: '',
+    reservationStateColor: '',
+    selectedCarId: res.car_id || null,
   });
 
   const fetchReservations = async () => {
