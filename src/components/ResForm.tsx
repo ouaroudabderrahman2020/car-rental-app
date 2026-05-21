@@ -711,8 +711,17 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                 <select
                   value={reservation?.prepaymentType || 'fully_paid'}
                   onChange={(e: any) => {
-                    set('prepaymentType', e.target.value);
-                    if (e.target.value === 'fully_paid') set('prepayment', 0);
+                    const val = e.target.value;
+                    const payload: any = { prepaymentType: val };
+                    if (val === 'fully_paid') payload.prepayment = 0;
+                    onChange({ ...(reservation || {}), ...payload } as Partial<ReservationFormData>);
+                    if (errors.prepaymentType) {
+                      setErrors(prev => {
+                        const next = { ...prev };
+                        delete next.prepaymentType;
+                        return next;
+                      });
+                    }
                   }}
                   className="bg-slate-50 border-r border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wider focus:outline-none appearance-none cursor-pointer"
                 >
