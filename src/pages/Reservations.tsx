@@ -101,20 +101,41 @@ export default function Reservations() {
       if (data) {
         const active: FormattedReservation[] = data
           .filter(r => r.status !== 'Completed' && r.status !== 'Cancelled')
-          .map(r => ({
-            ...r,
-            id_short: r.id.slice(0, 8).toUpperCase(),
-            client: r.customer_name,
-            carName: r.car ? `${r.car.brand} ${r.car.model}` : t('common.noData'),
-            carPlate: r.car?.plate || '—',
-            pickup: new Date(r.start_date).toLocaleDateString(i18n.language),
-            return: new Date(r.end_date).toLocaleDateString(i18n.language),
-            state: t(`reservations.${r.status.toLowerCase()}`, r.status),
-            price: `$${parseFloat(String(r.total_price || 0)).toFixed(2)}`,
-            statusColor: r.status === 'Confirmed' ? 'bg-primary/10 text-primary' : 
-                         r.status === 'In Progress' ? 'bg-accent-blue/10 text-accent-blue' :
-                         'bg-overdue-red/10 text-overdue-red'
-          }));
+          .map(r => {
+            const now = new Date();
+            const start = new Date(r.start_date);
+            const endDate = new Date(r.end_date);
+            const extEnd = r.extended_return_date ? new Date(r.extended_return_date) : null;
+            const end = (extEnd && !isNaN(extEnd.getTime())) ? extEnd : endDate;
+
+            let stateLabel = 'measuring...';
+            let statusColor = 'bg-slate-200 text-slate-700';
+            if (r.start_date && (r.end_date || r.extended_return_date)) {
+              if (now < start) {
+                stateLabel = 'Reserved';
+                statusColor = 'bg-sky-400 text-white';
+              } else if (now > end) {
+                stateLabel = 'Overdue';
+                statusColor = 'bg-red-600 text-white';
+              } else {
+                stateLabel = 'Active';
+                statusColor = 'bg-primary text-white';
+              }
+            }
+
+            return {
+              ...r,
+              id_short: r.id.slice(0, 8).toUpperCase(),
+              client: r.customer_name,
+              carName: r.car ? `${r.car.brand} ${r.car.model}` : t('common.noData'),
+              carPlate: r.car?.plate || '—',
+              pickup: new Date(r.start_date).toLocaleDateString(i18n.language),
+              return: new Date(r.end_date).toLocaleDateString(i18n.language),
+              state: stateLabel,
+              statusColor,
+              price: `$${parseFloat(String(r.total_price || 0)).toFixed(2)}`,
+            };
+          });
 
         setActiveReservations(active);
       }
@@ -264,7 +285,7 @@ export default function Reservations() {
                       <th className="py-3 px-4 font-black text-center">{t('reservations.car')}</th>
                       <th className="py-3 px-4 font-black text-center">{t('reservations.startDate')}</th>
                       <th className="py-3 px-4 font-black text-center">{t('reservations.endDate')}</th>
-                      <th className="py-3 px-4 font-black text-center">{t('common.status')}</th>
+                      <th className="py-3 px-4 font-black text-center">State</th>
                       <th className="py-3 px-4 text-center font-black">{t('reservations.totalAmount')}</th>
                     </tr>
                   </thead>
@@ -298,8 +319,10 @@ export default function Reservations() {
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.car')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenDetails(row)}>{row.carName}</span></td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.startDate')}>{row.pickup}</td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.endDate')}>{row.return}</td>
-                          <td className="py-2.5 px-4 text-center border-e border-border-tint" data-label={t('common.status')}>
-                            <span className={`px-2 py-0.5 ${row.statusColor} text-fluid-sm font-black uppercase tracking-tighter inline-block`}>{row.state}</span>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint" data-label="State">
+                            <div className={`h-7 flex items-center justify-center rounded-[12px] ${row.statusColor} px-3`}>
+                              <span className="text-[10px] font-black uppercase tracking-widest">{row.state}</span>
+                            </div>
                           </td>
                           <td className="py-2.5 px-4 text-center standard-row-text font-mono tracking-tighter font-black" data-label={t('reservations.totalAmount')}>{row.price}</td>
                         </tr>
