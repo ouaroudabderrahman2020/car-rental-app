@@ -87,7 +87,7 @@ export default function Cardetails({ car }: CardetailsProps) {
                   <span className="text-xs font-semibold text-slate-600 mb-1">
                     {field.label}
                   </span>
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
                     {field.value}
                   </span>
                 </div>

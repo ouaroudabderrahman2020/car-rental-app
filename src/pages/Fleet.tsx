@@ -1,4 +1,4 @@
-import { Plus, Car as CarIcon, Loader2, Edit, Check } from 'lucide-react';
+import { Plus, Car as CarIcon, Loader2, Edit, Check, Trash2 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
@@ -159,6 +159,35 @@ export default function Fleet() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!selectedCar?.id) return;
+    if (!window.confirm(t('common.confirmDelete', 'Are you sure you want to delete this car?'))) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('cars')
+        .delete()
+        .eq('id', selectedCar.id);
+      if (error) throw error;
+
+      setFleetData(prev => {
+        const next = prev.filter(c => c.id !== selectedCar.id);
+        localStorage.setItem('fleet_cache', JSON.stringify(next));
+        return next;
+      });
+
+      setStatus(t('common.actionCompleted', 'Done'), 'success');
+      setIsModalOpen(false);
+      setSelectedCar(null);
+      setFormData({});
+    } catch (error: any) {
+      setStatus(`${t('common.error')}: ${error.message || ''}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleOptimisticUpdate = (car: any) => {
     // Generate derived fields for FormattedCar
     const formatted: FormattedCar = {
@@ -220,41 +249,34 @@ export default function Fleet() {
             setFormData({});
           }}
           title={
-            <div className="flex justify-between items-center w-full pr-8">
-              <div className="flex flex-col">
-                <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
-                  {modalMode === 'add' ? t('carForm.title', 'Add Vehicle') : t('carDetails.title', 'Edit Vehicle')}
-                </h2>
-              </div>
-            </div>
+            <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
+              {modalMode === 'add' ? t('carForm.title', 'Add Vehicle') : t('carDetails.title', 'Edit Vehicle')}
+            </h2>
+          }
+          actions={
+            <>
+              {modalMode === 'edit' && (
+                <button
+                  disabled={isSaving}
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-red-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  {isSaving ? 'Deleting...' : 'Delete'}
+                </button>
+              )}
+              <button
+                disabled={isSaving}
+                onClick={handleSave}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                {isSaving ? t('carForm.processing', 'Processing...') : t('carForm.confirm', 'Save')}
+              </button>
+            </>
           }
         >
           <CarForm car={formData} onChange={setFormData} />
-          <div className="px-6 py-6 sm:px-10 bg-slate-50 border-t border-black/10 flex flex-col sm:flex-row justify-end items-center gap-3">
-            <button
-              onClick={() => {
-                setIsModalOpen(false);
-                setSelectedCar(null);
-                setFormData({});
-              }}
-              disabled={isSaving}
-              className="w-full sm:w-40 h-12 bg-white border border-black rounded-[12px] text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden bg-clip-padding"
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              disabled={isSaving}
-              onClick={handleSave}
-              className="w-full sm:w-40 h-12 bg-blue-600 border border-blue-600 rounded-[12px] text-white text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-sm disabled:opacity-50 overflow-hidden bg-clip-padding"
-            >
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Check className="w-4 h-4" />
-              )}
-              {isSaving ? t('carForm.processing', 'Processing...') : t('carForm.confirm', 'Save')}
-            </button>
-          </div>
         </BaseModal>
         <BaseModal
           isOpen={isDetailsOpen}
