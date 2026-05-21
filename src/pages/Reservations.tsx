@@ -42,6 +42,7 @@ export default function Reservations() {
   const [resFormMode, setResFormMode] = useState<'add' | 'edit'>('add');
   const [editReservationId, setEditReservationId] = useState<string | null>(null);
   const [saveActions, setSaveActions] = useState<ReactNode>(null);
+  const [isResSaving, setIsResSaving] = useState(false);
 
   const mapReservationToForm = (res: FormattedReservation): ReservationFormData => ({
     clientSearchQuery: res.customer_name || '',
@@ -230,6 +231,7 @@ export default function Reservations() {
             </div>
           }
           actions={saveActions}
+          closeDisabled={isResSaving}
         >
           <ResForm
             reservation={resFormData}
@@ -243,6 +245,7 @@ export default function Reservations() {
             mode={resFormMode}
             editId={editReservationId}
             onActionsReady={setSaveActions}
+            onSavingChange={setIsResSaving}
           />
         </BaseModal>
         <BaseModal

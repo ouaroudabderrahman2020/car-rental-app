@@ -7,9 +7,10 @@ interface BaseModalProps {
   title: React.ReactNode;
   children: React.ReactNode;
   actions?: React.ReactNode;
+  closeDisabled?: boolean;
 }
 
-export default function BaseModal({ isOpen, onClose, title, children, actions }: BaseModalProps) {
+export default function BaseModal({ isOpen, onClose, title, children, actions, closeDisabled }: BaseModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -27,7 +28,8 @@ export default function BaseModal({ isOpen, onClose, title, children, actions }:
             {actions}
             <button
               onClick={onClose}
-              className="group p-2 -mr-2 text-slate-900 hover:bg-slate-200/50 transition-colors active:scale-95"
+              disabled={closeDisabled}
+              className="group p-2 -mr-2 text-slate-900 hover:bg-slate-200/50 transition-colors active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Close"
             >
               <X className="w-6 h-6 sm:w-7 sm:h-7 transition-transform group-hover:rotate-90" />

@@ -51,6 +51,7 @@ interface ResFormProps {
   mode?: 'add' | 'edit';
   editId?: string | null;
   onActionsReady?: (actions: React.ReactNode) => void;
+  onSavingChange?: (saving: boolean) => void;
 }
 
 const InputField = (props: any) => {
@@ -85,7 +86,7 @@ const TextareaField = (props: any) => {
   );
 };
 
-export default function ResForm({ reservation, onChange, onSaved, mode = 'add', editId = null, onActionsReady }: ResFormProps) {
+export default function ResForm({ reservation, onChange, onSaved, mode = 'add', editId = null, onActionsReady, onSavingChange }: ResFormProps) {
   const { t } = useTranslation();
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [isClientSearchListActive, setIsClientSearchListActive] = useState(false);
@@ -355,6 +356,10 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       </div>
     );
   }, [handleSave, isSaving, saveError, onActionsReady, mode]);
+
+  useEffect(() => {
+    onSavingChange?.(isSaving);
+  }, [isSaving, onSavingChange]);
 
   useEffect(() => {
     const pickup = reservation?.pickupDate;

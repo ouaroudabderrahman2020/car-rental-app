@@ -37,6 +37,7 @@ export default function Archive() {
   const [resFormMode, setResFormMode] = useState<'add' | 'edit'>('add');
   const [editReservationId, setEditReservationId] = useState<string | null>(null);
   const [saveActions, setSaveActions] = useState<ReactNode>(null);
+  const [isResSaving, setIsResSaving] = useState(false);
 
   const mapArchiveToForm = (res: any): ReservationFormData => ({
     clientSearchQuery: res.customer_name || '',
@@ -231,6 +232,7 @@ export default function Archive() {
             </div>
           }
           actions={saveActions}
+          closeDisabled={isResSaving}
         >
           <ResForm
             reservation={resFormData}
@@ -244,6 +246,7 @@ export default function Archive() {
             mode={resFormMode}
             editId={editReservationId}
             onActionsReady={setSaveActions}
+            onSavingChange={setIsResSaving}
           />
         </BaseModal>
 
