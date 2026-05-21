@@ -89,6 +89,13 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
   const [registrationStatus, setRegistrationStatus] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null);
   const [isClientViewModalOpen, setIsClientViewModalOpen] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [duration, setDuration] = useState('0 Days, 0 Hours');
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [balanceDue, setBalanceDue] = useState(0);
+  const [reservationState, setReservationState] = useState({
+    label: 'measuring...',
+    color: 'bg-slate-200 text-slate-700',
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -209,14 +216,11 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
 
     if (pickup && (ret || ext)) {
       if (now < start) {
-        set('reservationStateLabel', 'Reserved');
-        set('reservationStateColor', 'bg-slate-header text-white');
+        setReservationState({ label: 'Reserved', color: 'bg-slate-header text-white' });
       } else if (now > end) {
-        set('reservationStateLabel', 'Overdue');
-        set('reservationStateColor', 'bg-red-600 text-white');
+        setReservationState({ label: 'Overdue', color: 'bg-red-600 text-white' });
       } else {
-        set('reservationStateLabel', 'Active');
-        set('reservationStateColor', 'bg-primary text-white');
+        setReservationState({ label: 'Active', color: 'bg-primary text-white' });
       }
     }
 
@@ -225,21 +229,20 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
       const totalHours = diffMs / (1000 * 60 * 60);
       const d = Math.floor(totalHours / 24);
       const h = Math.floor(totalHours % 24);
-      set('duration', `${d} ${t('reservations.form.days', 'Days')}, ${h} ${t('reservations.form.hours', 'Hours')}`);
+      setDuration(`${d} ${t('reservations.form.days', 'Days')}, ${h} ${t('reservations.form.hours', 'Hours')}`);
 
       const billableDays = Math.ceil(totalHours / 24);
       const dailyRateNum = typeof rate === 'number' ? rate : 0;
       const total = billableDays * dailyRateNum;
-      set('totalPrice', total);
+      setTotalPrice(total);
       const effectivePrepay = prepayType === 'fully_paid' ? total : (typeof prepay === 'number' ? prepay : 0);
-      set('balanceDue', total - effectivePrepay);
+      setBalanceDue(total - effectivePrepay);
     } else {
-      set('duration', t('reservations.form.invalidRange', 'Invalid duration'));
-      set('totalPrice', 0);
-      set('balanceDue', 0);
+      setDuration(t('reservations.form.invalidRange', 'Invalid duration'));
+      setTotalPrice(0);
+      setBalanceDue(0);
       if (!pickup && !ret) {
-        set('reservationStateLabel', 'measuring...');
-        set('reservationStateColor', 'bg-slate-200 text-slate-700');
+        setReservationState({ label: 'measuring...', color: 'bg-slate-200 text-slate-700' });
       }
     }
   }, [
@@ -542,9 +545,9 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
         {
           label: t('reservations.form.state', 'RESERVATION STATE'),
           input: (
-            <div className={`h-9 flex items-center justify-center rounded-[12px] ${reservation?.reservationStateColor || 'bg-slate-200 text-slate-700'}`}>
+            <div className={`h-9 flex items-center justify-center rounded-[12px] ${reservationState.color}`}>
               <span className="text-[11px] font-black uppercase tracking-widest">
-                {reservation?.reservationStateLabel || 'measuring...'}
+                {reservationState.label}
               </span>
             </div>
           ),
@@ -554,7 +557,7 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
           input: (
             <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-[12px] px-3 py-2 text-sm text-slate-900 font-medium">
               <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              {reservation?.duration || '0 Days, 0 Hours'}
+              {duration}
             </div>
           ),
         },
@@ -570,7 +573,7 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
           input: (
             <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-[12px] px-3 py-2 text-sm text-slate-900 font-semibold">
               <CreditCard className="w-4 h-4 text-slate-400" />
-              {`${(reservation?.totalPrice || 0).toFixed(2)} DH`}
+              {`${totalPrice.toFixed(2)} DH`}
             </div>
           ),
         },
@@ -601,8 +604,8 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
               </div>
               <div className="flex items-center gap-1 text-xs">
                 <span className="text-slate-500 font-semibold">{t('reservations.form.balanceDue', 'Balance Due')}:</span>
-                <span className={`font-bold ${(reservation?.balanceDue || 0) > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
-                  {(reservation?.balanceDue || 0) <= 0 ? 'none' : `${(reservation?.balanceDue || 0).toFixed(2)} DH`}
+                <span className={`font-bold ${balanceDue > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                  {balanceDue <= 0 ? 'none' : `${balanceDue.toFixed(2)} DH`}
                 </span>
               </div>
             </div>
