@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getDriveImageUrl } from '../lib/gas';
+import { fileToBase64 } from '../lib/utils';
 import ClientModal from './ClientModal';
 import BaseModal from './BaseModal';
 import ItemSection from './itemSection';
@@ -89,6 +90,13 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
   const [registrationStatus, setRegistrationStatus] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null);
   const [isClientViewModalOpen, setIsClientViewModalOpen] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [docFiles, setDocFiles] = useState<{
+    vehicle_state: any[];
+    paper_contract: any[];
+  }>({
+    vehicle_state: [],
+    paper_contract: [],
+  });
   const [duration, setDuration] = useState('0 Days, 0 Hours');
   const [totalPrice, setTotalPrice] = useState(0);
   const [balanceDue, setBalanceDue] = useState(0);
@@ -176,6 +184,28 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
         return next;
       });
     }
+  };
+
+  const handleFileUploadList = async (key: keyof typeof docFiles, e: any) => {
+    const files = e.target.files;
+    if (!files) return;
+    const newFiles = [...docFiles[key]];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const base64Data = await fileToBase64(file);
+        newFiles.push({ base64Data, name: file.name, contentType: file.type });
+      } catch (err) {
+        console.error('File conversion error:', err);
+      }
+    }
+    setDocFiles(prev => ({ ...prev, [key]: newFiles }));
+  };
+
+  const handleRemoveFile = (key: keyof typeof docFiles, index: number) => {
+    const newFiles = [...docFiles[key]];
+    newFiles.splice(index, 1);
+    setDocFiles(prev => ({ ...prev, [key]: newFiles }));
   };
 
   const validate = (): boolean => {
@@ -636,10 +666,34 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
           label: t('reservations.form.vehicleState', 'Vehicle State (Before/After)'),
           input: (
             <div className="flex flex-col gap-2">
-              <button type="button" className="h-9 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all">
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.multiple = true;
+                  input.accept = 'image/*,application/pdf';
+                  input.onchange = (e: any) => handleFileUploadList('vehicle_state', e);
+                  input.click();
+                }}
+                className="h-9 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all"
+              >
                 <Upload className="w-3.5 h-3.5" />
                 {t('common.upload', 'Upload Files')}
               </button>
+              {docFiles.vehicle_state.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {docFiles.vehicle_state.map((file: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2 px-2 py-1 bg-emerald-50 border border-emerald-500/20 rounded-[12px]">
+                      <FileText className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <span className="text-[9px] font-bold text-emerald-900 truncate max-w-[80px]">{file.name}</span>
+                      <button onClick={() => handleRemoveFile('vehicle_state', idx)} className="p-0.5 hover:bg-emerald-100 rounded-full text-emerald-600">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ),
         },
@@ -647,10 +701,34 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
           label: t('reservations.form.paperContract', 'Paper Contract PDF'),
           input: (
             <div className="flex flex-col gap-2">
-              <button type="button" className="h-9 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all">
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.multiple = true;
+                  input.accept = 'image/*,application/pdf';
+                  input.onchange = (e: any) => handleFileUploadList('paper_contract', e);
+                  input.click();
+                }}
+                className="h-9 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all"
+              >
                 <Upload className="w-3.5 h-3.5" />
                 {t('common.upload', 'Upload Files')}
               </button>
+              {docFiles.paper_contract.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {docFiles.paper_contract.map((file: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2 px-2 py-1 bg-emerald-50 border border-emerald-500/20 rounded-[12px]">
+                      <FileText className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <span className="text-[9px] font-bold text-emerald-900 truncate max-w-[80px]">{file.name}</span>
+                      <button onClick={() => handleRemoveFile('paper_contract', idx)} className="p-0.5 hover:bg-emerald-100 rounded-full text-emerald-600">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ),
         },
