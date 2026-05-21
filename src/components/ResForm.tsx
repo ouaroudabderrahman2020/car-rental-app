@@ -184,6 +184,74 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateDates = () => {
+    const start = new Date(reservation?.pickupDate || '');
+    const end = new Date(reservation?.returnDate || '');
+    if (reservation?.pickupDate && reservation?.returnDate && end <= start) {
+      return t('reservations.form.errors.returnBeforePickup', 'Return date must be after pickup date');
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    const pickup = reservation?.pickupDate;
+    const ret = reservation?.returnDate;
+    const ext = reservation?.extendedReturnDate;
+    const rate = reservation?.dailyRate;
+    const prepay = reservation?.prepayment;
+    const prepayType = reservation?.prepaymentType;
+
+    const now = new Date();
+    const start = new Date(pickup || '');
+    const standardEnd = new Date(ret || '');
+    const extEnd = ext ? new Date(ext) : null;
+    const end = (extEnd && !isNaN(extEnd.getTime())) ? extEnd : standardEnd;
+
+    if (pickup && (ret || ext)) {
+      if (now < start) {
+        set('reservationStateLabel', 'Reserved');
+        set('reservationStateColor', 'bg-slate-header text-white');
+      } else if (now > end) {
+        set('reservationStateLabel', 'Overdue');
+        set('reservationStateColor', 'bg-red-600 text-white');
+      } else {
+        set('reservationStateLabel', 'Active');
+        set('reservationStateColor', 'bg-primary text-white');
+      }
+    }
+
+    if (start.getTime() && end.getTime() && end > start) {
+      const diffMs = end.getTime() - start.getTime();
+      const totalHours = diffMs / (1000 * 60 * 60);
+      const d = Math.floor(totalHours / 24);
+      const h = Math.floor(totalHours % 24);
+      set('duration', `${d} ${t('reservations.form.days', 'Days')}, ${h} ${t('reservations.form.hours', 'Hours')}`);
+
+      const billableDays = Math.ceil(totalHours / 24);
+      const dailyRateNum = typeof rate === 'number' ? rate : 0;
+      const total = billableDays * dailyRateNum;
+      set('totalPrice', total);
+      const effectivePrepay = prepayType === 'fully_paid' ? total : (typeof prepay === 'number' ? prepay : 0);
+      set('balanceDue', total - effectivePrepay);
+    } else {
+      set('duration', t('reservations.form.invalidRange', 'Invalid duration'));
+      set('totalPrice', 0);
+      set('balanceDue', 0);
+      if (!pickup && !ret) {
+        set('reservationStateLabel', 'measuring...');
+        set('reservationStateColor', 'bg-slate-200 text-slate-700');
+      }
+    }
+  }, [
+    reservation?.pickupDate,
+    reservation?.returnDate,
+    reservation?.extendedReturnDate,
+    reservation?.dailyRate,
+    reservation?.prepayment,
+    reservation?.prepaymentType,
+    t,
+  ]);
+
   const sections = [
     {
       title: t('reservations.form.customer', 'Customer'),
@@ -448,8 +516,29 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
           ),
         },
         { label: t('reservations.form.pickupDate', 'Pick-up Date & Time'), required: true, input: <InputField type="datetime-local" value={reservation?.pickupDate || ''} onChange={(e: any) => set('pickupDate', e.target.value)} className={errors.pickupDate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
-        { label: t('reservations.form.returnDate', 'Return Date & Time'), required: true, input: <InputField type="datetime-local" value={reservation?.returnDate || ''} onChange={(e: any) => set('returnDate', e.target.value)} className={errors.returnDate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
-        { label: t('reservations.form.extendedReturn', 'Extended Return'), input: <InputField type="datetime-local" value={reservation?.extendedReturnDate || ''} onChange={(e: any) => set('extendedReturnDate', e.target.value)} /> },
+        {
+          label: t('reservations.form.returnDate', 'Return Date & Time'),
+          required: true,
+          input: (
+            <div className="flex flex-col gap-1 w-full">
+              <InputField type="datetime-local" value={reservation?.returnDate || ''} onChange={(e: any) => set('returnDate', e.target.value)} className={errors.returnDate ? 'border-red-500 ring-2 ring-red-100' : ''} />
+              {validateDates() && reservation?.returnDate && reservation?.pickupDate && new Date(reservation.returnDate) <= new Date(reservation.pickupDate) && (
+                <span className="text-[10px] font-semibold text-red-500">{validateDates()}</span>
+              )}
+            </div>
+          ),
+        },
+        {
+          label: t('reservations.form.extendedReturn', 'Extended Return'),
+          input: (
+            <div className="flex flex-col gap-1 w-full">
+              <InputField type="datetime-local" value={reservation?.extendedReturnDate || ''} onChange={(e: any) => set('extendedReturnDate', e.target.value)} />
+              {validateDates() && reservation?.extendedReturnDate && reservation?.returnDate && new Date(reservation.extendedReturnDate) <= new Date(reservation.returnDate) && (
+                <span className="text-[10px] font-semibold text-red-500">{validateDates()}</span>
+              )}
+            </div>
+          ),
+        },
         {
           label: t('reservations.form.state', 'RESERVATION STATE'),
           input: (
