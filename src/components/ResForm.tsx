@@ -285,12 +285,13 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
 
       if (result.error) throw new Error(result.error);
 
-      if (statusOverride === 'Completed' && reservation?.selectedCarId) {
-        await supabase.from('cars').update({
-          status: 'Available',
-          odometer: reservation?.odometerIn ? parseInt(reservation.odometerIn, 10) : undefined,
-          starting_fuel_level: reservation?.fuelIn ? parseInt(reservation.fuelIn, 10) : undefined,
-        }).eq('id', reservation.selectedCarId);
+      if ((statusOverride === 'Completed' || statusOverride === 'Cancelled') && reservation?.selectedCarId) {
+        const carUpdate: any = { status: 'Available' };
+        if (statusOverride === 'Completed') {
+          carUpdate.odometer = reservation?.odometerIn ? parseInt(reservation.odometerIn, 10) : undefined;
+          carUpdate.starting_fuel_level = reservation?.fuelIn ? parseInt(reservation.fuelIn, 10) : undefined;
+        }
+        await supabase.from('cars').update(carUpdate).eq('id', reservation.selectedCarId);
       }
 
       const resData = result.data?.[0];

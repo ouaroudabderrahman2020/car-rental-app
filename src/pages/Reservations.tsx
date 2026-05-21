@@ -259,13 +259,13 @@ export default function Reservations() {
                 <table className="w-full text-left border-collapse responsive-table">
                   <thead>
                     <tr className="bg-slate-800 text-white font-sans text-[10px] md:text-xs uppercase tracking-widest border-b border-slate-800">
-                      <th className="py-5 px-6 font-black text-center">{t('reservations.reservationId')}</th>
-                      <th className="py-5 px-6 font-black text-center">{t('reservations.customerName')}</th>
-                      <th className="py-5 px-6 font-black text-center">{t('reservations.car')}</th>
-                      <th className="py-5 px-6 font-black text-center">{t('reservations.startDate')}</th>
-                      <th className="py-5 px-6 font-black text-center">{t('reservations.endDate')}</th>
-                      <th className="py-5 px-6 font-black text-center">{t('common.status')}</th>
-                      <th className="py-5 px-6 text-center font-black">{t('reservations.totalAmount')}</th>
+                      <th className="py-3 px-4 font-black text-center">{t('reservations.reservationId')}</th>
+                      <th className="py-3 px-4 font-black text-center">{t('reservations.customerName')}</th>
+                      <th className="py-3 px-4 font-black text-center">{t('reservations.car')}</th>
+                      <th className="py-3 px-4 font-black text-center">{t('reservations.startDate')}</th>
+                      <th className="py-3 px-4 font-black text-center">{t('reservations.endDate')}</th>
+                      <th className="py-3 px-4 font-black text-center">{t('common.status')}</th>
+                      <th className="py-3 px-4 text-center font-black">{t('reservations.totalAmount')}</th>
                     </tr>
                   </thead>
                   <tbody className="font-sans text-midnight leading-[1.6]">
@@ -289,19 +289,19 @@ export default function Reservations() {
                         <tr key={row.id} className="border-b hover:bg-white transition-all border-border-tint">
                           <td 
                             onClick={() => handleOpenDetails(row)}
-                            className="py-6 px-6 text-center border-e border-border-tint standard-row-text cursor-pointer hover:text-primary transition-colors font-mono tracking-tighter" 
+                            className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text cursor-pointer hover:text-primary transition-colors font-mono tracking-tighter" 
                             data-label={t('reservations.reservationId')}
                           >
                             {row.id_short}
                           </td>
-                          <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.customerName')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenDetails(row)}>{row.client}</span></td>
-                          <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.car')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenDetails(row)}>{row.carName}</span></td>
-                          <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.startDate')}>{row.pickup}</td>
-                          <td className="py-6 px-6 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.endDate')}>{row.return}</td>
-                          <td className="py-6 px-6 text-center border-e border-border-tint" data-label={t('common.status')}>
-                            <span className={`px-2 py-1 ${row.statusColor} text-fluid-sm font-black uppercase tracking-tighter inline-block`}>{row.state}</span>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.customerName')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenDetails(row)}>{row.client}</span></td>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.car')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenDetails(row)}>{row.carName}</span></td>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.startDate')}>{row.pickup}</td>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.endDate')}>{row.return}</td>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint" data-label={t('common.status')}>
+                            <span className={`px-2 py-0.5 ${row.statusColor} text-fluid-sm font-black uppercase tracking-tighter inline-block`}>{row.state}</span>
                           </td>
-                          <td className="py-6 px-6 text-center standard-row-text font-mono tracking-tighter font-black" data-label={t('reservations.totalAmount')}>{row.price}</td>
+                          <td className="py-2.5 px-4 text-center standard-row-text font-mono tracking-tighter font-black" data-label={t('reservations.totalAmount')}>{row.price}</td>
                         </tr>
                       ))
                     )}
