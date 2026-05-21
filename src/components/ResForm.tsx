@@ -50,6 +50,7 @@ interface ResFormProps {
   onSaved?: () => void;
   mode?: 'add' | 'edit';
   editId?: string | null;
+  onActionsReady?: (actions: React.ReactNode) => void;
 }
 
 const InputField = (props: any) => {
@@ -84,7 +85,7 @@ const TextareaField = (props: any) => {
   );
 };
 
-export default function ResForm({ reservation, onChange, onSaved, mode = 'add', editId = null }: ResFormProps) {
+export default function ResForm({ reservation, onChange, onSaved, mode = 'add', editId = null, onActionsReady }: ResFormProps) {
   const { t } = useTranslation();
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [isClientSearchListActive, setIsClientSearchListActive] = useState(false);
@@ -303,6 +304,27 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    onActionsReady?.(
+      <div className="flex items-center gap-3">
+        {saveError && (
+          <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 uppercase tracking-wider">
+            <AlertCircle className="w-3.5 h-3.5" />
+            {saveError}
+          </div>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+        >
+          {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+          {isSaving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+        </button>
+      </div>
+    );
+  }, [handleSave, isSaving, saveError, onActionsReady, t]);
 
   useEffect(() => {
     const pickup = reservation?.pickupDate;
@@ -877,24 +899,6 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
             </div>
           </div>
         ))}
-      </div>
-      <div className="flex items-center justify-between gap-4 px-6 py-4 bg-white border-t border-slate-200 mt-6 -mx-6 -mb-6 rounded-b-[12px] sticky bottom-0">
-        <div>
-          {saveError && (
-            <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 uppercase tracking-wider">
-              <AlertCircle className="w-3.5 h-3.5" />
-              {saveError}
-            </div>
-          )}
-        </div>
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
-        >
-          {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-          {isSaving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
-        </button>
       </div>
     </div>
       {isCarSelectorOpen && (

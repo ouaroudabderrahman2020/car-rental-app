@@ -1,5 +1,5 @@
 import { RefreshCw, Loader2, Download } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import BaseModal from '../components/BaseModal';
@@ -36,6 +36,7 @@ export default function Archive() {
   const [resFormData, setResFormData] = useState<ReservationFormData>(defaultFormData);
   const [resFormMode, setResFormMode] = useState<'add' | 'edit'>('add');
   const [editReservationId, setEditReservationId] = useState<string | null>(null);
+  const [saveActions, setSaveActions] = useState<ReactNode>(null);
 
   const mapArchiveToForm = (res: any): ReservationFormData => ({
     clientSearchQuery: res.customer_name || '',
@@ -229,7 +230,7 @@ export default function Archive() {
               </h2>
             </div>
           }
-          actions={null}
+          actions={saveActions}
         >
           <ResForm
             reservation={resFormData}
@@ -242,6 +243,7 @@ export default function Archive() {
             }}
             mode={resFormMode}
             editId={editReservationId}
+            onActionsReady={setSaveActions}
           />
         </BaseModal>
 
