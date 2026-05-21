@@ -240,7 +240,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     return null;
   };
 
-  const handleSave = async () => {
+  const handleSave = async (statusOverride?: string) => {
     if (!validate()) return;
 
     const dateError = validateDates();
@@ -252,6 +252,8 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     setIsSaving(true);
     setSaveError(null);
 
+    const effectiveStatus = statusOverride || ((mode === 'edit' && reservation?.reservationStatus) ? reservation.reservationStatus : 'Confirmed');
+
     const baseData: any = {
       car_id: reservation?.selectedCarId || undefined,
       customer_name: reservation?.clientName || '',
@@ -259,7 +261,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       start_date: reservation?.pickupDate ? new Date(reservation.pickupDate).toISOString() : undefined,
       end_date: reservation?.returnDate ? new Date(reservation.returnDate).toISOString() : undefined,
       extended_return_date: reservation?.extendedReturnDate ? new Date(reservation.extendedReturnDate).toISOString() : null,
-      status: (mode === 'edit' && reservation?.reservationStatus) ? reservation.reservationStatus : 'Confirmed',
+      status: effectiveStatus,
       total_price: totalPrice,
       prepayment: reservation?.prepayment || 0,
       deposit_type: reservation?.depositType || null,
@@ -282,6 +284,14 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       }
 
       if (result.error) throw new Error(result.error);
+
+      if (statusOverride === 'Completed' && reservation?.selectedCarId) {
+        await supabase.from('cars').update({
+          status: 'Available',
+          odometer: reservation?.odometerIn ? parseInt(reservation.odometerIn, 10) : undefined,
+          starting_fuel_level: reservation?.fuelIn ? parseInt(reservation.fuelIn, 10) : undefined,
+        }).eq('id', reservation.selectedCarId);
+      }
 
       const resData = result.data?.[0];
       if (resData?.id) {
@@ -314,8 +324,18 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
             {saveError}
           </div>
         )}
+        {mode === 'edit' && (
+          <button
+            onClick={() => handleSave('Completed')}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-emerald-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+          >
+            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+            {isSaving ? t('common.saving', 'Saving...') : t('reservations.complete', 'Complete')}
+          </button>
+        )}
         <button
-          onClick={handleSave}
+          onClick={() => handleSave()}
           disabled={isSaving}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
         >
@@ -324,7 +344,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         </button>
       </div>
     );
-  }, [handleSave, isSaving, saveError, onActionsReady, t]);
+  }, [handleSave, isSaving, saveError, onActionsReady, mode, t]);
 
   useEffect(() => {
     const pickup = reservation?.pickupDate;
