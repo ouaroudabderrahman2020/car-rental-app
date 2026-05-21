@@ -1,4 +1,4 @@
-import { Plus, ArrowRight, Loader2, Edit, Check } from 'lucide-react';
+import { Plus, Loader2, Edit } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
@@ -8,10 +8,8 @@ import ResForm, { ReservationFormData } from '../components/ResForm';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 import { supabase } from '../lib/supabase';
-import { Reservation, FormattedReservation } from '../types';
+import { FormattedReservation } from '../types';
 import { RESERVATION_STATUSES } from '../constants';
-import { useStatus } from '../contexts/StatusContext';
-import { useReservations } from '../hooks/useReservations';
 
 const defaultFormData: ReservationFormData = {
   clientSearchQuery: '',
@@ -29,8 +27,6 @@ const defaultFormData: ReservationFormData = {
 
 export default function Reservations() {
   const { t, i18n } = useTranslation();
-  const { setStatus } = useStatus();
-  const { createReservation, updateReservation, loading: isSubmitting } = useReservations();
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<FormattedReservation | null>(null);
@@ -179,47 +175,6 @@ export default function Reservations() {
     setIsModalOpen(true);
   };
 
-  const handleResFormSubmit = async () => {
-    const payload: Partial<Reservation> = {
-      customer_name: resFormData.clientName,
-      customer_phone: resFormData.clientPhone,
-      start_date: resFormData.pickupDate ? new Date(resFormData.pickupDate).toISOString() : undefined,
-      end_date: resFormData.returnDate ? new Date(resFormData.returnDate).toISOString() : undefined,
-      extended_return_date: resFormData.extendedReturnDate ? new Date(resFormData.extendedReturnDate).toISOString() : null,
-      total_price: 0,
-      prepayment: resFormData.prepayment || 0,
-      deposit_type: resFormData.depositType || null,
-      deposit_amount: resFormData.depositAmount || 0,
-      odometer_out: resFormData.odometerOut ? parseInt(resFormData.odometerOut, 10) : undefined,
-      odometer_in: resFormData.odometerIn ? parseInt(resFormData.odometerIn, 10) : undefined,
-      fuel_level_out: resFormData.fuelOut ? parseInt(resFormData.fuelOut, 10) : undefined,
-      fuel_level_in: resFormData.fuelIn ? parseInt(resFormData.fuelIn, 10) : undefined,
-      cleaned_before: resFormData.cleanedBefore || null,
-      included_items: resFormData.includedItems,
-      notes: resFormData.notes || null,
-      status: 'Confirmed' as any,
-    };
-
-    setStatus(t('reservationModal.savingReservation', 'Saving reservation...'), 'processing', 0);
-
-    try {
-      if (resFormMode === 'edit' && editReservationId) {
-        const { error } = await updateReservation(editReservationId, payload);
-        if (error) throw new Error(error);
-      } else {
-        const { error } = await createReservation(payload);
-        if (error) throw new Error(error);
-      }
-      setStatus(t('reservationModal.reservationSaved', 'Reservation saved successfully'), 'success');
-      setIsModalOpen(false);
-      setSelectedReservation(null);
-      setEditReservationId(null);
-      fetchReservations();
-    } catch (err: any) {
-      setStatus(`${t('reservationModal.saveError', 'Error saving reservation')}: ${err.message}`, 'error');
-    }
-  };
-
   return (
     <Layout>
       <div className="w-full bg-white">
@@ -250,18 +205,20 @@ export default function Reservations() {
               </h2>
             </div>
           }
-          actions={
-            <button
-              onClick={handleResFormSubmit}
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
-            >
-              {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-              {isSubmitting ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
-            </button>
-          }
+          actions={null}
         >
-          <ResForm reservation={resFormData} onChange={(data) => setResFormData(prev => ({ ...prev, ...data }))} />
+          <ResForm
+            reservation={resFormData}
+            onChange={(data) => setResFormData(prev => ({ ...prev, ...data }))}
+            onSaved={() => {
+              setIsModalOpen(false);
+              setResFormData(defaultFormData);
+              setEditReservationId(null);
+              fetchReservations();
+            }}
+            mode={resFormMode}
+            editId={editReservationId}
+          />
         </BaseModal>
         <BaseModal
           isOpen={isDetailsOpen}

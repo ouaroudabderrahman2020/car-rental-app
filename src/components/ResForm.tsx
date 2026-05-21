@@ -5,6 +5,8 @@ import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, Ch
 import { supabase } from '../lib/supabase';
 import { getDriveImageUrl } from '../lib/gas';
 import { fileToBase64 } from '../lib/utils';
+import { uploadFile } from '../lib/storage';
+import { useReservations } from '../hooks/useReservations';
 import ClientModal from './ClientModal';
 import BaseModal from './BaseModal';
 import ItemSection from './itemSection';
@@ -44,6 +46,9 @@ export interface ReservationFormData {
 interface ResFormProps {
   reservation?: Partial<ReservationFormData> | null;
   onChange: (data: Partial<ReservationFormData>) => void;
+  onSaved?: () => void;
+  mode?: 'add' | 'edit';
+  editId?: string | null;
 }
 
 const InputField = (props: any) => {
@@ -78,7 +83,7 @@ const TextareaField = (props: any) => {
   );
 };
 
-export default function ResForm({ reservation, onChange }: ResFormProps) {
+export default function ResForm({ reservation, onChange, onSaved, mode = 'add', editId = null }: ResFormProps) {
   const { t } = useTranslation();
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [isClientSearchListActive, setIsClientSearchListActive] = useState(false);
@@ -97,6 +102,9 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
     vehicle_state: [],
     paper_contract: [],
   });
+  const { createReservation, updateReservation } = useReservations();
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [duration, setDuration] = useState('0 Days, 0 Hours');
   const [totalPrice, setTotalPrice] = useState(0);
   const [balanceDue, setBalanceDue] = useState(0);
@@ -228,6 +236,71 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
       return t('reservations.form.errors.returnBeforePickup', 'Return date must be after pickup date');
     }
     return null;
+  };
+
+  const handleSave = async () => {
+    if (!validate()) return;
+
+    const dateError = validateDates();
+    if (dateError) {
+      setErrors(prev => ({ ...prev, returnDate: dateError }));
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    const baseData: any = {
+      car_id: reservation?.selectedCarId || undefined,
+      customer_name: reservation?.clientName || '',
+      customer_phone: reservation?.clientPhone || '',
+      start_date: reservation?.pickupDate ? new Date(reservation.pickupDate).toISOString() : undefined,
+      end_date: reservation?.returnDate ? new Date(reservation.returnDate).toISOString() : undefined,
+      extended_return_date: reservation?.extendedReturnDate ? new Date(reservation.extendedReturnDate).toISOString() : null,
+      status: 'Confirmed',
+      total_price: totalPrice,
+      prepayment: reservation?.prepayment || 0,
+      deposit_type: reservation?.depositType || null,
+      deposit_amount: reservation?.depositAmount || 0,
+      odometer_out: reservation?.odometerOut ? parseInt(reservation.odometerOut, 10) : undefined,
+      odometer_in: reservation?.odometerIn ? parseInt(reservation.odometerIn, 10) : undefined,
+      fuel_level_out: reservation?.fuelOut ? parseInt(reservation.fuelOut, 10) : undefined,
+      fuel_level_in: reservation?.fuelIn ? parseInt(reservation.fuelIn, 10) : undefined,
+      cleaned_before: reservation?.cleanedBefore || null,
+      included_items: reservation?.includedItems || [],
+      notes: reservation?.notes || null,
+    };
+
+    try {
+      let result;
+      if (mode === 'edit' && editId) {
+        result = await updateReservation(editId, baseData);
+      } else {
+        result = await createReservation(baseData);
+      }
+
+      if (result.error) throw new Error(result.error);
+
+      const resData = result.data?.[0];
+      if (resData?.id) {
+        const resFolderName = `${resData.id}_${new Date().toISOString().split('T')[0]}`.replace(/\s+/g, '_');
+        const tasks: Promise<any>[] = [];
+        Object.entries(docFiles).forEach(([key, fileList]) => {
+          (fileList as any[]).forEach((fileObj: any) => {
+            tasks.push(
+              uploadFile('reservation-files', fileObj.base64Data, `${key}_${fileObj.name}`, fileObj.contentType, resFolderName)
+            );
+          });
+        });
+        await Promise.allSettled(tasks);
+      }
+
+      onSaved?.();
+    } catch (err: any) {
+      setSaveError(err.message || 'Error saving reservation');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   useEffect(() => {
@@ -794,6 +867,24 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
             </div>
           </div>
         ))}
+      </div>
+      <div className="flex items-center justify-between gap-4 px-6 py-4 bg-white border-t border-slate-200 mt-6 -mx-6 -mb-6 rounded-b-[12px] sticky bottom-0">
+        <div>
+          {saveError && (
+            <div className="flex items-center gap-2 text-[10px] font-bold text-red-600 uppercase tracking-wider">
+              <AlertCircle className="w-3.5 h-3.5" />
+              {saveError}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+        >
+          {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+          {isSaving ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
+        </button>
       </div>
     </div>
       {isCarSelectorOpen && (
