@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw } from 'lucide-react';
+import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { getDriveImageUrl } from '../lib/gas';
 import ClientModal from './ClientModal';
+import BaseModal from './BaseModal';
 import ItemSection from './itemSection';
 
 export interface ReservationFormData {
@@ -80,17 +82,23 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [isClientSearchListActive, setIsClientSearchListActive] = useState(false);
 
+  const [availableCars, setAvailableCars] = useState<any[]>([]);
+  const [isCarSelectorOpen, setIsCarSelectorOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null);
   const [isClientViewModalOpen, setIsClientViewModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      const { data: customers } = await supabase.from('customers').select('*');
+    const fetchData = async () => {
+      const [{ data: cars }, { data: customers }] = await Promise.all([
+        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, starting_fuel_level, image_url, essentials').neq('status', 'Decommissioned'),
+        supabase.from('customers').select('*')
+      ]);
+      if (cars) setAvailableCars(cars);
       if (customers) setAllCustomers(customers);
     };
-    fetchCustomers();
+    fetchData();
   }, []);
 
   const handleRegisterClient = async () => {
@@ -397,15 +405,21 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
         {
           label: t('reservations.form.carSelection', 'Car Selection'),
           input: (
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-[12px] px-3 py-2 text-sm">
-              <svg className="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10l-3-3c-.4-.4-.9-.6-1.4-.6h-3.2c-.5 0-1 .2-1.4.6L6 10l-3.5.1C1.7 10.3 1 11.1 1 12v3c0 .6.4 1 1 1h2"/><circle cx="6" cy="17" r="2"/><circle cx="18" cy="17" r="2"/></svg>
-              <span className="flex-1 text-slate-900 font-medium truncate">
-                {reservation?.selectedCarId && reservation?.licensePlate
-                  ? `${reservation.licensePlate} - ${reservation.carBrand || ''} ${reservation.carModel || ''}`
-                  : t('reservations.form.selectCar', 'Select Car')}
-              </span>
-              <svg className="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsCarSelectorOpen(true)}
+              className="w-full h-9 bg-white border border-slate-200 rounded-[12px] px-3 flex items-center justify-between text-sm group hover:bg-slate-50 transition-all"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <CarIcon className="w-4 h-4 text-slate-400 group-hover:scale-110 transition-transform shrink-0" />
+                <span className="truncate text-slate-900 font-medium">
+                  {reservation?.selectedCarId && reservation?.licensePlate
+                    ? `${reservation.licensePlate} - ${reservation.carBrand || ''} ${reservation.carModel || ''}`
+                    : t('reservations.form.selectCar', 'Select Car')}
+                </span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+            </button>
           ),
         },
         { label: t('reservations.form.pickupDate', 'Pick-up Date & Time'), input: <InputField type="datetime-local" value={reservation?.pickupDate || ''} onChange={(e: any) => set('pickupDate', e.target.value)} /> },
@@ -586,6 +600,76 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
         ))}
       </div>
     </div>
+      {isCarSelectorOpen && (
+        <BaseModal
+          isOpen={isCarSelectorOpen}
+          onClose={() => setIsCarSelectorOpen(false)}
+          title={t('reservations.form.selectCar', 'Select Car')}
+        >
+          <div className="p-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {availableCars.map(car => (
+                <div
+                  key={car.id}
+                  onClick={() => {
+                    onChange({
+                      ...(reservation || {}),
+                      selectedCarId: car.id,
+                      carBrand: car.brand,
+                      carModel: car.model,
+                      licensePlate: car.plate,
+                      dailyRate: car.daily_rate,
+                      odometerOut: car.odometer?.toString() || '0',
+                      includedItems: car.essentials
+                        ? car.essentials.filter((e: any) => e.checked).map((e: any) => e.name)
+                        : [],
+                    } as Partial<ReservationFormData>);
+                    setIsCarSelectorOpen(false);
+                  }}
+                  className={`group flex flex-col p-3 cursor-pointer transition-all duration-200 border-2 border-black rounded-[12px] bg-white relative ${
+                    reservation?.selectedCarId === car.id
+                      ? 'shadow-[0px_0px_0px_1px_rgba(0,0,0,1),0px_0px_0px_4px_rgba(59,130,246,0.1),-3px_3px_0px_0px_rgba(0,0,0,1)] -translate-y-0.5 translate-x-0.5 bg-blue-50/50'
+                      : 'shadow-[-2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:translate-x-0.5 hover:shadow-[-3px_3px_0px_0px_rgba(0,0,0,1)]'
+                  }`}
+                >
+                  <div className="w-full aspect-[4/3] bg-slate-50 border border-black/5 rounded-[12px] mb-3 overflow-hidden flex items-center justify-center p-2">
+                    {car.image_url ? (
+                      <img
+                        alt={car.model}
+                        className="w-full h-full object-contain mix-blend-multiply"
+                        src={getDriveImageUrl(car.image_url)}
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full opacity-5 flex items-center justify-center" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000, #000 12px, transparent 12px, transparent 24px)' }}>
+                        <CarIcon className="w-10 h-10 text-black" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <h3 className="text-[13px] font-black text-black uppercase leading-tight tracking-tight truncate">
+                      {car.brand} {car.model}
+                    </h3>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest truncate">
+                      {car.plate}
+                    </p>
+                    <div className="flex items-center justify-between mt-2 gap-2">
+                      <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-tighter border border-black/10 rounded-[12px] transition-transform group-hover:scale-105 ${
+                        car.status === 'Available' ? 'bg-[#22C55E] text-white' : 'bg-[#F59E0B] text-white'
+                      }`}>
+                        {car.status}
+                      </span>
+                      <div className="text-[12px] font-black text-black whitespace-nowrap">
+                        {car.daily_rate} <span className="text-[9px] font-bold opacity-30">DH/D</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </BaseModal>
+      )}
       <ClientModal
         isOpen={isClientViewModalOpen}
         onClose={() => setIsClientViewModalOpen(false)}
