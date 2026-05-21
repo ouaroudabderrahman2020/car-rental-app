@@ -371,7 +371,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
 
     if (pickup && (ret || ext)) {
       if (now < start) {
-        setReservationState({ label: 'Reserved', color: 'bg-slate-header text-white' });
+        setReservationState({ label: 'Reserved', color: 'bg-sky-400 text-white' });
       } else if (now > end) {
         setReservationState({ label: 'Overdue', color: 'bg-red-600 text-white' });
       } else {
