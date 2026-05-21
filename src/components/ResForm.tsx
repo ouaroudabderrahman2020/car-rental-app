@@ -475,7 +475,7 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
       title: t('reservations.form.billing', 'Billing'),
       icon: <CreditCard className="w-4 h-4" />,
       fields: [
-        { label: t('reservations.form.dailyRate', 'Daily Rate'), required: true, input: <InputField type="number" value={reservation?.dailyRate ?? ''} onChange={(e: any) => set('dailyRate', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" className={errors.dailyRate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
+        { label: t('reservations.form.dailyRate', 'Daily Rate'), required: true, input: <InputField type="number" value={reservation?.dailyRate || ''} onChange={(e: any) => set('dailyRate', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" className={errors.dailyRate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
         {
           label: t('reservations.form.totalPriceCalc', 'Total Price'),
           input: (
@@ -503,7 +503,7 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
                 </select>
                 <input
                   type="number"
-                  value={reservation?.prepayment ?? ''}
+                  value={reservation?.prepayment || ''}
                   onChange={(e: any) => set('prepayment', e.target.value === '' ? '' : parseFloat(e.target.value))}
                   disabled={reservation?.prepaymentType === 'fully_paid'}
                   placeholder="0.00"
@@ -533,7 +533,7 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
             </SelectField>
           ),
         },
-        { label: t('reservations.form.depositAmount', 'Deposit Amount'), input: <InputField type="number" value={reservation?.depositAmount ?? ''} onChange={(e: any) => set('depositAmount', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" /> },
+        { label: t('reservations.form.depositAmount', 'Deposit Amount'), input: <InputField type="number" value={reservation?.depositAmount || ''} onChange={(e: any) => set('depositAmount', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" /> },
       ],
     },
     {
