@@ -88,6 +88,7 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationStatus, setRegistrationStatus] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null);
   const [isClientViewModalOpen, setIsClientViewModalOpen] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -161,6 +162,26 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
 
   const set = (field: string, value: any) => {
     onChange({ ...(reservation || {}), [field]: value } as Partial<ReservationFormData>);
+    if (errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
+  const validate = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+    if (!reservation?.clientName?.trim()) newErrors.clientName = 'required';
+    if (!reservation?.clientId?.trim()) newErrors.clientId = 'required';
+    if (!reservation?.clientLicense?.trim()) newErrors.clientLicense = 'required';
+    if (!reservation?.selectedCarId) newErrors.selectedCarId = 'required';
+    if (!reservation?.pickupDate) newErrors.pickupDate = 'required';
+    if (!reservation?.returnDate) newErrors.returnDate = 'required';
+    if (reservation?.dailyRate === undefined || reservation?.dailyRate === null || reservation?.dailyRate === 0) newErrors.dailyRate = 'required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const sections = [
@@ -283,16 +304,17 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
             ]
           : [
               {
-                label: t('reservations.form.fullName', 'Full Name'),
-                input: (
-                  <div className="flex">
-                    <InputField
-                      type="text"
-                      value={reservation?.clientName || ''}
-                      onChange={(e: any) => set('clientName', e.target.value)}
-                      placeholder={t('reservations.form.clientPlaceholder', 'Enter client name...')}
-                      className="flex-1 min-w-0"
-                    />
+              label: t('reservations.form.fullName', 'Full Name'),
+              required: true,
+              input: (
+                <div className="flex">
+                  <InputField
+                    type="text"
+                    value={reservation?.clientName || ''}
+                    onChange={(e: any) => set('clientName', e.target.value)}
+                    placeholder={t('reservations.form.clientPlaceholder', 'Enter client name...')}
+                    className={`flex-1 min-w-0 ${errors.clientName ? 'border-red-500 ring-2 ring-red-100' : ''}`}
+                  />
                     <button
                       type="button"
                       onClick={() => set('clientName', reservation?.clientSearchQuery || '')}
@@ -305,16 +327,17 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
                 ),
               },
               {
-                label: t('reservations.form.idCardNumber', 'ID Card Number'),
-                input: (
-                  <div className="flex">
-                    <InputField
-                      type="text"
-                      value={reservation?.clientId || ''}
-                      onChange={(e: any) => set('clientId', e.target.value)}
-                      placeholder={t('reservations.form.idPlaceholder', 'ID Card...')}
-                      className="flex-1 min-w-0"
-                    />
+              label: t('reservations.form.idCardNumber', 'ID Card Number'),
+              required: true,
+              input: (
+                <div className="flex">
+                  <InputField
+                    type="text"
+                    value={reservation?.clientId || ''}
+                    onChange={(e: any) => set('clientId', e.target.value)}
+                    placeholder={t('reservations.form.idPlaceholder', 'ID Card...')}
+                    className={`flex-1 min-w-0 ${errors.clientId ? 'border-red-500 ring-2 ring-red-100' : ''}`}
+                  />
                     <button
                       type="button"
                       onClick={() => set('clientId', reservation?.clientSearchQuery || '')}
@@ -326,16 +349,17 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
                 ),
               },
               {
-                label: t('reservations.form.licenseNumber', 'License Number'),
-                input: (
-                  <div className="flex">
-                    <InputField
-                      type="text"
-                      value={reservation?.clientLicense || ''}
-                      onChange={(e: any) => set('clientLicense', e.target.value)}
-                      placeholder={t('reservations.form.licensePlaceholder', 'License Num...')}
-                      className="flex-1 min-w-0"
-                    />
+              label: t('reservations.form.licenseNumber', 'License Number'),
+              required: true,
+              input: (
+                <div className="flex">
+                  <InputField
+                    type="text"
+                    value={reservation?.clientLicense || ''}
+                    onChange={(e: any) => set('clientLicense', e.target.value)}
+                    placeholder={t('reservations.form.licensePlaceholder', 'License Num...')}
+                    className={`flex-1 min-w-0 ${errors.clientLicense ? 'border-red-500 ring-2 ring-red-100' : ''}`}
+                  />
                     <button
                       type="button"
                       onClick={() => set('clientLicense', reservation?.clientSearchQuery || '')}
@@ -404,11 +428,12 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
       fields: [
         {
           label: t('reservations.form.carSelection', 'Car Selection'),
+          required: true,
           input: (
             <button
               type="button"
               onClick={() => setIsCarSelectorOpen(true)}
-              className="w-full h-9 bg-white border border-slate-200 rounded-[12px] px-3 flex items-center justify-between text-sm group hover:bg-slate-50 transition-all"
+              className={`w-full h-9 bg-white border border-slate-200 rounded-[12px] px-3 flex items-center justify-between text-sm group hover:bg-slate-50 transition-all ${errors.selectedCarId ? 'border-red-500 ring-2 ring-red-100' : ''}`}
             >
               <div className="flex items-center gap-2 truncate">
                 <CarIcon className="w-4 h-4 text-slate-400 group-hover:scale-110 transition-transform shrink-0" />
@@ -422,8 +447,8 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
             </button>
           ),
         },
-        { label: t('reservations.form.pickupDate', 'Pick-up Date & Time'), input: <InputField type="datetime-local" value={reservation?.pickupDate || ''} onChange={(e: any) => set('pickupDate', e.target.value)} /> },
-        { label: t('reservations.form.returnDate', 'Return Date & Time'), input: <InputField type="datetime-local" value={reservation?.returnDate || ''} onChange={(e: any) => set('returnDate', e.target.value)} /> },
+        { label: t('reservations.form.pickupDate', 'Pick-up Date & Time'), required: true, input: <InputField type="datetime-local" value={reservation?.pickupDate || ''} onChange={(e: any) => set('pickupDate', e.target.value)} className={errors.pickupDate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
+        { label: t('reservations.form.returnDate', 'Return Date & Time'), required: true, input: <InputField type="datetime-local" value={reservation?.returnDate || ''} onChange={(e: any) => set('returnDate', e.target.value)} className={errors.returnDate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
         { label: t('reservations.form.extendedReturn', 'Extended Return'), input: <InputField type="datetime-local" value={reservation?.extendedReturnDate || ''} onChange={(e: any) => set('extendedReturnDate', e.target.value)} /> },
         {
           label: t('reservations.form.state', 'RESERVATION STATE'),
@@ -450,7 +475,7 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
       title: t('reservations.form.billing', 'Billing'),
       icon: <CreditCard className="w-4 h-4" />,
       fields: [
-        { label: t('reservations.form.dailyRate', 'Daily Rate'), input: <InputField type="number" value={reservation?.dailyRate ?? ''} onChange={(e: any) => set('dailyRate', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" /> },
+        { label: t('reservations.form.dailyRate', 'Daily Rate'), required: true, input: <InputField type="number" value={reservation?.dailyRate ?? ''} onChange={(e: any) => set('dailyRate', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" className={errors.dailyRate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
         {
           label: t('reservations.form.totalPriceCalc', 'Total Price'),
           input: (
@@ -591,6 +616,7 @@ export default function ResForm({ reservation, onChange }: ResFormProps) {
                 <div key={fIdx} className="w-full flex flex-col">
                   <span className="text-xs font-semibold text-slate-600 mb-1">
                     {field.label}
+                    {field.required && <span className="text-red-500 ml-0.5">*</span>}
                   </span>
                   {field.input}
                 </div>
