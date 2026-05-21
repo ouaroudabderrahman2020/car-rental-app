@@ -719,8 +719,17 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           label: t('reservations.form.depositType', 'Deposit Type'),
           input: (
             <SelectField value={reservation?.depositType || ''} onChange={(e: any) => {
-              set('depositType', e.target.value);
-              if (e.target.value === '' || e.target.value === 'None') set('depositAmount', 0);
+              const val = e.target.value;
+              const payload: any = { depositType: val };
+              if (val === '' || val === 'None') payload.depositAmount = 0;
+              onChange({ ...(reservation || {}), ...payload } as Partial<ReservationFormData>);
+              if (errors.depositType) {
+                setErrors(prev => {
+                  const next = { ...prev };
+                  delete next.depositType;
+                  return next;
+                });
+              }
             }}>
               <option value="">{t('common.select', 'Select')}</option>
               <option value="None">{t('common.none', 'None')}</option>
