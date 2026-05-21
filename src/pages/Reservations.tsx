@@ -23,6 +23,7 @@ const defaultFormData: ReservationFormData = {
   totalPrice: 0, balanceDue: 0, duration: '',
   reservationStateLabel: '', reservationStateColor: '',
   selectedCarId: null,
+  reservationStatus: '',
 };
 
 export default function Reservations() {
@@ -71,6 +72,7 @@ export default function Reservations() {
     reservationStateLabel: '',
     reservationStateColor: '',
     selectedCarId: res.car_id || null,
+    reservationStatus: res.status,
   });
 
   const fetchReservations = async () => {

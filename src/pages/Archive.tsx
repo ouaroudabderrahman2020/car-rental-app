@@ -1,27 +1,74 @@
-import { RefreshCw, ArrowRight, Loader2, Download } from 'lucide-react';
+import { RefreshCw, Loader2, Download } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
-import ReservationModal from '../components/ReservationModal';
+import BaseModal from '../components/BaseModal';
+import ResForm, { ReservationFormData } from '../components/ResForm';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
-/* removed FormSection import */
 import { supabase } from '../lib/supabase';
 import { useStatus } from '../contexts/StatusContext';
 import { gasService } from '../lib/gas';
+
+const defaultFormData: ReservationFormData = {
+  clientSearchQuery: '',
+  clientName: '', clientPhone: '', clientId: '', clientLicense: '',
+  pickupDate: '', returnDate: '', extendedReturnDate: '',
+  dailyRate: 0, prepayment: 0, prepaymentType: 'fully_paid',
+  depositType: '', depositAmount: 0,
+  odometerOut: '', odometerIn: '', fuelOut: '', fuelIn: '',
+  cleanedBefore: '', includedItems: [], notes: '',
+  carBrand: '', carModel: '', licensePlate: '',
+  totalPrice: 0, balanceDue: 0, duration: '',
+  reservationStateLabel: '', reservationStateColor: '',
+  selectedCarId: null, reservationStatus: '',
+};
 
 export default function Archive() {
   const { t, i18n } = useTranslation();
   const { setStatus } = useStatus();
   const [isSyncing, setIsSyncing] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState<any>(null);
-  const [initialData, setInitialData] = useState<any>(null);
   const [archiveData, setArchiveData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [resFormData, setResFormData] = useState<ReservationFormData>(defaultFormData);
+  const [resFormMode, setResFormMode] = useState<'add' | 'edit'>('add');
+  const [editReservationId, setEditReservationId] = useState<string | null>(null);
+
+  const mapArchiveToForm = (res: any): ReservationFormData => ({
+    clientSearchQuery: res.customer_name || '',
+    clientName: res.customer_name || '',
+    clientPhone: res.customer_phone || '',
+    clientId: res.customer_id || '',
+    clientLicense: res.license_number || '',
+    pickupDate: res.start_date?.slice(0, 16) || '',
+    returnDate: res.end_date?.slice(0, 16) || '',
+    extendedReturnDate: res.extended_return_date?.slice(0, 16) || '',
+    dailyRate: res.car?.daily_rate || 0,
+    prepayment: res.prepayment || 0,
+    prepaymentType: res.prepayment && res.total_price && res.prepayment >= res.total_price ? 'fully_paid' : 'amount',
+    depositType: res.deposit_type || '',
+    depositAmount: res.deposit_amount || 0,
+    odometerOut: res.odometer_out?.toString() || '',
+    odometerIn: res.odometer_in?.toString() || '',
+    fuelOut: res.fuel_level_out?.toString() || '',
+    fuelIn: res.fuel_level_in?.toString() || '',
+    cleanedBefore: res.cleaned_before || '',
+    includedItems: res.included_items || [],
+    notes: res.notes || '',
+    carBrand: res.car?.brand || '',
+    carModel: res.car?.model || '',
+    licensePlate: res.car?.plate || '',
+    totalPrice: res.total_price || 0,
+    balanceDue: (res.total_price || 0) - (res.prepayment || 0),
+    duration: '',
+    reservationStateLabel: '',
+    reservationStateColor: '',
+    selectedCarId: res.car_id || null,
+    reservationStatus: res.status,
+  });
 
   const fetchArchive = async () => {
     setLoading(true);
@@ -103,27 +150,28 @@ export default function Archive() {
   };
 
   const handleOpenDetails = (res: any) => {
-    setSelectedReservation(res);
-    setModalMode('edit');
+    setResFormData(mapArchiveToForm(res));
+    setEditReservationId(res.id);
+    setResFormMode('edit');
     setIsModalOpen(true);
   };
 
   const handleRebook = (res: any) => {
-    setInitialData({
-      car_id: res.car_id,
-      customer_name: res.customer_name,
-      customer_phone: res.customer_phone,
-      carBrand: res.car?.brand,
-      carModel: res.car?.model,
-      carPlate: res.car?.plate,
-      daily_rate: res.daily_rate || res.car?.daily_rate,
-      prepayment: 0,
-      deposit_type: res.deposit_type,
-      deposit_amount: res.deposit_amount,
-      rating: res.rating,
-      notes: res.notes
+    setResFormData({
+      ...defaultFormData,
+      clientName: res.customer_name || '',
+      clientPhone: res.customer_phone || '',
+      carBrand: res.car?.brand || '',
+      carModel: res.car?.model || '',
+      licensePlate: res.car?.plate || '',
+      dailyRate: res.daily_rate || res.car?.daily_rate || 0,
+      depositType: res.deposit_type || '',
+      depositAmount: res.deposit_amount || 0,
+      notes: res.notes || '',
+      selectedCarId: res.car_id || null,
     });
-    setModalMode('add');
+    setEditReservationId(null);
+    setResFormMode('add');
     setIsModalOpen(true);
   };
 
@@ -166,18 +214,36 @@ export default function Archive() {
           }
           className="p-6 md:p-10"
         />
-        <ReservationModal 
-          isOpen={isModalOpen} 
+        <BaseModal
+          isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
-            setInitialData(null);
-            setSelectedReservation(null);
+            setResFormData(defaultFormData);
+            setEditReservationId(null);
             fetchArchive();
-          }} 
-          mode={modalMode}
-          reservationData={selectedReservation}
-          initialData={initialData}
-        />
+          }}
+          title={
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-[0.2em]">
+                {resFormMode === 'edit' ? t('editReservation.title', 'Edit Reservation') : t('reservations.form.title', 'New Reservation')}
+              </h2>
+            </div>
+          }
+          actions={null}
+        >
+          <ResForm
+            reservation={resFormData}
+            onChange={(data) => setResFormData(prev => ({ ...prev, ...data }))}
+            onSaved={() => {
+              setIsModalOpen(false);
+              setResFormData(defaultFormData);
+              setEditReservationId(null);
+              fetchArchive();
+            }}
+            mode={resFormMode}
+            editId={editReservationId}
+          />
+        </BaseModal>
 
         <div className="pt-6 pb-12">
           <div className="max-w-[1440px] mx-auto">

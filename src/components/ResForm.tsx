@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight } from 'lucide-react';
+import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getDriveImageUrl } from '../lib/gas';
 import { fileToBase64 } from '../lib/utils';
@@ -41,6 +41,7 @@ export interface ReservationFormData {
   reservationStateLabel: string;
   reservationStateColor: string;
   selectedCarId: string | null;
+  reservationStatus?: string;
 }
 
 interface ResFormProps {
@@ -257,7 +258,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       start_date: reservation?.pickupDate ? new Date(reservation.pickupDate).toISOString() : undefined,
       end_date: reservation?.returnDate ? new Date(reservation.returnDate).toISOString() : undefined,
       extended_return_date: reservation?.extendedReturnDate ? new Date(reservation.extendedReturnDate).toISOString() : null,
-      status: 'Confirmed',
+      status: (mode === 'edit' && reservation?.reservationStatus) ? reservation.reservationStatus : 'Confirmed',
       total_price: totalPrice,
       prepayment: reservation?.prepayment || 0,
       deposit_type: reservation?.depositType || null,
@@ -728,7 +729,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
             </SelectField>
           ),
         },
-        { label: t('reservations.form.depositAmount', 'Deposit Amount'), input: <InputField type="number" value={reservation?.depositAmount || ''} onChange={(e: any) => set('depositAmount', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" /> },
+        { label: t('reservations.form.depositAmount', 'Deposit Amount'), input: <InputField type="number" value={reservation?.depositAmount || ''} onChange={(e: any) => set('depositAmount', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" disabled={!reservation?.depositType || reservation?.depositType === 'None'} /> },
       ],
     },
     {
