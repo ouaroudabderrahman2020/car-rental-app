@@ -1,8 +1,8 @@
-import { Plus, Car as CarIcon, Loader2, Edit, Trash2 } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { Plus, Car as CarIcon, Loader2, Edit, Check, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
-import CarForm from '../components/CarForm';
+import CarForm, { CarFormHandle } from '../components/CarForm';
 import BaseModal from '../components/BaseModal';
 import Cardetails from '../components/CarDetails';
 import { PageHeader } from '../components/PageHeader';
@@ -23,6 +23,7 @@ export default function Fleet() {
   const [selectedCar, setSelectedCar] = useState<FormattedCar | null>(null);
   const [formData, setFormData] = useState<Partial<FormattedCar>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const carFormRef = useRef<CarFormHandle>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [detailsCar, setDetailsCar] = useState<FormattedCar | null>(null);
   const [fleetData, setFleetData] = useState<FormattedCar[]>(() => {
@@ -92,10 +93,7 @@ export default function Fleet() {
   };
 
   const handleSave = async () => {
-    if (!formData.brand || !formData.model || !formData.plate) {
-      setStatus('Brand, Model and Plate are required', 'error');
-      return;
-    }
+    if (!carFormRef.current?.validate()) return;
 
     setIsSaving(true);
     setStatus(t('common.processing'), 'processing', 0);
@@ -292,19 +290,29 @@ export default function Fleet() {
             </h2>
           }
           actions={
-            modalMode === 'edit' ? (
+            <>
+              {modalMode === 'edit' && (
+                <button
+                  disabled={isSaving}
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-red-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  {isSaving ? 'Deleting...' : 'Delete'}
+                </button>
+              )}
               <button
                 disabled={isSaving}
-                onClick={handleDelete}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-red-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+                onClick={handleSave}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
               >
-                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                {isSaving ? 'Deleting...' : 'Delete'}
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                {isSaving ? t('carForm.processing', 'Processing...') : t('carForm.confirm', 'Save')}
               </button>
-            ) : undefined
+            </>
           }
         >
-          <CarForm car={formData} onChange={setFormData} onSave={handleSave} saving={isSaving} />
+          <CarForm ref={carFormRef} car={formData} onChange={setFormData} />
         </BaseModal>
         <BaseModal
           isOpen={isDetailsOpen}

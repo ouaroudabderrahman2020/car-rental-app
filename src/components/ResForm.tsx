@@ -2,6 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check, Archive } from 'lucide-react';
+import { useNotification } from '../contexts/NotificationContext';
 import { supabase } from '../lib/supabase';
 import { getDriveImageUrl } from '../lib/gas';
 import { fileToBase64 } from '../lib/utils';
@@ -86,6 +87,7 @@ const TextareaField = (props: any) => {
 
 export default function ResForm({ reservation, onChange, onSaved, mode = 'add', editId = null, onActionsReady, onSavingChange }: ResFormProps) {
   const { t } = useTranslation();
+  const { showToast } = useNotification();
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [isClientSearchListActive, setIsClientSearchListActive] = useState(false);
 
@@ -226,6 +228,9 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     if (!reservation?.returnDate) newErrors.returnDate = 'required';
     if (reservation?.dailyRate === undefined || reservation?.dailyRate === null || reservation?.dailyRate === 0) newErrors.dailyRate = 'required';
     setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      showToast(t('reservations.form.requiredFields', 'Please fill in all required fields'), 'error');
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -244,6 +249,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     const dateError = validateDates();
     if (dateError) {
       setErrors(prev => ({ ...prev, returnDate: dateError }));
+      showToast(dateError, 'error');
       return;
     }
 
@@ -552,7 +558,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
             ]
           : [
               {
-              label: t('reservations.form.fullName', 'Full Name'),
+              name: 'clientName', label: t('reservations.form.fullName', 'Full Name'),
               required: true,
               input: (
                 <div className="flex">
@@ -575,7 +581,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                 ),
               },
               {
-              label: t('reservations.form.idCardNumber', 'ID Card Number'),
+              name: 'clientId', label: t('reservations.form.idCardNumber', 'ID Card Number'),
               required: true,
               input: (
                 <div className="flex">
@@ -597,7 +603,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                 ),
               },
               {
-              label: t('reservations.form.licenseNumber', 'License Number'),
+              name: 'clientLicense', label: t('reservations.form.licenseNumber', 'License Number'),
               required: true,
               input: (
                 <div className="flex">
@@ -675,7 +681,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       icon: <Search className="w-4 h-4" />,
       fields: [
         {
-          label: t('reservations.form.carSelection', 'Car Selection'),
+          name: 'selectedCarId', label: t('reservations.form.carSelection', 'Car Selection'),
           required: true,
           input: (
             <button
@@ -695,9 +701,9 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
             </button>
           ),
         },
-        { label: t('reservations.form.pickupDate', 'Pick-up Date & Time'), required: true, input: <InputField type="datetime-local" value={reservation?.pickupDate || ''} onChange={(e: any) => set('pickupDate', e.target.value)} className={errors.pickupDate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
+        { name: 'pickupDate', label: t('reservations.form.pickupDate', 'Pick-up Date & Time'), required: true, input: <InputField type="datetime-local" value={reservation?.pickupDate || ''} onChange={(e: any) => set('pickupDate', e.target.value)} className={errors.pickupDate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
         {
-          label: t('reservations.form.returnDate', 'Return Date & Time'),
+          name: 'returnDate', label: t('reservations.form.returnDate', 'Return Date & Time'),
           required: true,
           input: (
             <div className="flex flex-col gap-1 w-full">
@@ -744,7 +750,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       title: `3 ${t('reservations.form.billing', 'Billing')}`,
       icon: <CreditCard className="w-4 h-4" />,
       fields: [
-        { label: t('reservations.form.dailyRate', 'Daily Rate'), required: true, input: <InputField type="number" value={reservation?.dailyRate || ''} onChange={(e: any) => set('dailyRate', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" className={errors.dailyRate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
+        { name: 'dailyRate', label: t('reservations.form.dailyRate', 'Daily Rate'), required: true, input: <InputField type="number" value={reservation?.dailyRate || ''} onChange={(e: any) => set('dailyRate', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" className={errors.dailyRate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
         {
           label: t('reservations.form.totalPriceCalc', 'Total Price'),
           input: (
@@ -940,15 +946,24 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         </div>
       )}
       <div className="flex flex-col gap-4">
-        {section.fields.map((field, fIdx) => (
+        {section.fields.map((field, fIdx) => {
+          const fieldName = (field as any).name as string | undefined;
+          const hasError = fieldName ? !!errors[fieldName] : false;
+          const inputEl = field.input as React.ReactElement;
+          return (
           <div key={fIdx} className="w-full flex flex-col">
             <span className="text-xs font-semibold text-slate-600 mb-1">
               {field.label}
-              {field.required && <span className="text-red-500 ml-0.5">*</span>}
+              {(field as any).required && <span className="text-red-500 ml-0.5">*</span>}
             </span>
-            {field.input}
+            {hasError
+              ? React.cloneElement(inputEl, {
+                  className: `${(inputEl.props as any).className || ''} border-red-500 ring-2 ring-red-200`
+                } as any)
+              : field.input}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

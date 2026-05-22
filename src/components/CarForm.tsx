@@ -1,4 +1,4 @@
-import React, { useRef, useLayoutEffect, useState } from 'react';
+import React, { useRef, useLayoutEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../contexts/NotificationContext';
 import { Settings, FileText, Calendar, Gauge, Upload, Trash2 } from 'lucide-react';
@@ -34,11 +34,13 @@ const serviceOptions = [
   { key: 'shocks', value: "Shock Absorbers" }
 ];
 
+export interface CarFormHandle {
+  validate: () => boolean;
+}
+
 interface CarFormProps {
   car?: Partial<FormattedCar> | null;
   onChange: (car: Partial<FormattedCar>) => void;
-  onSave?: () => void;
-  saving?: boolean;
 }
 
 const InputField = (props: any) => {
@@ -135,7 +137,7 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
   );
 };
 
-export default function CarForm({ car, onChange, onSave, saving }: CarFormProps) {
+export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, onChange }: CarFormProps, ref) {
   const { t } = useTranslation();
   const { showToast } = useNotification();
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -182,23 +184,21 @@ export default function CarForm({ car, onChange, onSave, saving }: CarFormProps)
     set('intervals', newIntervals);
   };
 
-  const validate = () => {
-    const newErrors: Record<string, boolean> = {};
-    if (!car?.brand) newErrors.brand = true;
-    if (!car?.model) newErrors.model = true;
-    if (!car?.plate) newErrors.plate = true;
-    if (!car?.daily_rate && car?.daily_rate !== 0) newErrors.daily_rate = true;
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSave = () => {
-    if (!validate()) {
-      showToast(t('carForm.requiredFields', 'Please fill in all required fields'), 'error');
-      return;
+  useImperativeHandle(ref, () => ({
+    validate: () => {
+      const newErrors: Record<string, boolean> = {};
+      if (!car?.brand) newErrors.brand = true;
+      if (!car?.model) newErrors.model = true;
+      if (!car?.plate) newErrors.plate = true;
+      if (!car?.daily_rate && car?.daily_rate !== 0) newErrors.daily_rate = true;
+      setErrors(newErrors);
+      const valid = Object.keys(newErrors).length === 0;
+      if (!valid) {
+        showToast(t('carForm.requiredFields', 'Please fill in all required fields'), 'error');
+      }
+      return valid;
     }
-    onSave?.();
-  };
+  }), [car, showToast, t]);
 
   const sections = [
     {
@@ -363,15 +363,6 @@ export default function CarForm({ car, onChange, onSave, saving }: CarFormProps)
           </div>
           <div className="flex-1 flex flex-col gap-6 min-w-0" />
         </div>
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 mt-6">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold text-xs uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
-          >
-            {saving ? 'Saving...' : t('carForm.save', 'Save')}
-          </button>
-        </div>
       </div>
     );
   }
@@ -390,15 +381,6 @@ export default function CarForm({ car, onChange, onSave, saving }: CarFormProps)
           ))}
         </div>
       </div>
-      <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 mt-6">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold text-xs uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
-        >
-          {saving ? 'Saving...' : t('carForm.save', 'Save')}
-        </button>
-      </div>
     </div>
   );
-}
+});
