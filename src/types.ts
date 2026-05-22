@@ -62,6 +62,18 @@ export interface FormattedCar extends Car {
   image?: string;
 }
 
+export interface ReservationDocument {
+  id: string;
+  reservation_id: string;
+  doc_type: 'vehicle_state' | 'paper_contract';
+  file_url: string;
+  file_name?: string;
+  file_size?: number;
+  mime_type?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Reservation {
   id: string;
   car_id: string;
@@ -92,6 +104,7 @@ export interface Reservation {
   created_at: string;
   updated_at?: string;
   car?: Car;
+  documents?: ReservationDocument[];
 }
 
 export interface FormattedReservation extends Reservation {

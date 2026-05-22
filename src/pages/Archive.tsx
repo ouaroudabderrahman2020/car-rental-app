@@ -84,7 +84,8 @@ export default function Archive() {
             plate,
             odometer,
             daily_rate
-          )
+          ),
+          reservation_documents (*)
         `)
         .in('status', ['Completed', 'Cancelled'])
         .order('end_date', { ascending: false });

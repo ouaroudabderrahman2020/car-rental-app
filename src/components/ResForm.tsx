@@ -296,15 +296,34 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       const resData = result.data?.[0];
       if (resData?.id) {
         const resFolderName = `${resData.id}_${new Date().toISOString().split('T')[0]}`.replace(/\s+/g, '_');
-        const tasks: Promise<any>[] = [];
+        const newDocRows: any[] = [];
+        const uploadTasks: Promise<any>[] = [];
+
         Object.entries(docFiles).forEach(([key, fileList]) => {
           (fileList as any[]).forEach((fileObj: any) => {
-            tasks.push(
-              uploadFile('reservation-files', fileObj.base64Data, `${key}_${fileObj.name}`, fileObj.contentType, resFolderName)
+            const fileName = `${key}_${fileObj.name}`;
+            uploadTasks.push(
+              uploadFile('reservation-files', fileObj.base64Data, fileName, fileObj.contentType, resFolderName)
+                .then(url => {
+                  if (url) {
+                    newDocRows.push({
+                      reservation_id: resData.id,
+                      doc_type: key,
+                      file_url: url,
+                      file_name: fileObj.name,
+                      mime_type: fileObj.contentType,
+                    });
+                  }
+                })
             );
           });
         });
-        await Promise.allSettled(tasks);
+
+        await Promise.allSettled(uploadTasks);
+
+        if (newDocRows.length > 0) {
+          await supabase.from('reservation_documents').insert(newDocRows);
+        }
       }
 
       onSaved?.();

@@ -90,7 +90,8 @@ export default function Reservations() {
               daily_rate,
               odometer,
               essentials
-            )
+            ),
+            reservation_documents (*)
           `)
           .order('created_at', { ascending: false });
 
