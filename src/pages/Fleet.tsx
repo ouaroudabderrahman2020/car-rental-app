@@ -10,11 +10,13 @@ import Section2 from '../components/Section2';
 import { supabase } from '../lib/supabase';
 import { getDriveImageUrl } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { FormattedCar } from '../types';
 
 export default function Fleet() {
   const { t, i18n } = useTranslation();
   const { setStatus } = useStatus();
+  const { confirm: customConfirm } = useNotification();
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState<FormattedCar | null>(null);
@@ -161,7 +163,14 @@ export default function Fleet() {
 
   const handleDelete = async () => {
     if (!selectedCar?.id) return;
-    if (!window.confirm(t('common.confirmDelete', 'Are you sure you want to delete this car?'))) return;
+    const confirmed = await customConfirm({
+      title: t('common.confirmDelete', 'Delete Car'),
+      message: t('common.confirmDelete', 'Are you sure you want to delete this car?'),
+      confirmLabel: t('common.delete', 'Delete'),
+      cancelLabel: t('common.cancel', 'Cancel'),
+      type: 'danger'
+    });
+    if (!confirmed) return;
 
     setIsSaving(true);
     try {
@@ -248,6 +257,7 @@ export default function Fleet() {
             setSelectedCar(null);
             setFormData({});
           }}
+          closeDisabled={isSaving}
           title={
             <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
               {modalMode === 'add' ? t('carForm.title', 'Add Vehicle') : t('carDetails.title', 'Edit Vehicle')}
