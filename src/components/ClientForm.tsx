@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { User, FileText, Calendar, Star, Upload, Trash2 } from 'lucide-react';
+import { User, FileText, Calendar, Star, Upload, Trash2, RotateCcw } from 'lucide-react';
 import { Customer } from '../types';
 
 interface ClientFormProps {
@@ -110,7 +110,7 @@ export default function ClientForm({ client, onChange }: ClientFormProps) {
       icon: <Star className="w-4 h-4" />,
       fields: [
         {
-          label: t('clientForm.rating', 'Trust Ranking'),
+          label: <span className="inline-flex items-center gap-1.5">{t('clientForm.rating', 'Trust Ranking')}<button type="button" onClick={() => set('trust_rank', 0)} className="p-0.5 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all" title="Reset"><RotateCcw className="w-3 h-3" /></button></span>,
           input: (
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((num) => (
@@ -129,7 +129,7 @@ export default function ClientForm({ client, onChange }: ClientFormProps) {
           ),
         },
         {
-          label: t('crm.modal.markAsBlacklisted', 'Blacklist'),
+          label: '',
           input: (
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -168,11 +168,13 @@ export default function ClientForm({ client, onChange }: ClientFormProps) {
             <div className="flex flex-col gap-4">
               {section.fields.map((field, fIdx) => (
                 <div key={fIdx} className="w-full flex flex-col">
-                  <span className="text-xs font-semibold text-slate-600 mb-1">
-                    {field.label.endsWith(' *') ? (
-                      <>{field.label.slice(0, -2)} <span className="text-red-500">*</span></>
-                    ) : field.label}
-                  </span>
+                  {field.label && (
+                    <span className="text-xs font-semibold text-slate-600 mb-1">
+                      {typeof field.label === 'string' && field.label.endsWith(' *')
+                        ? <>{field.label.slice(0, -2)} <span className="text-red-500">*</span></>
+                        : field.label}
+                    </span>
+                  )}
                   {field.input}
                 </div>
               ))}
