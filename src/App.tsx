@@ -10,11 +10,11 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
-import Reservations from './pages/Reservations';
+import Reservations from './pages/ResPage';
 import Archive from './pages/Archive';
 import Fleet from './pages/Fleet';
 import Financials from './pages/Financials';
-import ClientDashboard from './pages/ClientDashboard';
+import ClientDashboard from './pages/clientpage';
 import Tools from './pages/Tools';
 
 export default function App() {

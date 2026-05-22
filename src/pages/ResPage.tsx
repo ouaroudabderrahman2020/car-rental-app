@@ -3,7 +3,7 @@ import { useState, useEffect, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import BaseModal from '../components/BaseModal';
-import ReservationDetailsView from '../components/ReservationDetailsView';
+import ReservationDetailsView from '../components/ResDetails';
 import ResForm, { ReservationFormData } from '../components/ResForm';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
