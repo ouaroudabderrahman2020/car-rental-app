@@ -14,7 +14,7 @@ import BaseModal from './BaseModal';
 import { getDrivePreviewUrl } from '../lib/gas';
 import { uploadFile, deleteFiles, listFolderFiles } from '../lib/storage';
 
-import ModalSection1 from './modalSection1';
+import ModalSection1 from './ModalSection1';
 
 const Label = ({ children, required, className = "" }: { children: React.ReactNode, required?: boolean, className?: string }) => (
   <label className={`text-[10px] font-black uppercase tracking-[0.15em] text-[#0066FF] mb-2 flex items-center gap-1 ${className}`}>

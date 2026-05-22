@@ -8,7 +8,7 @@ import { uploadFile, deleteFiles, listFolderFiles } from '../lib/storage';
 import Layout from '../components/Layout';
 import ClientForm from '../components/ClientForm';
 import BaseModal from '../components/BaseModal';
-import ClientDetailsView from '../components/clientdetails';
+import ClientDetailsView from '../components/ClientDetails';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 /* removed FormSection import */

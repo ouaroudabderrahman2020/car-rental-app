@@ -9,7 +9,7 @@ import { uploadFile } from '../lib/storage';
 import { useReservations } from '../hooks/useReservations';
 import ClientModal from './ClientModal';
 import BaseModal from './BaseModal';
-import ItemSection from './itemSection';
+import ItemSection from './ItemSection';
 
 export interface ReservationFormData {
   clientSearchQuery: string;

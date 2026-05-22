@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import CarForm from '../components/CarForm';
 import BaseModal from '../components/BaseModal';
-import Cardetails from '../components/cardetails';
+import Cardetails from '../components/CarDetails';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 import { supabase } from '../lib/supabase';
