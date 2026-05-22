@@ -57,8 +57,8 @@ export default function ClientDetails({ client }: ClientDetailsProps) {
   const renderCard = (section: typeof sections[0]) => (
     <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
       {section.title && (
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
-          {section.icon && <span className="shrink-0 text-slate-500">{section.icon}</span>}
+        <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-sky-600 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+          {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
           {section.title}
         </div>
       )}
