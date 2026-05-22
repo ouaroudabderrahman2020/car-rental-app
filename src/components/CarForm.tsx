@@ -310,18 +310,13 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
         {section.fields.map((field, fIdx) => {
           const fieldName = (field as any).name as string | undefined;
           const hasError = fieldName ? errors[fieldName] : false;
-          const inputEl = field.input as React.ReactElement;
           return (
-          <div key={fIdx} className="w-full flex flex-col">
+          <div key={fIdx} className={`w-full flex flex-col${hasError ? ' p-0.5 -m-0.5 rounded-[12px] ring-2 ring-red-200' : ''}`}>
             <span className="text-xs font-semibold text-slate-600 mb-1">
               {field.label}
               {(field as any).required && <span className="text-red-500 ml-0.5">*</span>}
             </span>
-            {hasError
-              ? React.cloneElement(inputEl, {
-                  className: `${(inputEl.props as any).className || ''} border-red-400 ring-2 ring-red-200`
-                } as any)
-              : field.input}
+            {field.input}
           </div>
           );
         })}
