@@ -257,12 +257,14 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     const baseData: any = {
       car_id: reservation?.selectedCarId || undefined,
       customer_name: reservation?.clientName || '',
-      customer_phone: reservation?.clientPhone || '',
+      customer_national_id: reservation?.clientId || null,
+      customer_license: reservation?.clientLicense || null,
       start_date: reservation?.pickupDate ? new Date(reservation.pickupDate).toISOString() : undefined,
       end_date: reservation?.returnDate ? new Date(reservation.returnDate).toISOString() : undefined,
       extended_return_date: reservation?.extendedReturnDate ? new Date(reservation.extendedReturnDate).toISOString() : null,
       status: effectiveStatus,
       total_price: totalPrice,
+      balance_due: balanceDue,
       prepayment: reservation?.prepayment || 0,
       deposit_type: reservation?.depositType || null,
       deposit_amount: reservation?.depositAmount || 0,
@@ -289,7 +291,6 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         const carUpdate: any = { status: 'Available' };
         if (statusOverride === 'Completed') {
           carUpdate.odometer = reservation?.odometerIn ? parseInt(reservation.odometerIn, 10) : undefined;
-          // starting_fuel_level column removed — fuel tracking moved if needed
         }
         await supabase.from('cars').update(carUpdate).eq('id', reservation.selectedCarId);
       }
@@ -965,7 +966,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       <div className="flex gap-6">
         <div className="flex-1 flex flex-col gap-6 min-w-0">
           {(layoutReady ? colLeft : sections).map((section, i) => (
-            <div key={i} ref={!layoutReady ? (el => cardRefs.current[i] = el) : undefined}>{renderCard(section)}</div>
+            <div key={i} ref={!layoutReady ? (el => { cardRefs.current[i] = el; }) : undefined}>{renderCard(section)}</div>
           ))}
         </div>
         <div className="flex-1 flex flex-col gap-6 min-w-0">

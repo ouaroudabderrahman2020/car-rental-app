@@ -73,7 +73,7 @@ export default function ClientDashboard() {
   const enrichedClients = useMemo(() => {
     return clients.map(client => {
       const clientReservations = reservations
-        .filter(r => r.customer_phone === client.phone)
+        .filter(r => r.customer_national_id === client.national_id || r.customer_name === client.name)
         .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
         
       const totalRevenue = clientReservations.reduce((sum, r) => sum + r.total_price, 0);

@@ -42,9 +42,9 @@ export default function Archive() {
   const mapArchiveToForm = (res: any): ReservationFormData => ({
     clientSearchQuery: res.customer_name || '',
     clientName: res.customer_name || '',
-    clientPhone: res.customer_phone || '',
-    clientId: res.client_id || '',
-    clientLicense: res.license_number || '',
+    clientPhone: '',
+    clientId: res.customer_national_id || '',
+    clientLicense: res.customer_license || '',
     pickupDate: res.start_date?.slice(0, 16) || '',
     returnDate: res.end_date?.slice(0, 16) || '',
     extendedReturnDate: res.extended_return_date?.slice(0, 16) || '',
@@ -162,7 +162,6 @@ export default function Archive() {
     setResFormData({
       ...defaultFormData,
       clientName: res.customer_name || '',
-      clientPhone: res.customer_phone || '',
       carBrand: res.car?.brand || '',
       carModel: res.car?.model || '',
       licensePlate: res.car?.plate || '',

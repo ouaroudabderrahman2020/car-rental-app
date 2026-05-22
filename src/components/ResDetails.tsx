@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { User, Phone, Calendar, Car as CarIcon, Gauge, Fuel, DollarSign, Star, ClipboardList } from 'lucide-react';
+import { User, Phone, Calendar, Car as CarIcon, Gauge, Fuel, DollarSign, Star, ClipboardList, CreditCard, Monitor } from 'lucide-react';
 import { FormattedReservation, Car } from '../types';
 
 interface ReservationDetailsViewProps {
@@ -9,11 +9,10 @@ interface ReservationDetailsViewProps {
 export default function ReservationDetailsView({ reservation }: ReservationDetailsViewProps) {
   const formatDate = (val?: string) => (val ? new Date(val).toLocaleDateString() : '---');
   const carInfo = (reservation.car || {}) as Partial<Car>;
-  const r = reservation as any;
-  const rate = r.daily_rate || carInfo.daily_rate || 0;
+  const rate = carInfo.daily_rate || 0;
   const prepay = reservation.prepayment || 0;
   const total = reservation.total_price != null ? reservation.total_price : (Number(rate) * 1);
-  const balance = total - prepay;
+  const balance = reservation.balance_due != null ? reservation.balance_due : (total - prepay);
 
   const sections = [
     {
@@ -21,9 +20,8 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
       icon: <User className="w-4 h-4" />,
       fields: [
         { label: 'Name', value: reservation.customer_name || reservation.client },
-        { label: 'Phone', value: reservation.customer_phone },
-        { label: 'ID Card', value: r.client_id },
-        { label: 'License', value: r.license_number || r.customer_license },
+        { label: 'ID Card', value: reservation.customer_national_id },
+        { label: 'License', value: reservation.customer_license },
       ],
     },
     {
@@ -139,7 +137,7 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
         <div className="flex gap-4">
           <div className="flex-1 flex flex-col gap-4 min-w-0">
             {sections.map((section, i) => (
-              <div key={i} ref={el => cardRefs.current[i] = el}>{renderCard(section)}</div>
+              <div key={i} ref={el => { cardRefs.current[i] = el; }}>{renderCard(section)}</div>
             ))}
           </div>
           <div className="flex-1 flex flex-col gap-4 min-w-0" />

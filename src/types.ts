@@ -65,13 +65,16 @@ export interface FormattedCar extends Car {
 export interface Reservation {
   id: string;
   car_id: string;
+  client_id?: string;
   customer_name: string;
-  customer_phone: string;
+  customer_national_id?: string;
+  customer_license?: string;
   start_date: string;
   end_date: string;
   status: ReservationStatus;
   total_price: number;
   prepayment: number;
+  balance_due?: number;
   deposit_type?: string;
   deposit_amount?: number;
   odometer_out?: number;
@@ -83,7 +86,11 @@ export interface Reservation {
   included_items?: string[];
   notes?: string;
   rating?: number;
+  vehicle_state_urls?: string[];
+  contract_url?: string;
+  paper_contract_urls?: string[];
   created_at: string;
+  updated_at?: string;
   car?: Car;
 }
 

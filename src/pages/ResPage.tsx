@@ -47,9 +47,9 @@ export default function Reservations() {
   const mapReservationToForm = (res: FormattedReservation): ReservationFormData => ({
     clientSearchQuery: res.customer_name || '',
     clientName: res.customer_name || '',
-    clientPhone: res.customer_phone || '',
-    clientId: (res as any).client_id || '',
-    clientLicense: (res as any).license_number || '',
+    clientPhone: '',
+    clientId: res.customer_national_id || '',
+    clientLicense: res.customer_license || '',
     pickupDate: res.start_date?.slice(0, 16) || '',
     returnDate: res.end_date?.slice(0, 16) || '',
     extendedReturnDate: res.extended_return_date?.slice(0, 16) || '',
@@ -183,7 +183,6 @@ export default function Reservations() {
     setInitialData({
       car_id: res.car_id,
       customer_name: res.customer_name,
-      customer_phone: res.customer_phone,
       carBrand: res.car?.brand,
       carModel: res.car?.model,
       carPlate: res.car?.plate,
