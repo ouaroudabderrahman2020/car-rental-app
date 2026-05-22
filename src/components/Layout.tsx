@@ -205,14 +205,6 @@ export default function Layout({ children, title }: LayoutProps) {
             </div>
 
             <div className="flex items-center gap-2 md:gap-4">
-              <button
-                onClick={signOut}
-                className="flex items-center gap-1 p-1.5 hover:bg-ink/5 transition-all border border-transparent hover:border-ink/10"
-                title={t('common.signOut', 'Sign Out')}
-              >
-                <LogOut className="w-4 h-4 md:w-5 md:h-5 text-ink" />
-              </button>
-
               <div className="relative lang-switcher-container">
                 <button 
                   onClick={() => setLangDropdownOpen(!langDropdownOpen)}
@@ -255,6 +247,14 @@ export default function Layout({ children, title }: LayoutProps) {
                   )}
                 </AnimatePresence>
               </div>
+
+              <button
+                onClick={signOut}
+                className="flex items-center gap-1 p-1.5 hover:bg-ink/5 transition-all border border-transparent hover:border-ink/10"
+                title={t('common.signOut', 'Sign Out')}
+              >
+                <LogOut className="w-4 h-4 md:w-5 md:h-5 text-ink" />
+              </button>
             </div>
           </div>
         </div>
