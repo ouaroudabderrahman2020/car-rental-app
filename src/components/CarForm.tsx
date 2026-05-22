@@ -176,9 +176,9 @@ export default function CarForm({ car, onChange }: CarFormProps) {
       title: `1 ${t('carDetailsView.basicInfo', 'Basic Info')}`,
       icon: <Settings className="w-4 h-4" />,
       fields: [
-        { label: t('carDetailsView.fields.brand', 'Brand'), input: <InputField type="text" value={car?.brand || ''} onChange={(e: any) => set('brand', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { label: t('carDetailsView.fields.model', 'Model'), input: <InputField type="text" value={car?.model || ''} onChange={(e: any) => set('model', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { label: t('carDetailsView.fields.plate', 'Plate'), input: <InputField type="text" value={car?.plate || ''} onChange={(e: any) => set('plate', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} className="uppercase" /> },
+        { label: t('carDetailsView.fields.brand', 'Brand'), required: true, input: <InputField type="text" value={car?.brand || ''} onChange={(e: any) => set('brand', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('carDetailsView.fields.model', 'Model'), required: true, input: <InputField type="text" value={car?.model || ''} onChange={(e: any) => set('model', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('carDetailsView.fields.plate', 'Plate'), required: true, input: <InputField type="text" value={car?.plate || ''} onChange={(e: any) => set('plate', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} className="uppercase" /> },
         {
           label: t('carDetailsView.fields.color', 'Color'),
           input: (
@@ -193,7 +193,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           ),
         },
         {
-          label: t('carDetailsView.fields.dailyRate', 'Daily Rate'),
+          label: t('carDetailsView.fields.dailyRate', 'Daily Rate'), required: true,
           input: (
             <div className="flex items-center gap-1">
               <span className="text-sm font-semibold text-slate-500">$</span>
@@ -282,6 +282,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           <div key={fIdx} className="w-full flex flex-col">
             <span className="text-xs font-semibold text-slate-600 mb-1">
               {field.label}
+              {(field as any).required && <span className="text-red-500 ml-0.5">*</span>}
             </span>
             {field.input}
           </div>
