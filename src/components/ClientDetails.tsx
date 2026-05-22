@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { User, FileText, Calendar, Star, AlertCircle } from 'lucide-react';
+import { User, FileText, Calendar, Star, AlertCircle, ExternalLink } from 'lucide-react';
 import { Customer } from '../types';
+import { getDrivePreviewUrl } from '../lib/gas';
 
 interface ClientDetailsProps {
   client: Customer;
@@ -28,9 +29,9 @@ export default function ClientDetails({ client }: ClientDetailsProps) {
       title: t('clientForm.documents', 'Documents'),
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('clientForm.idCardDoc', 'ID Card'), value: client.drive_id_photo ? t('common.attached', 'Attached') : '---' },
-        { label: t('clientForm.licenseDoc', 'Driving License'), value: client.drive_license_front_photo ? t('common.attached', 'Attached') : '---' },
-        { label: t('clientForm.allInOneDoc', 'Master Contract/Composite'), value: client.drive_contract_doc_id ? t('common.attached', 'Attached') : '---' },
+        { label: t('clientForm.idCardDoc', 'ID Card'), url: client.drive_id_photo },
+        { label: t('clientForm.licenseDoc', 'Driving License'), url: client.drive_license_front_photo },
+        { label: t('clientForm.allInOneDoc', 'Master Contract/Composite'), url: client.drive_contract_doc_id },
       ],
     },
     {
@@ -75,14 +76,34 @@ export default function ClientDetails({ client }: ClientDetailsProps) {
               </div>
             )}
             <div className="flex flex-col gap-4">
-              {section.fields.map((field, fIdx) => (
+              {section.fields.map((field: any, fIdx) => (
                 <div key={fIdx} className="w-full flex flex-col">
-                  <span className="text-xs font-semibold text-slate-600 mb-1">
-                    {field.label}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
-                    {field.value}
-                  </span>
+                  {'url' in field ? (
+                    field.url ? (
+                      <a
+                        href={getDrivePreviewUrl(field.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-[12px] px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors"
+                      >
+                        {field.label}
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0 ml-auto" />
+                      </a>
+                    ) : (
+                      <span className="w-full text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
+                        {field.label}
+                      </span>
+                    )
+                  ) : (
+                    <>
+                      <span className="text-xs font-semibold text-slate-600 mb-1">
+                        {field.label}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
+                        {field.value}
+                      </span>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
