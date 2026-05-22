@@ -1,12 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, FileText, Calendar, Star, Upload, Trash2, RotateCcw } from 'lucide-react';
-import { Customer } from '../types';
+import { Client } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
 
 interface ClientFormProps {
-  client?: Partial<Customer> | null;
-  onChange: (client: Partial<Customer>) => void;
+  client?: Partial<Client> | null;
+  onChange: (client: Partial<Client>) => void;
 }
 
 export interface ClientFormHandle {
@@ -116,7 +116,7 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
 
   const set = (field: string, value: any) => {
     if (errors[field]) setErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
-    onChange({ ...(client || {}), [field]: value } as Partial<Customer>);
+    onChange({ ...(client || {}), [field]: value } as Partial<Client>);
   };
 
   const getDoc = (type: string) => (client?.documents || []).find(d => d.doc_type === type);

@@ -115,7 +115,7 @@ export interface ClientDocument {
   updated_at: string;
 }
 
-export interface Customer {
+export interface Client {
   id: string;
   name: string;
   phone: string;

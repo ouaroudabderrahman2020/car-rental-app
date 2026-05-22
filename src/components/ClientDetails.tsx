@@ -1,11 +1,11 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, FileText, Calendar, Star, AlertCircle, ExternalLink } from 'lucide-react';
-import { Customer } from '../types';
+import { Client } from '../types';
 import { getDrivePreviewUrl } from '../lib/gas';
 
 interface ClientDetailsProps {
-  client: Customer;
+  client: Client;
 }
 
 export default function ClientDetails({ client }: ClientDetailsProps) {

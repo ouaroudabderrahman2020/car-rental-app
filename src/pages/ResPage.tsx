@@ -48,7 +48,7 @@ export default function Reservations() {
     clientSearchQuery: res.customer_name || '',
     clientName: res.customer_name || '',
     clientPhone: res.customer_phone || '',
-    clientId: (res as any).customer_id || '',
+    clientId: (res as any).client_id || '',
     clientLicense: (res as any).license_number || '',
     pickupDate: res.start_date?.slice(0, 16) || '',
     returnDate: res.end_date?.slice(0, 16) || '',

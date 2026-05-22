@@ -22,7 +22,7 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
       fields: [
         { label: 'Name', value: reservation.customer_name || reservation.client },
         { label: 'Phone', value: reservation.customer_phone },
-        { label: 'ID Card', value: r.customer_id },
+        { label: 'ID Card', value: r.client_id },
         { label: 'License', value: r.license_number || r.customer_license },
       ],
     },

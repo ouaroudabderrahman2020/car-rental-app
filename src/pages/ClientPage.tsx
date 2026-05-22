@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity, FileText, Loader2, Check, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
-import { Customer, Reservation } from '../types';
+import { Client, Reservation } from '../types';
 import { uploadFile, deleteFiles, listFolderFiles } from '../lib/storage';
 import Layout from '../components/Layout';
 import ClientForm, { type ClientFormHandle } from '../components/ClientForm';
@@ -19,16 +19,16 @@ export default function ClientDashboard() {
   const { t } = useTranslation();
   const { setStatus } = useStatus();
   const [searchTerm, setSearchTerm] = useState('');
-  const [clients, setClients] = useState<Customer[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Customer | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [detailsClient, setDetailsClient] = useState<Customer | null>(null);
-  const [formData, setFormData] = useState<Partial<Customer>>({});
+  const [detailsClient, setDetailsClient] = useState<Client | null>(null);
+  const [formData, setFormData] = useState<Partial<Client>>({});
   const [isSaving, setIsSaving] = useState(false);
   const formRef = React.useRef<ClientFormHandle>(null);
 
@@ -44,7 +44,7 @@ export default function ClientDashboard() {
       // If table doesn't exist, we might have to infer from reservations, 
       // but let's try fetching companies/customers first.
       const { data: customersData, error: customersError } = await supabase
-        .from('customers')
+        .from('clients')
         .select('*, client_documents(*)');
 
       const { data: resData, error: resError } = await supabase
@@ -103,7 +103,7 @@ export default function ClientDashboard() {
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [enrichedClients, searchTerm]);
 
-  const handleOpenDetails = (client: Customer) => {
+  const handleOpenDetails = (client: Client) => {
     setDetailsClient(client);
     setIsDetailsOpen(true);
   };
@@ -180,7 +180,7 @@ export default function ClientDashboard() {
 
       if (modalMode === 'edit' && selectedClient?.id) {
         const { data, error } = await supabase
-          .from('customers')
+          .from('clients')
           .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('id', selectedClient.id)
           .select()
@@ -190,7 +190,7 @@ export default function ClientDashboard() {
         await supabase.from('client_documents').delete().eq('client_id', selectedClient.id);
       } else {
         const { data, error } = await supabase
-          .from('customers')
+          .from('clients')
           .insert([{ ...payload, created_at: new Date().toISOString() }])
           .select()
           .single();
@@ -227,7 +227,7 @@ export default function ClientDashboard() {
       if (oldFiles.length > 0) await deleteFiles('client-docs', oldFiles);
 
       const { error } = await supabase
-        .from('customers')
+        .from('clients')
         .delete()
         .eq('id', selectedClient.id);
 

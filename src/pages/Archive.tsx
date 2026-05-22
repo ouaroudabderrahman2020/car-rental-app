@@ -43,7 +43,7 @@ export default function Archive() {
     clientSearchQuery: res.customer_name || '',
     clientName: res.customer_name || '',
     clientPhone: res.customer_phone || '',
-    clientId: res.customer_id || '',
+    clientId: res.client_id || '',
     clientLicense: res.license_number || '',
     pickupDate: res.start_date?.slice(0, 16) || '',
     returnDate: res.end_date?.slice(0, 16) || '',

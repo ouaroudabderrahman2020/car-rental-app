@@ -119,7 +119,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     const fetchData = async () => {
       const [{ data: cars }, { data: customers }] = await Promise.all([
         supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, essentials, car_documents(*)').neq('status', 'Decommissioned'),
-        supabase.from('customers').select('*')
+        supabase.from('clients').select('*')
       ]);
       if (cars) setAvailableCars(cars);
       if (customers) setAllCustomers(customers);
@@ -133,7 +133,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     setRegistrationStatus(null);
     try {
       const { data: existingClients, error: checkError } = await supabase
-        .from('customers')
+        .from('clients')
         .select('national_id, license_number')
         .or(`national_id.eq.${reservation.clientId},license_number.eq.${reservation.clientLicense}`);
       if (checkError) throw checkError;
@@ -149,7 +149,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         return;
       }
       const { error: insertError } = await supabase
-        .from('customers')
+        .from('clients')
         .insert([{
           name: reservation.clientName,
           national_id: reservation.clientId,
@@ -160,7 +160,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         }]);
       if (insertError) throw insertError;
       setRegistrationStatus({ type: 'success', message: 'client added' });
-      const { data: updatedCustomers } = await supabase.from('customers').select('*');
+      const { data: updatedCustomers } = await supabase.from('clients').select('*');
       if (updatedCustomers) setAllCustomers(updatedCustomers);
     } catch (err) {
       console.error(err);
