@@ -36,8 +36,6 @@ export interface Car {
   vignette_url?: string;
   registration_expiry?: string;
   insurance_expiry?: string;
-  tech_inspection_expiry?: string;
-  tax_renewal_expiry?: string;
   vignette_expiry?: string;
   first_use_date?: string;
   created_at: string;

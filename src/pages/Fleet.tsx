@@ -117,8 +117,6 @@ export default function Fleet() {
         notes: formData.notes || null,
         registration_expiry: formData.registration_expiry || null,
         insurance_expiry: formData.insurance_expiry || null,
-        tech_inspection_expiry: formData.tech_inspection_expiry || null,
-        tax_renewal_expiry: formData.tax_renewal_expiry || null,
         vignette_expiry: formData.vignette_expiry || null,
         first_use_date: formData.first_use_date || null,
         image_url: formData.image_url || '',

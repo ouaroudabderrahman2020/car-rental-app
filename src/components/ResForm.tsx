@@ -119,7 +119,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
   useEffect(() => {
     const fetchData = async () => {
       const [{ data: cars }, { data: customers }] = await Promise.all([
-        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, starting_fuel_level, image_url, essentials').neq('status', 'Decommissioned'),
+        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, image_url, essentials').neq('status', 'Decommissioned'),
         supabase.from('customers').select('*')
       ]);
       if (cars) setAvailableCars(cars);
@@ -290,7 +290,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         const carUpdate: any = { status: 'Available' };
         if (statusOverride === 'Completed') {
           carUpdate.odometer = reservation?.odometerIn ? parseInt(reservation.odometerIn, 10) : undefined;
-          carUpdate.starting_fuel_level = reservation?.fuelIn ? parseInt(reservation.fuelIn, 10) : undefined;
+          // starting_fuel_level column removed — fuel tracking moved if needed
         }
         await supabase.from('cars').update(carUpdate).eq('id', reservation.selectedCarId);
       }
