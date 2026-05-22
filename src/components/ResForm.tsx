@@ -418,7 +418,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
 
   const sections = [
     {
-      title: t('reservations.form.customer', 'Customer'),
+      title: `1 ${t('reservations.form.customer', 'Customer')}`,
       icon: <User className="w-4 h-4" />,
       fields: [
         {
@@ -655,7 +655,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       ],
     },
     {
-      title: t('reservations.form.schedule', 'Schedule'),
+      title: `2 ${t('reservations.form.schedule', 'Schedule')}`,
       icon: <Search className="w-4 h-4" />,
       fields: [
         {
@@ -725,7 +725,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       ],
     },
     {
-      title: t('reservations.form.billing', 'Billing'),
+      title: `3 ${t('reservations.form.billing', 'Billing')}`,
       icon: <CreditCard className="w-4 h-4" />,
       fields: [
         { label: t('reservations.form.dailyRate', 'Daily Rate'), required: true, input: <InputField type="number" value={reservation?.dailyRate || ''} onChange={(e: any) => set('dailyRate', e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" className={errors.dailyRate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
@@ -808,7 +808,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       ],
     },
     {
-      title: t('reservations.form.documentation', 'Documentation'),
+      title: `4 ${t('reservations.form.documentation', 'Documentation')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
         {
@@ -884,7 +884,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       ],
     },
     {
-      title: t('reservations.form.vehicleInspection', 'Vehicle Inspection'),
+      title: `5 ${t('reservations.form.vehicleInspection', 'Vehicle Inspection')}`,
       icon: <Monitor className="w-4 h-4" />,
       fields: [
         { label: 'Starting KM', input: <InputField type="number" value={reservation?.odometerOut || ''} onChange={(e: any) => set('odometerOut', e.target.value)} placeholder="KM" /> },
@@ -917,9 +917,10 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
   const renderCard = (section: typeof sections[0]) => (
     <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
       {section.title && (
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
-          {section.icon && <span className="shrink-0 text-slate-500">{section.icon}</span>}
-          {section.title}
+        <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
+          {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
+          <span>{section.title.split(' ').slice(1).join(' ')}</span>
         </div>
       )}
       <div className="flex flex-col gap-4">

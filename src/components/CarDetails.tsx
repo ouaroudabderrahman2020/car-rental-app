@@ -13,7 +13,7 @@ export default function Cardetails({ car }: CardetailsProps) {
 
   const sections = [
     {
-      title: t('carDetailsView.basicInfo', 'Basic Info'),
+      title: `1 ${t('carDetailsView.basicInfo', 'Basic Info')}`,
       icon: <Settings className="w-4 h-4" />,
       fields: [
         { label: t('carDetailsView.fields.brand', 'Brand'), value: car.brand },
@@ -26,7 +26,7 @@ export default function Cardetails({ car }: CardetailsProps) {
       ],
     },
     {
-      title: t('carForm.documents', 'Documents'),
+      title: `2 ${t('carForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
         { label: t('carForm.uploadImage', 'Vehicle Image'), url: car.image_url },
@@ -37,7 +37,7 @@ export default function Cardetails({ car }: CardetailsProps) {
       ],
     },
     {
-      title: t('carForm.otherDetails', 'Other Details'),
+      title: `3 ${t('carForm.otherDetails', 'Other Details')}`,
       icon: <Calendar className="w-4 h-4" />,
       fields: [
         { label: t('carForm.firstUse', 'First Use'), value: formatDate(car.first_use_date) },
@@ -56,7 +56,7 @@ export default function Cardetails({ car }: CardetailsProps) {
       ],
     },
     {
-      title: t('carForm.maintenance', 'Maintenance'),
+      title: `4 ${t('carForm.maintenance', 'Maintenance')}`,
       icon: <Gauge className="w-4 h-4" />,
       fields: car.intervals?.length
         ? car.intervals.map((i: any) => ({
@@ -70,9 +70,10 @@ export default function Cardetails({ car }: CardetailsProps) {
   const renderCard = (section: typeof sections[0]) => (
     <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
       {section.title && (
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
-          {section.icon && <span className="shrink-0 text-slate-500">{section.icon}</span>}
-          {section.title}
+        <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
+          {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
+          <span>{section.title.split(' ').slice(1).join(' ')}</span>
         </div>
       )}
       <div className="flex flex-col gap-4">

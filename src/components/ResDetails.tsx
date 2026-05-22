@@ -16,7 +16,7 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
 
   const sections = [
     {
-      title: 'Customer',
+      title: '1 Customer',
       icon: <User className="w-4 h-4" />,
       fields: [
         { label: 'Name', value: reservation.customer_name || reservation.client },
@@ -26,7 +26,7 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
       ],
     },
     {
-      title: 'Vehicle & Schedule',
+      title: '2 Vehicle & Schedule',
       icon: <CarIcon className="w-4 h-4" />,
       fields: [
         { label: 'Car', value: `${carInfo.brand || ''} ${carInfo.model || ''}`.trim() || reservation.carName },
@@ -44,7 +44,7 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
       ],
     },
     {
-      title: 'Billing',
+      title: '3 Billing',
       icon: <DollarSign className="w-4 h-4" />,
       fields: [
         { label: 'Daily Rate', value: `${rate} DH` },
@@ -57,7 +57,7 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
       ],
     },
     {
-      title: 'Vehicle Inspection',
+      title: '4 Vehicle Inspection',
       icon: <Gauge className="w-4 h-4" />,
       fields: [
         { label: 'Starting KM', value: reservation.odometer_out?.toString() },
@@ -68,7 +68,7 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
       ],
     },
     {
-      title: 'Notes & Items',
+      title: '5 Notes & Items',
       icon: <ClipboardList className="w-4 h-4" />,
       fields: [
         { label: 'Included Items', value: reservation.included_items?.length ? reservation.included_items.join(', ') : '---' },
@@ -80,9 +80,10 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
   const renderCard = (section: typeof sections[0]) => (
     <div className="bg-slate-50/80 border border-slate-200/85 rounded-xl p-5 sm:p-6 shadow-sm">
       {section.title && (
-        <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-900 uppercase pb-3 mb-4 border-b border-slate-200">
-          {section.icon && <span className="shrink-0 text-indigo-600">{section.icon}</span>}
-          {section.title}
+        <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-white uppercase pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-xl">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
+          {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
+          <span>{section.title.split(' ').slice(1).join(' ')}</span>
         </div>
       )}
       <div className="flex flex-col gap-0">

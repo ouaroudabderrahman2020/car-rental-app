@@ -13,7 +13,7 @@ export default function ClientDetails({ client }: ClientDetailsProps) {
 
   const sections = [
     {
-      title: t('clientForm.identity', 'Identity'),
+      title: `1 ${t('clientForm.identity', 'Identity')}`,
       icon: <User className="w-4 h-4" />,
       fields: [
         { label: t('clientForm.fullName', 'Full Name'), value: client.name },
@@ -26,7 +26,7 @@ export default function ClientDetails({ client }: ClientDetailsProps) {
       ],
     },
     {
-      title: t('clientForm.documents', 'Documents'),
+      title: `2 ${t('clientForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
         { label: t('clientForm.idCardDoc', 'ID Card'), url: client.drive_id_photo },
@@ -35,7 +35,7 @@ export default function ClientDetails({ client }: ClientDetailsProps) {
       ],
     },
     {
-      title: t('clientForm.otherDetails', 'Other Details'),
+      title: `3 ${t('clientForm.otherDetails', 'Other Details')}`,
       icon: <Calendar className="w-4 h-4" />,
       fields: [
         { label: t('clientForm.licenseExpiry', 'License Expiry'), value: formatDate(client.license_expiry) },
@@ -44,7 +44,7 @@ export default function ClientDetails({ client }: ClientDetailsProps) {
       ],
     },
     {
-      title: t('clientForm.notesAndRating', 'Notes & Rating'),
+      title: `4 ${t('clientForm.notesAndRating', 'Notes & Rating')}`,
       icon: <Star className="w-4 h-4" />,
       fields: [
         { label: t('clientForm.rating', 'Trust Ranking'), value: client.trust_rank > 0 ? `${'★'.repeat(client.trust_rank)}${'☆'.repeat(5 - client.trust_rank)}` : '---' },
@@ -57,9 +57,10 @@ export default function ClientDetails({ client }: ClientDetailsProps) {
   const renderCard = (section: typeof sections[0]) => (
     <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
       {section.title && (
-        <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-sky-600 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+        <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
           {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
-          {section.title}
+          <span>{section.title.split(' ').slice(1).join(' ')}</span>
         </div>
       )}
       <div className="flex flex-col gap-4">

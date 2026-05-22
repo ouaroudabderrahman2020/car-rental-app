@@ -99,7 +99,7 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
 
   const sections = [
     {
-      title: t('clientForm.identity', 'Identity'),
+      title: `1 ${t('clientForm.identity', 'Identity')}`,
       icon: <User className="w-4 h-4" />,
       fields: [
         { label: t('clientForm.fullName', 'Full Name') + ' *', input: <InputField hasError={errors.name} type="text" value={client?.name || ''} onChange={(e: any) => set('name', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
@@ -112,7 +112,7 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
       ],
     },
     {
-      title: t('clientForm.documents', 'Documents'),
+      title: `2 ${t('clientForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
         { label: t('clientForm.idCardDoc', 'ID Card'), input: <FileField label="ID Card" value={client?.drive_id_photo || ''} onChange={(v) => set('drive_id_photo', v)} /> },
@@ -121,7 +121,7 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
       ],
     },
     {
-      title: t('clientForm.otherDetails', 'Other Details'),
+      title: `3 ${t('clientForm.otherDetails', 'Other Details')}`,
       icon: <Calendar className="w-4 h-4" />,
       fields: [
         { label: t('clientForm.licenseExpiry', 'License Expiry'), input: <InputField type="date" value={client?.license_expiry || ''} onChange={(e: any) => set('license_expiry', e.target.value)} /> },
@@ -130,7 +130,7 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
       ],
     },
     {
-      title: t('clientForm.notesAndRating', 'Notes & Rating'),
+      title: `4 ${t('clientForm.notesAndRating', 'Notes & Rating')}`,
       icon: <Star className="w-4 h-4" />,
       fields: [
         {
@@ -177,9 +177,10 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
   const renderCard = (section: typeof sections[0]) => (
     <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
       {section.title && (
-        <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-sky-600 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+        <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
           {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
-          {section.title}
+          <span>{section.title.split(' ').slice(1).join(' ')}</span>
         </div>
       )}
       <div className="flex flex-col gap-4">
