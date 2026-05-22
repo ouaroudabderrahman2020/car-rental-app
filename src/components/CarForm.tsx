@@ -232,12 +232,12 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           label: t('carDetailsView.fields.color', 'Color'),
           input: (
             <div className="flex flex-col gap-2">
+              <InputField type="text" value={car?.color || ''} onChange={(e: any) => set('color', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} />
               <div className="flex flex-wrap gap-2">
                 {colors.map((c) => (
                   <button key={c.name} type="button" onClick={() => set('color', c.name)} className={`w-8 h-8 rounded-full border transition-all ${c.border} ${(car?.color || '').toLowerCase() === c.name ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`} style={{ backgroundColor: c.hex }} title={t(`carForm.color${c.name.charAt(0).toUpperCase() + c.name.slice(1)}`, c.name)} />
                 ))}
               </div>
-              <InputField type="text" value={car?.color || ''} onChange={(e: any) => set('color', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} />
             </div>
           ),
         },
