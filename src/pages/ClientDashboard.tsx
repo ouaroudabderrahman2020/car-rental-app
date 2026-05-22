@@ -1,17 +1,19 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity, FileText } from 'lucide-react';
+import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity, FileText, Loader2, Check, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Customer, Reservation } from '../types';
+import { uploadFile, deleteFiles, listFolderFiles } from '../lib/storage';
 import Layout from '../components/Layout';
-import ClientModal from '../components/ClientModal';
+import ClientForm from '../components/ClientForm';
 import BaseModal from '../components/BaseModal';
 import ClientDetailsView from '../components/ClientDetailsView';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 /* removed FormSection import */
 import { useStatus } from '../contexts/StatusContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 export default function ClientDashboard() {
   const { t } = useTranslation();
@@ -26,6 +28,8 @@ export default function ClientDashboard() {
   const [selectedClient, setSelectedClient] = useState<Customer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [detailsClient, setDetailsClient] = useState<Customer | null>(null);
+  const [formData, setFormData] = useState<Partial<Customer>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -107,14 +111,136 @@ export default function ClientDashboard() {
     if (!detailsClient) return;
     setIsDetailsOpen(false);
     setSelectedClient(detailsClient);
+    setFormData({ ...detailsClient });
     setModalMode('edit');
     setIsModalOpen(true);
   };
 
   const handleAddClient = () => {
     setSelectedClient(null);
+    setFormData({});
     setModalMode('add');
     setIsModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    const name = formData.name || '';
+    const nationalId = formData.national_id || '';
+    const licenseNumber = formData.license_number || '';
+
+    if (!name || !nationalId || !licenseNumber) {
+      setStatus('Please fill all required fields', 'error');
+      return;
+    }
+
+    setIsSaving(true);
+    setStatus('Processing...', 'processing', 0);
+
+    try {
+      let finalIdDocUrl = formData.drive_id_photo || '';
+      let finalLicenseDocUrl = formData.drive_license_front_photo || '';
+      let finalMasterDocUrl = formData.drive_contract_doc_id || '';
+
+      const folderName = `${name} ${nationalId}`.trim();
+      let oldFolderName: string | undefined;
+
+      if (modalMode === 'edit' && selectedClient) {
+        oldFolderName = `${selectedClient.name} ${selectedClient.national_id || selectedClient.id_card_number || ''}`.trim();
+
+        if (oldFolderName !== folderName) {
+          const oldFiles = await listFolderFiles('client-files', oldFolderName);
+          if (oldFiles.length > 0) await deleteFiles('client-files', oldFiles);
+        }
+      }
+
+      const uploadIfNeeded = async (val: string) => {
+        if (val.startsWith('data:')) {
+          const [header, base64] = val.split(',');
+          const contentType = header.split(';')[0].replace('data:', '');
+          const ext = contentType === 'application/pdf' ? 'pdf' : 'png';
+          const url = await uploadFile('client-files', base64, `doc.${ext}`, contentType, folderName);
+          return url || val;
+        }
+        return val;
+      };
+
+      finalIdDocUrl = await uploadIfNeeded(finalIdDocUrl);
+      finalLicenseDocUrl = await uploadIfNeeded(finalLicenseDocUrl);
+      finalMasterDocUrl = await uploadIfNeeded(finalMasterDocUrl);
+
+      const payload = {
+        name,
+        national_id: nationalId,
+        dob: formData.dob || null,
+        nationality: formData.nationality || null,
+        license_number: licenseNumber,
+        license_expiry: formData.license_expiry || null,
+        license_issue: formData.license_issue || null,
+        phone: formData.phone || '',
+        email: formData.email || null,
+        address: formData.address || null,
+        trust_rank: formData.trust_rank || 0,
+        notes: formData.notes || null,
+        is_blacklisted: formData.is_blacklisted || false,
+        drive_id_photo: finalIdDocUrl,
+        drive_license_front_photo: finalLicenseDocUrl,
+        drive_contract_doc_id: finalMasterDocUrl,
+      };
+
+      if (modalMode === 'edit' && selectedClient?.id) {
+        const { error } = await supabase
+          .from('customers')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', selectedClient.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('customers')
+          .insert([{ ...payload, created_at: new Date().toISOString() }]);
+        if (error) throw error;
+      }
+
+      setStatus('Action Completed', 'success');
+      setIsModalOpen(false);
+      setSelectedClient(null);
+      setFormData({});
+      fetchData();
+    } catch (err: any) {
+      console.error('Save error:', err);
+      setStatus(`Error: ${err.message || ''}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedClient?.id) return;
+
+    setIsSaving(true);
+    setStatus('Processing...', 'processing', 0);
+
+    try {
+      const folderName = `${selectedClient.name} ${selectedClient.national_id || selectedClient.id_card_number || ''}`.trim();
+      const oldFiles = await listFolderFiles('client-files', folderName);
+      if (oldFiles.length > 0) await deleteFiles('client-files', oldFiles);
+
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', selectedClient.id);
+
+      if (error) throw error;
+      setStatus('Action Completed', 'success');
+      setIsModalOpen(false);
+      setSelectedClient(null);
+      setFormData({});
+      fetchData();
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      setStatus('Error', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -269,14 +395,44 @@ export default function ClientDashboard() {
           {detailsClient && <ClientDetailsView client={detailsClient} />}
         </BaseModal>
 
-        <ClientModal 
+        <BaseModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          mode={modalMode}
-          client={selectedClient}
-          reservations={reservations}
-          onRefresh={fetchData}
-        />
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedClient(null);
+            setFormData({});
+          }}
+          closeDisabled={isSaving}
+          title={
+            <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
+              {modalMode === 'add' ? 'Add New Client' : 'Edit Client Profile'}
+            </h2>
+          }
+          actions={
+            <>
+              {modalMode === 'edit' && (
+                <button
+                  disabled={isSaving}
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-red-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  {isSaving ? 'Deleting...' : 'Delete'}
+                </button>
+              )}
+              <button
+                disabled={isSaving}
+                onClick={handleSave}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                {isSaving ? 'Processing...' : (modalMode === 'add' ? 'Create' : 'Save')}
+              </button>
+            </>
+          }
+        >
+          <ClientForm client={formData} onChange={setFormData} />
+        </BaseModal>
       </div>
     </Layout>
   );

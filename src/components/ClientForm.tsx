@@ -1,0 +1,185 @@
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { User, FileText, Calendar, Star, Upload, Trash2 } from 'lucide-react';
+import { Customer } from '../types';
+
+interface ClientFormProps {
+  client?: Partial<Customer> | null;
+  onChange: (client: Partial<Customer>) => void;
+}
+
+const InputField = (props: any) => {
+  const { label: _, ...rest } = props;
+  return (
+    <input
+      {...rest}
+      className={`w-full bg-white border border-slate-200 rounded-[12px] px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 ${props.className || ''}`}
+    />
+  );
+};
+
+const TextareaField = (props: any) => {
+  const { label: _, ...rest } = props;
+  return (
+    <textarea
+      {...rest}
+      className={`w-full bg-white border border-slate-200 rounded-[12px] px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 resize-none ${props.className || ''}`}
+    />
+  );
+};
+
+const FileField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => {
+  const { t } = useTranslation();
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="flex flex-col gap-1.5 w-full">
+      <input
+        type="file"
+        ref={inputRef}
+        accept="image/*,application/pdf"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => onChange(reader.result as string);
+          reader.readAsDataURL(file);
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="h-10 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all w-full"
+      >
+        <Upload className="w-3.5 h-3.5" />
+        {t('clientForm.uploadFile', 'Upload')}
+      </button>
+      {value && (
+        <div className="flex items-center justify-between px-3 h-10 bg-blue-50 border border-blue-200 rounded-[12px]">
+          <span className="text-[10px] font-bold text-blue-900 truncate">{label}</span>
+          <button type="button" onClick={() => onChange('')} className="p-1.5 hover:bg-red-100 rounded-full text-red-500 transition-colors">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function ClientForm({ client, onChange }: ClientFormProps) {
+  const { t } = useTranslation();
+
+  const set = (field: string, value: any) => {
+    onChange({ ...(client || {}), [field]: value } as Partial<Customer>);
+  };
+
+  const sections = [
+    {
+      title: t('clientForm.identity', 'Identity'),
+      icon: <User className="w-4 h-4" />,
+      fields: [
+        { label: t('clientForm.fullName', 'Full Name') + ' *', input: <InputField type="text" value={client?.name || ''} onChange={(e: any) => set('name', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('clientForm.nationalId', 'National ID') + ' *', input: <InputField type="text" value={client?.national_id || client?.id_card_number || ''} onChange={(e: any) => set('national_id', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('clientForm.licenseNumber', 'License Number') + ' *', input: <InputField type="text" value={client?.license_number || ''} onChange={(e: any) => set('license_number', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('clientForm.phone', 'Phone'), input: <InputField type="text" value={client?.phone || ''} onChange={(e: any) => set('phone', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('clientForm.dob', 'Date of Birth'), input: <InputField type="date" value={client?.dob || ''} onChange={(e: any) => set('dob', e.target.value)} /> },
+      ],
+    },
+    {
+      title: t('clientForm.documents', 'Documents'),
+      icon: <FileText className="w-4 h-4" />,
+      fields: [
+        { label: t('clientForm.idCardDoc', 'ID Card'), input: <FileField label="ID Card" value={client?.drive_id_photo || ''} onChange={(v) => set('drive_id_photo', v)} /> },
+        { label: t('clientForm.licenseDoc', 'Driving License'), input: <FileField label="License" value={client?.drive_license_front_photo || ''} onChange={(v) => set('drive_license_front_photo', v)} /> },
+        { label: t('clientForm.allInOneDoc', 'Master Contract/Composite'), input: <FileField label="Master Contract" value={client?.drive_contract_doc_id || ''} onChange={(v) => set('drive_contract_doc_id', v)} /> },
+      ],
+    },
+    {
+      title: t('clientForm.otherDetails', 'Other Details'),
+      icon: <Calendar className="w-4 h-4" />,
+      fields: [
+        { label: t('clientForm.licenseExpiry', 'License Expiry'), input: <InputField type="date" value={client?.license_expiry || ''} onChange={(e: any) => set('license_expiry', e.target.value)} /> },
+        { label: t('clientForm.licenseIssue', 'License Issue Date'), input: <InputField type="date" value={client?.license_issue || ''} onChange={(e: any) => set('license_issue', e.target.value)} /> },
+        { label: t('clientForm.email', 'Email Address'), input: <InputField type="email" value={client?.email || ''} onChange={(e: any) => set('email', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('clientForm.address', 'Residential Address'), input: <InputField type="text" value={client?.address || ''} onChange={(e: any) => set('address', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+      ],
+    },
+    {
+      title: t('clientForm.notesAndRating', 'Notes & Rating'),
+      icon: <Star className="w-4 h-4" />,
+      fields: [
+        {
+          label: t('clientForm.rating', 'Trust Ranking'),
+          input: (
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => set('trust_rank', num)}
+                  className={`w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center transition-all ${
+                    (client?.trust_rank || 0) >= num ? 'bg-amber-400 text-black border-amber-500' : 'bg-white text-slate-200'
+                  }`}
+                >
+                  <Star className={`w-4 h-4 ${(client?.trust_rank || 0) >= num ? 'fill-current' : ''}`} />
+                </button>
+              ))}
+            </div>
+          ),
+        },
+        {
+          label: t('crm.modal.markAsBlacklisted', 'Blacklist'),
+          input: (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={client?.is_blacklisted || false}
+                onChange={(e) => set('is_blacklisted', e.target.checked)}
+                className="w-4 h-4 border-2 border-slate-300 rounded text-red-600 focus:ring-0"
+              />
+              <span className="text-xs font-semibold text-slate-600">{t('crm.modal.markAsBlacklisted', 'Mark as Blacklisted')}</span>
+            </label>
+          ),
+        },
+        {
+          label: t('clientForm.notes', 'Observations'),
+          input: <TextareaField value={client?.notes || ''} onChange={(e: any) => set('notes', e.target.value)} placeholder={t('common.notesPlaceholder', 'Type any relevant observations or notes...')} rows={3} />,
+        },
+      ],
+    },
+  ];
+
+  return (
+    <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
+      <div className="flex flex-wrap gap-6">
+        {sections.map((section, sIdx) => (
+          <div
+            key={sIdx}
+            className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm"
+            style={{ flexBasis: '300px', flexShrink: 1, minWidth: '250px', maxWidth: '100%' }}
+          >
+            {section.title && (
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+                {section.icon && <span className="shrink-0 text-slate-500">{section.icon}</span>}
+                {section.title}
+              </div>
+            )}
+            <div className="flex flex-col gap-4">
+              {section.fields.map((field, fIdx) => (
+                <div key={fIdx} className="w-full flex flex-col">
+                  <span className="text-xs font-semibold text-slate-600 mb-1">
+                    {field.label.endsWith(' *') ? (
+                      <>{field.label.slice(0, -2)} <span className="text-red-500">*</span></>
+                    ) : field.label}
+                  </span>
+                  {field.input}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
