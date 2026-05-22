@@ -45,7 +45,7 @@ export default function ClientDashboard() {
       // but let's try fetching companies/customers first.
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
-        .select('*');
+        .select('*, client_documents(*)');
 
       const { data: resData, error: resError } = await supabase
         .from('reservations')
@@ -135,36 +135,30 @@ export default function ClientDashboard() {
     setStatus('Processing...', 'processing', 0);
 
     try {
-      let finalIdDocUrl = formData.drive_id_photo || '';
-      let finalLicenseDocUrl = formData.drive_license_front_photo || '';
-      let finalMasterDocUrl = formData.drive_contract_doc_id || '';
-
       const folderName = `${name} ${nationalId}`.trim();
       let oldFolderName: string | undefined;
 
       if (modalMode === 'edit' && selectedClient) {
         oldFolderName = `${selectedClient.name} ${selectedClient.national_id || selectedClient.id_card_number || ''}`.trim();
-
         if (oldFolderName !== folderName) {
-          const oldFiles = await listFolderFiles('client-files', oldFolderName);
-          if (oldFiles.length > 0) await deleteFiles('client-files', oldFiles);
+          const oldFiles = await listFolderFiles('client-docs', oldFolderName);
+          if (oldFiles.length > 0) await deleteFiles('client-docs', oldFiles);
         }
       }
 
-      const uploadIfNeeded = async (val: string) => {
-        if (val.startsWith('data:')) {
-          const [header, base64] = val.split(',');
-          const contentType = header.split(';')[0].replace('data:', '');
-          const ext = contentType === 'application/pdf' ? 'pdf' : 'png';
-          const url = await uploadFile('client-files', base64, `doc.${ext}`, contentType, folderName);
-          return url || val;
+      // Upload pending docs to client-docs bucket
+      const rawDocs = formData.documents || [];
+      const newDocRows: any[] = [];
+      for (const doc of rawDocs) {
+        let fileUrl = (doc as any).file_url;
+        if ((doc as any).file_data) {
+          const url = await uploadFile('client-docs', (doc as any).file_data.replace(/^data:.*?;base64,/, ''), (doc as any).file_name || `${doc.doc_type}.pdf`, (doc as any).mime_type || 'image/png', folderName);
+          if (url) fileUrl = url;
         }
-        return val;
-      };
-
-      finalIdDocUrl = await uploadIfNeeded(finalIdDocUrl);
-      finalLicenseDocUrl = await uploadIfNeeded(finalLicenseDocUrl);
-      finalMasterDocUrl = await uploadIfNeeded(finalMasterDocUrl);
+        if (fileUrl) {
+          newDocRows.push({ doc_type: doc.doc_type, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
+        }
+      }
 
       const payload = {
         name,
@@ -180,22 +174,32 @@ export default function ClientDashboard() {
         trust_rank: formData.trust_rank || 0,
         notes: formData.notes || null,
         is_blacklisted: formData.is_blacklisted || false,
-        drive_id_photo: finalIdDocUrl,
-        drive_license_front_photo: finalLicenseDocUrl,
-        drive_contract_doc_id: finalMasterDocUrl,
       };
 
+      let savedClient: any;
+
       if (modalMode === 'edit' && selectedClient?.id) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('customers')
           .update({ ...payload, updated_at: new Date().toISOString() })
-          .eq('id', selectedClient.id);
+          .eq('id', selectedClient.id)
+          .select()
+          .single();
         if (error) throw error;
+        savedClient = data;
+        await supabase.from('client_documents').delete().eq('client_id', selectedClient.id);
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('customers')
-          .insert([{ ...payload, created_at: new Date().toISOString() }]);
+          .insert([{ ...payload, created_at: new Date().toISOString() }])
+          .select()
+          .single();
         if (error) throw error;
+        savedClient = data;
+      }
+
+      if (newDocRows.length > 0) {
+        await supabase.from('client_documents').insert(newDocRows.map(r => ({ ...r, client_id: savedClient.id })));
       }
 
       setStatus('Action Completed', 'success');
@@ -219,8 +223,8 @@ export default function ClientDashboard() {
 
     try {
       const folderName = `${selectedClient.name} ${selectedClient.national_id || selectedClient.id_card_number || ''}`.trim();
-      const oldFiles = await listFolderFiles('client-files', folderName);
-      if (oldFiles.length > 0) await deleteFiles('client-files', oldFiles);
+      const oldFiles = await listFolderFiles('client-docs', folderName);
+      if (oldFiles.length > 0) await deleteFiles('client-docs', oldFiles);
 
       const { error } = await supabase
         .from('customers')

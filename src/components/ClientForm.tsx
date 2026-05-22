@@ -33,7 +33,12 @@ const TextareaField = (props: any) => {
   );
 };
 
-const FileField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => {
+const DocField = ({ docType, label, value, onChange }: {
+  docType: string;
+  label: string;
+  value?: { file_data?: string; file_name?: string; mime_type?: string; file_url?: string };
+  onChange: (doc: { doc_type: string; file_data?: string; file_name?: string; mime_type?: string } | null) => void;
+}) => {
   const { t } = useTranslation();
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -48,26 +53,43 @@ const FileField = ({ label, value, onChange }: { label: string; value: string; o
           const file = e.target.files?.[0];
           if (!file) return;
           const reader = new FileReader();
-          reader.onload = () => onChange(reader.result as string);
+          reader.onload = () => onChange({
+            doc_type: docType,
+            file_data: reader.result as string,
+            file_name: file.name,
+            mime_type: file.type,
+          });
           reader.readAsDataURL(file);
         }}
       />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="h-10 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all w-full"
-      >
-        <Upload className="w-3.5 h-3.5" />
-        {t('clientForm.uploadFile', 'Upload')}
-      </button>
-      {value && (
-        <div className="flex items-center justify-between px-3 h-10 bg-blue-50 border border-blue-200 rounded-[12px]">
-          <span className="text-[10px] font-bold text-blue-900 truncate">{label}</span>
-          <button type="button" onClick={() => onChange('')} className="p-1.5 hover:bg-red-100 rounded-full text-red-500 transition-colors">
-            <Trash2 className="w-3.5 h-3.5" />
+      <div className="flex flex-col gap-2 w-full">
+        {value ? (
+          <div className="flex items-center justify-between px-3 h-10 bg-blue-50 border border-blue-200 rounded-[12px]">
+            <div className="flex items-center gap-2 min-w-0">
+              <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+              <span className="text-[10px] font-bold text-blue-900 truncate">
+                {value.file_name || label}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="p-1.5 hover:bg-red-100 rounded-full text-red-500 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="h-10 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all w-full"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            {t('clientForm.uploadFile', 'Upload')}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -97,6 +119,21 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
     onChange({ ...(client || {}), [field]: value } as Partial<Customer>);
   };
 
+  const getDoc = (type: string) => (client?.documents || []).find(d => d.doc_type === type);
+
+  const setDoc = (type: string, data: { file_data?: string; file_name?: string; mime_type?: string } | null) => {
+    const docs: any[] = [...(client?.documents || [])];
+    if (data === null) {
+      set('documents', docs.filter((d: any) => d.doc_type !== type));
+    } else {
+      const idx = docs.findIndex((d: any) => d.doc_type === type);
+      const entry = { ...data, doc_type: type };
+      if (idx >= 0) docs[idx] = entry;
+      else docs.push(entry);
+      set('documents', docs);
+    }
+  };
+
   const sections = [
     {
       title: `1 ${t('clientForm.identity', 'Identity')}`,
@@ -115,9 +152,9 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
       title: `2 ${t('clientForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('clientForm.idCardDoc', 'ID Card'), input: <FileField label="ID Card" value={client?.drive_id_photo || ''} onChange={(v) => set('drive_id_photo', v)} /> },
-        { label: t('clientForm.licenseDoc', 'Driving License'), input: <FileField label="License" value={client?.drive_license_front_photo || ''} onChange={(v) => set('drive_license_front_photo', v)} /> },
-        { label: t('clientForm.allInOneDoc', 'Master Contract/Composite'), input: <FileField label="Master Contract" value={client?.drive_contract_doc_id || ''} onChange={(v) => set('drive_contract_doc_id', v)} /> },
+        { label: t('clientForm.idCardDoc', 'ID Card'), input: <DocField docType="id_card" label="ID Card" value={getDoc('id_card')} onChange={(v) => setDoc('id_card', v)} /> },
+        { label: t('clientForm.licenseDoc', 'Driving License'), input: <DocField docType="license" label="License" value={getDoc('license')} onChange={(v) => setDoc('license', v)} /> },
+        { label: t('clientForm.allInOneDoc', 'Master Contract/Composite'), input: <DocField docType="master_contract" label="Master Contract" value={getDoc('master_contract')} onChange={(v) => setDoc('master_contract', v)} /> },
       ],
     },
     {

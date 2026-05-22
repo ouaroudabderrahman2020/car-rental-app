@@ -7,7 +7,6 @@ import { getDriveImageUrl } from '../lib/gas';
 import { fileToBase64 } from '../lib/utils';
 import { uploadFile } from '../lib/storage';
 import { useReservations } from '../hooks/useReservations';
-import ClientModal from './ClientModal';
 import BaseModal from './BaseModal';
 import ItemSection from './ItemSection';
 
@@ -1046,12 +1045,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           </div>
         </BaseModal>
       )}
-      <ClientModal
-        isOpen={isClientViewModalOpen}
-        onClose={() => setIsClientViewModalOpen(false)}
-        mode="edit"
-        client={selectedCustomer}
-      />
+      {/* ClientModal removed — use ClientPage -> ClientForm instead */}
     </>
   );
 }

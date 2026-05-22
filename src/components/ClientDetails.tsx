@@ -30,9 +30,9 @@ export default function ClientDetails({ client }: ClientDetailsProps) {
       title: `2 ${t('clientForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('clientForm.idCardDoc', 'ID Card'), url: client.drive_id_photo },
-        { label: t('clientForm.licenseDoc', 'Driving License'), url: client.drive_license_front_photo },
-        { label: t('clientForm.allInOneDoc', 'Master Contract/Composite'), url: client.drive_contract_doc_id },
+        { label: t('clientForm.idCardDoc', 'ID Card'), url: (client.documents || []).find(d => d.doc_type === 'id_card')?.file_url },
+        { label: t('clientForm.licenseDoc', 'Driving License'), url: (client.documents || []).find(d => d.doc_type === 'license')?.file_url },
+        { label: t('clientForm.allInOneDoc', 'Master Contract/Composite'), url: (client.documents || []).find(d => d.doc_type === 'master_contract')?.file_url },
       ],
     },
     {
