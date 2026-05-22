@@ -84,6 +84,8 @@ export default function ClientForm({ client, onChange }: ClientFormProps) {
         { label: t('clientForm.licenseNumber', 'License Number') + ' *', input: <InputField type="text" value={client?.license_number || ''} onChange={(e: any) => set('license_number', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
         { label: t('clientForm.phone', 'Phone'), input: <InputField type="text" value={client?.phone || ''} onChange={(e: any) => set('phone', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
         { label: t('clientForm.dob', 'Date of Birth'), input: <InputField type="date" value={client?.dob || ''} onChange={(e: any) => set('dob', e.target.value)} /> },
+        { label: 'Nationality', input: <InputField type="text" value={client?.nationality || ''} onChange={(e: any) => set('nationality', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('clientForm.address', 'Physical Address'), input: <InputField type="text" value={client?.address || ''} onChange={(e: any) => set('address', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
       ],
     },
     {
@@ -102,7 +104,6 @@ export default function ClientForm({ client, onChange }: ClientFormProps) {
         { label: t('clientForm.licenseExpiry', 'License Expiry'), input: <InputField type="date" value={client?.license_expiry || ''} onChange={(e: any) => set('license_expiry', e.target.value)} /> },
         { label: t('clientForm.licenseIssue', 'License Issue Date'), input: <InputField type="date" value={client?.license_issue || ''} onChange={(e: any) => set('license_issue', e.target.value)} /> },
         { label: t('clientForm.email', 'Email Address'), input: <InputField type="email" value={client?.email || ''} onChange={(e: any) => set('email', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { label: t('clientForm.address', 'Residential Address'), input: <InputField type="text" value={client?.address || ''} onChange={(e: any) => set('address', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
       ],
     },
     {
