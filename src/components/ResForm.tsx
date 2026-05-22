@@ -119,7 +119,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
   useEffect(() => {
     const fetchData = async () => {
       const [{ data: cars }, { data: customers }] = await Promise.all([
-        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, image_url, essentials').neq('status', 'Decommissioned'),
+        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, essentials, car_documents(*)').neq('status', 'Decommissioned'),
         supabase.from('customers').select('*')
       ]);
       if (cars) setAvailableCars(cars);
@@ -1009,11 +1009,11 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                   }`}
                 >
                   <div className="w-full aspect-[4/3] bg-slate-50 border border-black/5 rounded-[12px] mb-3 overflow-hidden flex items-center justify-center p-2">
-                    {car.image_url ? (
+                    {(() => { const img = (car.car_documents || []).find((d: any) => d.doc_type === 'image'); return img?.file_url; })() ? (
                       <img
                         alt={car.model}
                         className="w-full h-full object-contain mix-blend-multiply"
-                        src={getDriveImageUrl(car.image_url)}
+                        src={getDriveImageUrl(((car.car_documents || []).find((d: any) => d.doc_type === 'image')?.file_url))}
                         referrerPolicy="no-referrer"
                       />
                     ) : (

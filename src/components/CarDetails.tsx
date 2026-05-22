@@ -30,11 +30,11 @@ export default function Cardetails({ car }: CardetailsProps) {
       title: `2 ${t('carForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.uploadImage', 'Vehicle Image'), url: car.image_url },
-        { label: t('carForm.registrationCard', 'Registration Card'), url: car.registration_card_url },
-        { label: t('carForm.insurance', 'Insurance'), url: car.insurance_url },
-        { label: t('carForm.vignette', 'Vignette'), url: car.vignette_url },
-        { label: t('carForm.pdfLabel', 'Documentation'), url: car.documentation_url },
+        { label: t('carForm.uploadImage', 'Vehicle Image'), url: (car.documents || []).find(d => d.doc_type === 'image')?.file_url },
+        { label: t('carForm.registrationCard', 'Registration Card'), url: (car.documents || []).find(d => d.doc_type === 'registration_card')?.file_url },
+        { label: t('carForm.insurance', 'Insurance'), url: (car.documents || []).find(d => d.doc_type === 'insurance')?.file_url },
+        { label: t('carForm.vignette', 'Vignette'), url: (car.documents || []).find(d => d.doc_type === 'vignette')?.file_url },
+        { label: t('carForm.pdfLabel', 'Documentation'), url: (car.documents || []).find(d => d.doc_type === 'documentation')?.file_url },
       ],
     },
     {

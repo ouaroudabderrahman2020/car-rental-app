@@ -15,6 +15,18 @@ export interface EssentialItem {
   checked: boolean;
 }
 
+export interface CarDocument {
+  id: string;
+  car_id: string;
+  doc_type: 'image' | 'registration_card' | 'insurance' | 'vignette' | 'documentation';
+  file_url: string;
+  file_name?: string;
+  file_size?: number;
+  mime_type?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Car {
   id: string;
   brand: string;
@@ -29,11 +41,6 @@ export interface Car {
   gps_sim?: string;
   seats?: number;
   notes?: string;
-  image_url?: string;
-  documentation_url?: string;
-  registration_card_url?: string;
-  insurance_url?: string;
-  vignette_url?: string;
   registration_expiry?: string;
   insurance_expiry?: string;
   vignette_expiry?: string;
@@ -42,6 +49,7 @@ export interface Car {
   updated_at: string;
   essentials?: EssentialItem[];
   intervals?: MaintenanceInterval[];
+  documents?: CarDocument[];
 }
 
 export interface FormattedCar extends Car {

@@ -90,7 +90,6 @@ export default function Reservations() {
               plate,
               daily_rate,
               odometer,
-              image_url,
               essentials
             )
           `)

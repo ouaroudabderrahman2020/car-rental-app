@@ -1,6 +1,6 @@
 import React, { useRef, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, FileText, Calendar, Gauge, Upload, Monitor, Trash2 } from 'lucide-react';
+import { Settings, FileText, Calendar, Gauge, Upload, Trash2 } from 'lucide-react';
 import { FormattedCar, MaintenanceInterval, EssentialItem } from '../types';
 import { FUEL_TYPES, TRANSMISSIONS } from '../constants';
 import ItemSection from './ItemSection';
@@ -70,59 +70,13 @@ const TextareaField = (props: any) => {
   );
 };
 
-const ImageField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => {
-  const { t } = useTranslation();
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  return (
-    <div className="flex flex-col">
-      <input
-        type="file"
-        ref={inputRef}
-        accept="image/*,application/pdf"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => onChange(reader.result as string);
-          reader.readAsDataURL(file);
-        }}
-      />
-      <div
-        onClick={() => inputRef.current?.click()}
-        className="w-full aspect-video border border-slate-200 rounded-[12px] bg-white flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all overflow-hidden"
-      >
-        {value ? (
-          value.startsWith('data:') ? (
-            <img src={value} alt={label} className="w-full h-full object-cover" />
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <FileText className="w-8 h-8 text-blue-600" />
-              <span className="text-[10px] font-bold text-slate-400">{t('carForm.fileLinked', 'File linked')}</span>
-            </div>
-          )
-        ) : (
-          <>
-            <Upload className="w-8 h-8 text-slate-300" />
-            <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('clientForm.uploadFile', 'Upload')}</p>
-          </>
-        )}
-      </div>
-      {value && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onChange(''); }}
-          className="mt-1 text-[9px] font-bold text-red-500 uppercase tracking-wider flex items-center gap-1 hover:underline"
-        >
-          <Trash2 className="w-3 h-3" /> {t('common.remove', 'Remove')}
-        </button>
-      )}
-    </div>
-  );
-};
-
-const FileField = ({ label, value, onChange, isPdf }: { label: string; value: string; onChange: (v: string) => void; isPdf?: boolean }) => {
+const DocField = ({ docType, label, value, onChange, isPdf }: {
+  docType: string;
+  label: string;
+  value?: { file_data?: string; file_name?: string; mime_type?: string; file_url?: string };
+  onChange: (doc: { doc_type: string; file_data?: string; file_name?: string; mime_type?: string } | null) => void;
+  isPdf?: boolean;
+}) => {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -137,59 +91,41 @@ const FileField = ({ label, value, onChange, isPdf }: { label: string; value: st
           const file = e.target.files?.[0];
           if (!file) return;
           const reader = new FileReader();
-          reader.onload = () => onChange(reader.result as string);
+          reader.onload = () => onChange({
+            doc_type: docType,
+            file_data: reader.result as string,
+            file_name: file.name,
+            mime_type: file.type,
+          });
           reader.readAsDataURL(file);
         }}
       />
       <div className="flex flex-col gap-2 w-full">
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="h-10 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all w-full"
-        >
-          <Upload className="w-3.5 h-3.5" />
-          {t('clientForm.uploadFile', 'Upload')}
-        </button>
-        {value && (
+        {value ? (
           <div className="flex items-center justify-between px-3 h-10 bg-blue-50 border border-blue-200 rounded-[12px]">
             <div className="flex items-center gap-2 min-w-0">
               <FileText className="w-4 h-4 text-blue-600 shrink-0" />
               <span className="text-[10px] font-bold text-blue-900 truncate">
-                {isPdf ? t('carForm.pdfLabel', 'Documentation') : label.toUpperCase()}
+                {value.file_name || label}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              {value.startsWith('data:') ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = value;
-                    link.download = `${label}.${isPdf ? 'pdf' : 'png'}`;
-                    link.click();
-                  }}
-                  className="p-1.5 hover:bg-blue-200 rounded-full text-blue-600 transition-colors"
-                >
-                  <Monitor className="w-3.5 h-3.5" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => window.open(value, '_blank')}
-                  className="p-1.5 hover:bg-blue-200 rounded-full text-blue-600 transition-colors"
-                >
-                  <Monitor className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => onChange('')}
-                className="p-1.5 hover:bg-red-100 rounded-full text-red-500 transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="p-1.5 hover:bg-red-100 rounded-full text-red-500 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="h-10 px-4 bg-white border border-slate-200 rounded-[12px] flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider hover:bg-slate-50 transition-all w-full"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            {t('clientForm.uploadFile', 'Upload')}
+          </button>
         )}
       </div>
     </div>
@@ -202,6 +138,21 @@ export default function CarForm({ car, onChange }: CarFormProps) {
 
   const set = (field: string, value: any) => {
     onChange({ ...(car || {}), [field]: value } as Partial<FormattedCar>);
+  };
+
+  const getDoc = (type: string) => (car?.documents || []).find(d => d.doc_type === type);
+
+  const setDoc = (type: string, data: { file_data?: string; file_name?: string; mime_type?: string } | null) => {
+    const docs: any[] = [...(car?.documents || [])];
+    if (data === null) {
+      set('documents', docs.filter((d: any) => d.doc_type !== type));
+    } else {
+      const idx = docs.findIndex((d: any) => d.doc_type === type);
+      const entry = { ...data, doc_type: type };
+      if (idx >= 0) docs[idx] = entry;
+      else docs.push(entry);
+      set('documents', docs);
+    }
   };
 
   const intervals: MaintenanceInterval[] = car?.intervals || [];
@@ -267,11 +218,11 @@ export default function CarForm({ car, onChange }: CarFormProps) {
       title: `2 ${t('carForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.uploadImage', 'Vehicle Image'), input: <ImageField label="Vehicle Image" value={car?.image_url || ''} onChange={(v) => set('image_url', v)} /> },
-        { label: t('carForm.registrationCard', 'Registration Card'), input: <FileField label="Registration Card" value={car?.registration_card_url || ''} onChange={(v) => set('registration_card_url', v)} /> },
-        { label: t('carForm.insurance', 'Insurance'), input: <FileField label="Insurance" value={car?.insurance_url || ''} onChange={(v) => set('insurance_url', v)} /> },
-        { label: t('carForm.vignette', 'Vignette'), input: <FileField label="Vignette" value={car?.vignette_url || ''} onChange={(v) => set('vignette_url', v)} /> },
-        { label: t('carForm.pdfLabel', 'All-in-one Documentation'), input: <FileField label="Documentation" value={car?.documentation_url || ''} onChange={(v) => set('documentation_url', v)} isPdf /> },
+        { label: t('carForm.uploadImage', 'Vehicle Image'), input: <DocField docType="image" label="Vehicle Image" value={getDoc('image')} onChange={(v) => setDoc('image', v)} /> },
+        { label: t('carForm.registrationCard', 'Registration Card'), input: <DocField docType="registration_card" label="Registration Card" value={getDoc('registration_card')} onChange={(v) => setDoc('registration_card', v)} /> },
+        { label: t('carForm.insurance', 'Insurance'), input: <DocField docType="insurance" label="Insurance" value={getDoc('insurance')} onChange={(v) => setDoc('insurance', v)} /> },
+        { label: t('carForm.vignette', 'Vignette'), input: <DocField docType="vignette" label="Vignette" value={getDoc('vignette')} onChange={(v) => setDoc('vignette', v)} /> },
+        { label: t('carForm.pdfLabel', 'All-in-one Documentation'), input: <DocField docType="documentation" label="Documentation" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf /> },
       ],
     },
     {

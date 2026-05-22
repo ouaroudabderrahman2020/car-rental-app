@@ -11,7 +11,8 @@ import { supabase } from '../lib/supabase';
 import { getDriveImageUrl } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { FormattedCar } from '../types';
+import { FormattedCar, CarDocument } from '../types';
+import { uploadFile } from '../lib/storage';
 
 export default function Fleet() {
   const { t, i18n } = useTranslation();
@@ -41,22 +42,20 @@ export default function Fleet() {
     try {
       const { data, error } = await supabase
         .from('cars')
-        .select('*')
+        .select('*, car_documents(*)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data) {
-        console.log('Fetched fleet data:', data.map(c => ({ id: c.id, img: c.image_url })));
         const formattedData: FormattedCar[] = data.map(car => {
-          const transformedImage = car.image_url ? getDriveImageUrl(car.image_url) : null;
-          console.log(`🚗 Car ${car.brand} ${car.model} (${car.plate}):`, {
-            original_url: car.image_url,
-            transformed_url: transformedImage,
-            has_image: !!transformedImage
-          });
+          const docs = (car as any).car_documents || [];
+          delete (car as any).car_documents;
+          const imageDoc = docs.find((d: any) => d.doc_type === 'image');
+          const transformedImage = imageDoc?.file_url ? getDriveImageUrl(imageDoc.file_url) : null;
           return {
             ...car,
+            documents: docs,
             name: `${car.brand} ${car.model}`,
             rate: `${formatCurrency(car.daily_rate)} ${t('common.perDay')}`,
             statusColor: car.status === 'Available' ? 'bg-primary' : 
@@ -119,14 +118,11 @@ export default function Fleet() {
         insurance_expiry: formData.insurance_expiry || null,
         vignette_expiry: formData.vignette_expiry || null,
         first_use_date: formData.first_use_date || null,
-        image_url: formData.image_url || '',
-        documentation_url: formData.documentation_url || '',
-        registration_card_url: formData.registration_card_url || '',
-        insurance_url: formData.insurance_url || '',
-        vignette_url: formData.vignette_url || '',
         essentials: formData.essentials || [],
         intervals: formData.intervals || [],
       };
+
+      let savedCar: any;
 
       if (modalMode === 'edit' && selectedCar?.id) {
         const { data, error } = await supabase
@@ -136,7 +132,7 @@ export default function Fleet() {
           .select()
           .single();
         if (error) throw error;
-        handleOptimisticUpdate(data);
+        savedCar = data;
       } else {
         const { data, error } = await supabase
           .from('cars')
@@ -144,8 +140,41 @@ export default function Fleet() {
           .select()
           .single();
         if (error) throw error;
-        handleOptimisticUpdate(data);
+        savedCar = data;
       }
+
+      // Upload pending docs and save to car_documents
+      const carId = savedCar.id;
+      const newDocs: any[] = [];
+      const rawDocs = formData.documents || [];
+
+      for (const doc of rawDocs) {
+        const docType = doc.doc_type;
+        let fileUrl = (doc as any).file_url;
+
+        if ((doc as any).file_data) {
+          const ext = (doc as any).mime_type?.includes('pdf') ? 'pdf' : 'png';
+          const url = await uploadFile('car-docs', (doc as any).file_data.replace(/^data:.*?;base64,/, ''), `${docType}_${Date.now()}.${ext}`, (doc as any).mime_type || 'image/png', carId);
+          if (url) fileUrl = url;
+        }
+
+        if (fileUrl) {
+          newDocs.push({ car_id: carId, doc_type: docType, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
+        }
+      }
+
+      if (modalMode === 'edit' && selectedCar?.id) {
+        await supabase.from('car_documents').delete().eq('car_id', carId);
+      }
+
+      if (newDocs.length > 0) {
+        const { data: insertedDocs } = await supabase.from('car_documents').insert(newDocs).select();
+        savedCar.documents = insertedDocs || newDocs;
+      } else {
+        savedCar.documents = [];
+      }
+
+      handleOptimisticUpdate(savedCar);
 
       setStatus(t('common.actionCompleted'), 'success');
       setIsModalOpen(false);
@@ -196,7 +225,8 @@ export default function Fleet() {
   };
 
   const handleOptimisticUpdate = (car: any) => {
-    // Generate derived fields for FormattedCar
+    const docs = car.documents || [];
+    const imageDoc = docs.find((d: any) => d.doc_type === 'image');
     const formatted: FormattedCar = {
       ...car,
       id: car.id || `temp-${Date.now()}`,
@@ -206,7 +236,7 @@ export default function Fleet() {
                    car.status === 'In Maintenance' ? 'bg-workshop-amber' : 
                    car.status === 'Rented' ? 'bg-indigo-600' : 'bg-slate-500',
       needsMaintenance: car.status === 'In Maintenance' || car.status === 'Workshop',
-      image: car.image_url ? getDriveImageUrl(car.image_url) : null
+      image: imageDoc?.file_url ? getDriveImageUrl(imageDoc.file_url) : null
     };
 
     setFleetData(prev => {
@@ -354,7 +384,7 @@ export default function Fleet() {
                               onError={(e) => {
                                 console.error(`❌ Failed to load image for ${car.name} (${car.plate}):`, {
                                   attempted_src: car.image,
-                                  original_database_url: car.image_url,
+                                  original_doc: (car.documents || []).find((d: any) => d.doc_type === 'image')?.file_url,
                                   error: 'Image failed to load from Google Drive. Possible causes: 1) File not publicly shared, 2) File deleted, 3) URL format issue'
                                 });
                                 // Hide the failed image
