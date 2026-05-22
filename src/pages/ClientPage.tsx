@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { Customer, Reservation } from '../types';
 import { uploadFile, deleteFiles, listFolderFiles } from '../lib/storage';
 import Layout from '../components/Layout';
-import ClientForm from '../components/ClientForm';
+import ClientForm, { type ClientFormHandle } from '../components/ClientForm';
 import BaseModal from '../components/BaseModal';
 import ClientDetailsView from '../components/ClientDetails';
 import { PageHeader } from '../components/PageHeader';
@@ -30,6 +30,7 @@ export default function ClientDashboard() {
   const [detailsClient, setDetailsClient] = useState<Customer | null>(null);
   const [formData, setFormData] = useState<Partial<Customer>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const formRef = React.useRef<ClientFormHandle>(null);
 
   useEffect(() => {
     fetchData();
@@ -124,14 +125,11 @@ export default function ClientDashboard() {
   };
 
   const handleSave = async () => {
+    if (!formRef.current?.validate()) return;
+
     const name = formData.name || '';
     const nationalId = formData.national_id || '';
     const licenseNumber = formData.license_number || '';
-
-    if (!name || !nationalId || !licenseNumber) {
-      setStatus('Please fill all required fields', 'error');
-      return;
-    }
 
     setIsSaving(true);
     setStatus('Processing...', 'processing', 0);
@@ -431,7 +429,7 @@ export default function ClientDashboard() {
             </>
           }
         >
-          <ClientForm client={formData} onChange={setFormData} />
+          <ClientForm ref={formRef} client={formData} onChange={setFormData} />
         </BaseModal>
       </div>
     </Layout>

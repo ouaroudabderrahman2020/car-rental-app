@@ -2,10 +2,15 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, FileText, Calendar, Star, Upload, Trash2, RotateCcw } from 'lucide-react';
 import { Customer } from '../types';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface ClientFormProps {
   client?: Partial<Customer> | null;
   onChange: (client: Partial<Customer>) => void;
+}
+
+export interface ClientFormHandle {
+  validate: () => boolean;
 }
 
 const InputField = (props: any) => {
@@ -67,8 +72,19 @@ const FileField = ({ label, value, onChange }: { label: string; value: string; o
   );
 };
 
-export default function ClientForm({ client, onChange }: ClientFormProps) {
+const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client, onChange }, ref) => {
   const { t } = useTranslation();
+  const { showToast } = useNotification();
+
+  React.useImperativeHandle(ref, () => ({
+    validate: () => {
+      if (!client?.name || !client?.national_id || !client?.license_number) {
+        showToast(t('clientForm.fillRequiredFields', 'Please fill all required fields'), 'error');
+        return false;
+      }
+      return true;
+    }
+  }));
 
   const set = (field: string, value: any) => {
     onChange({ ...(client || {}), [field]: value } as Partial<Customer>);
@@ -184,4 +200,6 @@ export default function ClientForm({ client, onChange }: ClientFormProps) {
       </div>
     </div>
   );
-}
+});
+
+export default ClientForm;
