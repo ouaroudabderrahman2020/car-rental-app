@@ -14,11 +14,11 @@ export interface ClientFormHandle {
 }
 
 const InputField = (props: any) => {
-  const { label: _, ...rest } = props;
+  const { label: _, hasError, ...rest } = props;
   return (
     <input
       {...rest}
-      className={`w-full bg-white border border-slate-200 rounded-[12px] px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 ${props.className || ''}`}
+      className={`w-full bg-white border rounded-[12px] px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 transition-all disabled:bg-slate-100 disabled:text-slate-500 ${hasError ? 'border-red-400 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:border-blue-400 focus:ring-blue-100'} ${props.className || ''}`}
     />
   );
 };
@@ -75,10 +75,16 @@ const FileField = ({ label, value, onChange }: { label: string; value: string; o
 const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client, onChange }, ref) => {
   const { t } = useTranslation();
   const { showToast } = useNotification();
+  const [errors, setErrors] = React.useState<Record<string, boolean>>({});
 
   React.useImperativeHandle(ref, () => ({
     validate: () => {
-      if (!client?.name || !client?.national_id || !client?.license_number) {
+      const newErrors: Record<string, boolean> = {};
+      if (!client?.name) newErrors.name = true;
+      if (!client?.national_id) newErrors.national_id = true;
+      if (!client?.license_number) newErrors.license_number = true;
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
         showToast(t('clientForm.fillRequiredFields', 'Please fill all required fields'), 'error');
         return false;
       }
@@ -87,6 +93,7 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
   }));
 
   const set = (field: string, value: any) => {
+    if (errors[field]) setErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
     onChange({ ...(client || {}), [field]: value } as Partial<Customer>);
   };
 
@@ -95,9 +102,9 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
       title: t('clientForm.identity', 'Identity'),
       icon: <User className="w-4 h-4" />,
       fields: [
-        { label: t('clientForm.fullName', 'Full Name') + ' *', input: <InputField type="text" value={client?.name || ''} onChange={(e: any) => set('name', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { label: t('clientForm.nationalId', 'National ID') + ' *', input: <InputField type="text" value={client?.national_id || client?.id_card_number || ''} onChange={(e: any) => set('national_id', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { label: t('clientForm.licenseNumber', 'License Number') + ' *', input: <InputField type="text" value={client?.license_number || ''} onChange={(e: any) => set('license_number', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('clientForm.fullName', 'Full Name') + ' *', input: <InputField hasError={errors.name} type="text" value={client?.name || ''} onChange={(e: any) => set('name', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('clientForm.nationalId', 'National ID') + ' *', input: <InputField hasError={errors.national_id} type="text" value={client?.national_id || client?.id_card_number || ''} onChange={(e: any) => set('national_id', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { label: t('clientForm.licenseNumber', 'License Number') + ' *', input: <InputField hasError={errors.license_number} type="text" value={client?.license_number || ''} onChange={(e: any) => set('license_number', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
         { label: t('clientForm.phone', 'Phone'), input: <InputField type="text" value={client?.phone || ''} onChange={(e: any) => set('phone', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
         { label: t('clientForm.dob', 'Date of Birth'), input: <InputField type="date" value={client?.dob || ''} onChange={(e: any) => set('dob', e.target.value)} /> },
         { label: 'Nationality', input: <InputField type="text" value={client?.nationality || ''} onChange={(e: any) => set('nationality', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
