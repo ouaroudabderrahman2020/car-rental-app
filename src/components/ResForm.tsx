@@ -13,7 +13,6 @@ import ItemSection from './ItemSection';
 export interface ReservationFormData {
   clientSearchQuery: string;
   clientName: string;
-  clientPhone: string;
   clientId: string;
   clientLicense: string;
   pickupDate: string;
@@ -154,7 +153,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           name: reservation.clientName,
           national_id: reservation.clientId,
           license_number: reservation.clientLicense,
-          phone: reservation.clientPhone || '',
+          phone: '',
           trust_rank: 3,
           is_blacklisted: false
         }]);
@@ -179,7 +178,6 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       ...(reservation || {}),
       clientSearchQuery: '',
       clientName: '',
-      clientPhone: '',
       clientId: '',
       clientLicense: '',
     } as Partial<ReservationFormData>);
@@ -418,7 +416,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
 
   const sections = [
     {
-      title: `1 ${t('reservations.form.customer', 'Customer')}`,
+      title: `1 ${t('reservations.form.client', 'Client')}`,
       icon: <User className="w-4 h-4" />,
       fields: [
         {
@@ -471,7 +469,6 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                             onChange({
                               ...(reservation || {}),
                               clientName: customer.name,
-                              clientPhone: customer.phone_number || customer.phone || '',
                               clientId: customer.national_id || '',
                               clientLicense: customer.license_number || '',
                               clientSearchQuery: customer.name,

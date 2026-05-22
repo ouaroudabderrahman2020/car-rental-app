@@ -12,7 +12,7 @@ import { gasService } from '../lib/gas';
 
 const defaultFormData: ReservationFormData = {
   clientSearchQuery: '',
-  clientName: '', clientPhone: '', clientId: '', clientLicense: '',
+  clientName: '', clientId: '', clientLicense: '',
   pickupDate: '', returnDate: '', extendedReturnDate: '',
   dailyRate: 0, prepayment: 0, prepaymentType: 'fully_paid',
   depositType: '', depositAmount: 0,
@@ -42,7 +42,6 @@ export default function Archive() {
   const mapArchiveToForm = (res: any): ReservationFormData => ({
     clientSearchQuery: res.customer_name || '',
     clientName: res.customer_name || '',
-    clientPhone: '',
     clientId: res.customer_national_id || '',
     clientLicense: res.customer_license || '',
     pickupDate: res.start_date?.slice(0, 16) || '',
