@@ -1,3 +1,4 @@
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { User, Phone, Calendar, Car as CarIcon, Gauge, Fuel, DollarSign, Star, ClipboardList } from 'lucide-react';
 import { FormattedReservation, Car } from '../types';
 
@@ -104,12 +105,48 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
     </div>
   );
 
-  const leftCol: typeof sections = [];
-  const rightCol: typeof sections = [];
-  sections.forEach((s, i) => {
-    if (i % 2 === 0) leftCol.push(s);
-    else rightCol.push(s);
-  });
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [colLeft, setColLeft] = useState<typeof sections>([]);
+  const [colRight, setColRight] = useState<typeof sections>([]);
+  const [layoutReady, setLayoutReady] = useState(false);
+
+  useLayoutEffect(() => {
+    if (layoutReady) return;
+    const heights = cardRefs.current.map(r => r?.offsetHeight || 0);
+    if (heights.some(h => h === 0)) return;
+    const left: typeof sections = [];
+    const right: typeof sections = [];
+    let leftH = 0, rightH = 0;
+    sections.forEach((s, i) => {
+      if (i === 0) { left.push(s); leftH += heights[i]; }
+      else if (i === 1) { right.push(s); rightH += heights[i]; }
+      else if (leftH <= rightH) { left.push(s); leftH += heights[i]; }
+      else { right.push(s); rightH += heights[i]; }
+    });
+    setColLeft(left);
+    setColRight(right);
+    setLayoutReady(true);
+  }, [layoutReady, sections]);
+
+  if (!layoutReady) {
+    return (
+      <div className="p-1 sm:p-2 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
+        <div className="px-4 py-2 mb-2 flex items-center gap-3">
+          <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border rounded-[8px] bg-blue-100 text-blue-800 border-blue-300">
+            {reservation.status || '---'}
+          </span>
+        </div>
+        <div className="flex gap-4">
+          <div className="flex-1 flex flex-col gap-4 min-w-0">
+            {sections.map((section, i) => (
+              <div key={i} ref={el => cardRefs.current[i] = el}>{renderCard(section)}</div>
+            ))}
+          </div>
+          <div className="flex-1 flex flex-col gap-4 min-w-0" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-1 sm:p-2 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
@@ -120,12 +157,12 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
       </div>
       <div className="flex gap-4">
         <div className="flex-1 flex flex-col gap-4 min-w-0">
-          {leftCol.map((section, i) => (
+          {colLeft.map((section, i) => (
             <div key={i}>{renderCard(section)}</div>
           ))}
         </div>
         <div className="flex-1 flex flex-col gap-4 min-w-0">
-          {rightCol.map((section, i) => (
+          {colRight.map((section, i) => (
             <div key={i}>{renderCard(section)}</div>
           ))}
         </div>

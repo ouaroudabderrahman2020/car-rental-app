@@ -1,3 +1,4 @@
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Settings, FileText, Calendar, Gauge, ExternalLink } from 'lucide-react';
 import { FormattedCar } from '../types';
@@ -111,23 +112,54 @@ export default function Cardetails({ car }: CardetailsProps) {
     </div>
   );
 
-  const leftCol: typeof sections = [];
-  const rightCol: typeof sections = [];
-  sections.forEach((s, i) => {
-    if (i % 2 === 0) leftCol.push(s);
-    else rightCol.push(s);
-  });
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [colLeft, setColLeft] = useState<typeof sections>([]);
+  const [colRight, setColRight] = useState<typeof sections>([]);
+  const [layoutReady, setLayoutReady] = useState(false);
+
+  useLayoutEffect(() => {
+    if (layoutReady) return;
+    const heights = cardRefs.current.map(r => r?.offsetHeight || 0);
+    if (heights.some(h => h === 0)) return;
+    const left: typeof sections = [];
+    const right: typeof sections = [];
+    let leftH = 0, rightH = 0;
+    sections.forEach((s, i) => {
+      if (i === 0) { left.push(s); leftH += heights[i]; }
+      else if (i === 1) { right.push(s); rightH += heights[i]; }
+      else if (leftH <= rightH) { left.push(s); leftH += heights[i]; }
+      else { right.push(s); rightH += heights[i]; }
+    });
+    setColLeft(left);
+    setColRight(right);
+    setLayoutReady(true);
+  }, [layoutReady, sections]);
+
+  if (!layoutReady) {
+    return (
+      <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
+        <div className="flex gap-6">
+          <div className="flex-1 flex flex-col gap-6 min-w-0">
+            {sections.map((section, i) => (
+              <div key={i} ref={el => cardRefs.current[i] = el}>{renderCard(section)}</div>
+            ))}
+          </div>
+          <div className="flex-1 flex flex-col gap-6 min-w-0" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
       <div className="flex gap-6">
         <div className="flex-1 flex flex-col gap-6 min-w-0">
-          {leftCol.map((section, i) => (
+          {colLeft.map((section, i) => (
             <div key={i}>{renderCard(section)}</div>
           ))}
         </div>
         <div className="flex-1 flex flex-col gap-6 min-w-0">
-          {rightCol.map((section, i) => (
+          {colRight.map((section, i) => (
             <div key={i}>{renderCard(section)}</div>
           ))}
         </div>
