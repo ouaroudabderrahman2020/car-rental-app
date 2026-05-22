@@ -1,5 +1,6 @@
 import React, { useRef, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNotification } from '../contexts/NotificationContext';
 import { Settings, FileText, Calendar, Gauge, Upload, Trash2 } from 'lucide-react';
 import { FormattedCar, MaintenanceInterval, EssentialItem } from '../types';
 import { FUEL_TYPES, TRANSMISSIONS } from '../constants';
@@ -36,6 +37,8 @@ const serviceOptions = [
 interface CarFormProps {
   car?: Partial<FormattedCar> | null;
   onChange: (car: Partial<FormattedCar>) => void;
+  onSave?: () => void;
+  saving?: boolean;
 }
 
 const InputField = (props: any) => {
@@ -132,12 +135,20 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
   );
 };
 
-export default function CarForm({ car, onChange }: CarFormProps) {
+export default function CarForm({ car, onChange, onSave, saving }: CarFormProps) {
   const { t } = useTranslation();
+  const { showToast } = useNotification();
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [selectedService, setSelectedService] = React.useState(serviceOptions[0].value);
 
   const set = (field: string, value: any) => {
     onChange({ ...(car || {}), [field]: value } as Partial<FormattedCar>);
+    setErrors(prev => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
 
   const getDoc = (type: string) => (car?.documents || []).find(d => d.doc_type === type);
@@ -171,14 +182,32 @@ export default function CarForm({ car, onChange }: CarFormProps) {
     set('intervals', newIntervals);
   };
 
+  const validate = () => {
+    const newErrors: Record<string, boolean> = {};
+    if (!car?.brand) newErrors.brand = true;
+    if (!car?.model) newErrors.model = true;
+    if (!car?.plate) newErrors.plate = true;
+    if (!car?.daily_rate && car?.daily_rate !== 0) newErrors.daily_rate = true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validate()) {
+      showToast(t('carForm.requiredFields', 'Please fill in all required fields'), 'error');
+      return;
+    }
+    onSave?.();
+  };
+
   const sections = [
     {
       title: `1 ${t('carDetailsView.basicInfo', 'Basic Info')}`,
       icon: <Settings className="w-4 h-4" />,
       fields: [
-        { label: t('carDetailsView.fields.brand', 'Brand'), required: true, input: <InputField type="text" value={car?.brand || ''} onChange={(e: any) => set('brand', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { label: t('carDetailsView.fields.model', 'Model'), required: true, input: <InputField type="text" value={car?.model || ''} onChange={(e: any) => set('model', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { label: t('carDetailsView.fields.plate', 'Plate'), required: true, input: <InputField type="text" value={car?.plate || ''} onChange={(e: any) => set('plate', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} className="uppercase" /> },
+        { name: 'brand', label: t('carDetailsView.fields.brand', 'Brand'), required: true, input: <InputField type="text" value={car?.brand || ''} onChange={(e: any) => set('brand', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { name: 'model', label: t('carDetailsView.fields.model', 'Model'), required: true, input: <InputField type="text" value={car?.model || ''} onChange={(e: any) => set('model', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { name: 'plate', label: t('carDetailsView.fields.plate', 'Plate'), required: true, input: <InputField type="text" value={car?.plate || ''} onChange={(e: any) => set('plate', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} className="uppercase" /> },
         {
           label: t('carDetailsView.fields.color', 'Color'),
           input: (
@@ -193,7 +222,7 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           ),
         },
         {
-          label: t('carDetailsView.fields.dailyRate', 'Daily Rate'), required: true,
+          name: 'daily_rate', label: t('carDetailsView.fields.dailyRate', 'Daily Rate'), required: true,
           input: (
             <div className="flex items-center gap-1">
               <span className="text-sm font-semibold text-slate-500">$</span>
@@ -278,15 +307,24 @@ export default function CarForm({ car, onChange }: CarFormProps) {
         </div>
       )}
       <div className="flex flex-col gap-4">
-        {section.fields.map((field, fIdx) => (
+        {section.fields.map((field, fIdx) => {
+          const fieldName = (field as any).name as string | undefined;
+          const hasError = fieldName ? errors[fieldName] : false;
+          const inputEl = field.input as React.ReactElement;
+          return (
           <div key={fIdx} className="w-full flex flex-col">
             <span className="text-xs font-semibold text-slate-600 mb-1">
               {field.label}
               {(field as any).required && <span className="text-red-500 ml-0.5">*</span>}
             </span>
-            {field.input}
+            {hasError
+              ? React.cloneElement(inputEl, {
+                  className: `${(inputEl.props as any).className || ''} border-red-400 ring-2 ring-red-200`
+                } as any)
+              : field.input}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -325,6 +363,15 @@ export default function CarForm({ car, onChange }: CarFormProps) {
           </div>
           <div className="flex-1 flex flex-col gap-6 min-w-0" />
         </div>
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 mt-6">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold text-xs uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : t('carForm.save', 'Save')}
+          </button>
+        </div>
       </div>
     );
   }
@@ -342,6 +389,15 @@ export default function CarForm({ car, onChange }: CarFormProps) {
             <div key={i}>{renderCard(section)}</div>
           ))}
         </div>
+      </div>
+      <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 mt-6">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold text-xs uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : t('carForm.save', 'Save')}
+        </button>
       </div>
     </div>
   );
