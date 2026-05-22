@@ -319,12 +319,11 @@ export default function CarForm({ car, onChange }: CarFormProps) {
 
   return (
     <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-      <div className="flex flex-wrap gap-6">
+      <div className="columns-2 2xl:columns-3 gap-6" style={{ columnWidth: '300px' }}>
         {sections.map((section, sIdx) => (
           <div
             key={sIdx}
-            className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm"
-            style={{ flexBasis: '300px', flexShrink: 1, minWidth: '250px', maxWidth: '100%' }}
+            className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm break-inside-avoid mb-6"
           >
             {section.title && (
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
