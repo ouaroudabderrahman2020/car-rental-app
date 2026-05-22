@@ -317,32 +317,47 @@ export default function CarForm({ car, onChange }: CarFormProps) {
     },
   ];
 
-  return (
-    <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-      <div className="columns-2 2xl:columns-3 gap-6" style={{ columnWidth: '300px' }}>
-        {sections.map((section, sIdx) => (
-          <div
-            key={sIdx}
-            className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm break-inside-avoid mb-6"
-          >
-            {section.title && (
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
-                {section.icon && <span className="shrink-0 text-slate-500">{section.icon}</span>}
-                {section.title}
-              </div>
-            )}
-            <div className="flex flex-col gap-4">
-              {section.fields.map((field, fIdx) => (
-                <div key={fIdx} className="w-full flex flex-col">
-                  <span className="text-xs font-semibold text-slate-600 mb-1">
-                    {field.label}
-                  </span>
-                  {field.input}
-                </div>
-              ))}
-            </div>
+  const renderCard = (section: typeof sections[0]) => (
+    <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
+      {section.title && (
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+          {section.icon && <span className="shrink-0 text-slate-500">{section.icon}</span>}
+          {section.title}
+        </div>
+      )}
+      <div className="flex flex-col gap-4">
+        {section.fields.map((field, fIdx) => (
+          <div key={fIdx} className="w-full flex flex-col">
+            <span className="text-xs font-semibold text-slate-600 mb-1">
+              {field.label}
+            </span>
+            {field.input}
           </div>
         ))}
+      </div>
+    </div>
+  );
+
+  const leftCol: typeof sections = [];
+  const rightCol: typeof sections = [];
+  sections.forEach((s, i) => {
+    if (i % 2 === 0) leftCol.push(s);
+    else rightCol.push(s);
+  });
+
+  return (
+    <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
+      <div className="flex gap-6">
+        <div className="flex-1 flex flex-col gap-6 min-w-0">
+          {leftCol.map((section, i) => (
+            <div key={i}>{renderCard(section)}</div>
+          ))}
+        </div>
+        <div className="flex-1 flex flex-col gap-6 min-w-0">
+          {rightCol.map((section, i) => (
+            <div key={i}>{renderCard(section)}</div>
+          ))}
+        </div>
       </div>
     </div>
   );
