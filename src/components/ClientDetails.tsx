@@ -1,90 +1,90 @@
-import { User, Phone, Mail, MapPin, Calendar, CreditCard, FileText, Star, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { User, CreditCard, FileText, Star, AlertCircle, Calendar } from 'lucide-react';
 import { Customer } from '../types';
 
-interface ClientDetailsViewProps {
+interface ClientDetailsProps {
   client: Customer;
 }
 
-export default function ClientDetailsView({ client }: ClientDetailsViewProps) {
+export default function ClientDetails({ client }: ClientDetailsProps) {
+  const { t } = useTranslation();
   const formatDate = (val?: string) => (val ? new Date(val).toLocaleDateString() : '---');
 
   const sections = [
     {
-      title: 'Identity',
+      title: t('clientForm.identity', 'Identity'),
       icon: <User className="w-4 h-4" />,
       fields: [
-        { label: 'Full Name', value: client.name },
-        { label: 'National ID', value: client.national_id || '---' },
-        { label: 'Phone', value: client.phone },
-        { label: 'Email', value: client.email || '---' },
-        { label: 'Date of Birth', value: formatDate(client.dob) },
+        { label: t('clientForm.fullName', 'Full Name'), value: client.name },
+        { label: t('clientForm.nationalId', 'National ID'), value: client.national_id || client.id_card_number || '---' },
+        { label: t('clientForm.phone', 'Phone'), value: client.phone },
+        { label: t('clientForm.email', 'Email'), value: client.email || '---' },
+        { label: t('clientForm.dob', 'Date of Birth'), value: formatDate(client.dob) },
         { label: 'Nationality', value: client.nationality || '---' },
-        { label: 'Address', value: client.address || '---' },
+        { label: t('clientForm.address', 'Address'), value: client.address || '---' },
       ],
     },
     {
-      title: 'License',
+      title: t('clientForm.license', 'License'),
       icon: <CreditCard className="w-4 h-4" />,
       fields: [
-        { label: 'License Number', value: client.license_number },
-        { label: 'License Issue Date', value: formatDate(client.license_issue) },
-        { label: 'License Expiry', value: formatDate(client.license_expiry) },
-        { label: 'ID Card Number', value: client.id_card_number },
+        { label: t('clientForm.licenseNumber', 'License Number'), value: client.license_number },
+        { label: t('clientForm.licenseIssue', 'License Issue Date'), value: formatDate(client.license_issue) },
+        { label: t('clientForm.licenseExpiry', 'License Expiry'), value: formatDate(client.license_expiry) },
+        { label: 'ID Card Number', value: client.id_card_number || '---' },
       ],
     },
     {
-      title: 'Documents',
+      title: t('clientForm.documents', 'Documents'),
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: 'ID Card Document', value: client.drive_id_photo ? 'Uploaded' : '---' },
-        { label: 'License Front Photo', value: client.drive_license_front_photo ? 'Uploaded' : '---' },
-        { label: 'License Back Photo', value: client.drive_license_back_photo ? 'Uploaded' : '---' },
-        { label: 'Master Contract', value: client.drive_contract_doc_id ? 'Uploaded' : '---' },
+        { label: t('clientForm.idCardDoc', 'ID Card'), value: client.drive_id_photo ? t('common.attached', 'Attached') : '---' },
+        { label: t('clientForm.licenseDoc', 'Driving License'), value: client.drive_license_front_photo ? t('common.attached', 'Attached') : '---' },
+        { label: 'License Back Photo', value: client.drive_license_back_photo ? t('common.attached', 'Attached') : '---' },
+        { label: t('clientForm.allInOneDoc', 'Master Contract'), value: client.drive_contract_doc_id ? t('common.attached', 'Attached') : '---' },
       ],
     },
     {
-      title: 'Status & Notes',
+      title: t('clientForm.notesAndRating', 'Status & Notes'),
       icon: <Star className="w-4 h-4" />,
       fields: [
-        { label: 'Trust Ranking', value: client.trust_rank > 0 ? `${'★'.repeat(client.trust_rank)}${'☆'.repeat(5 - client.trust_rank)}` : '---' },
-        { label: 'Blacklisted', value: client.is_blacklisted ? 'Yes' : 'No' },
+        { label: t('clientForm.rating', 'Trust Ranking'), value: client.trust_rank > 0 ? `${'★'.repeat(client.trust_rank)}${'☆'.repeat(5 - client.trust_rank)}` : '---' },
+        { label: t('crm.modal.markAsBlacklisted', 'Blacklisted'), value: client.is_blacklisted ? 'Yes' : 'No' },
         { label: 'Added On', value: formatDate(client.created_at) },
-        { label: 'Notes', value: client.notes || '---' },
+        { label: t('clientForm.notes', 'Notes'), value: client.notes || '---' },
       ],
     },
   ];
 
   return (
-    <div className="p-1 sm:p-2 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
+    <>
       {client.is_blacklisted && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
+        <div className="mb-6 flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-[12px]">
           <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
           <span className="text-xs font-black uppercase tracking-widest text-red-700">Blacklisted</span>
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
+        <div className="flex flex-wrap gap-6">
         {sections.map((section, sIdx) => (
           <div
             key={sIdx}
-            className="bg-slate-50/80 border border-slate-200/85 rounded-xl p-5 sm:p-6 shadow-sm flex-1 min-w-[320px]"
+            className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm"
+            style={{ flexBasis: '300px', flexShrink: 1, minWidth: '250px', maxWidth: '100%' }}
           >
             {section.title && (
-              <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-900 uppercase pb-3 mb-4 border-b border-slate-200">
-                {section.icon && <span className="shrink-0 text-indigo-600">{section.icon}</span>}
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+                {section.icon && <span className="shrink-0 text-slate-500">{section.icon}</span>}
                 {section.title}
               </div>
             )}
-
-            <div className="flex flex-col gap-0">
+            <div className="flex flex-col gap-4">
               {section.fields.map((field, fIdx) => (
-                <div
-                  key={fIdx}
-                  className="flex items-baseline py-2 border-b border-slate-100 last:border-0 gap-2 w-full min-w-0"
-                >
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap shrink-0">
-                    {field.label} :
+                <div key={fIdx} className="w-full flex flex-col">
+                  <span className="text-xs font-semibold text-slate-600 mb-1">
+                    {field.label}
                   </span>
-                  <span className="text-sm font-semibold text-slate-900 break-words flex-grow min-w-0">
+                  <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
                     {field.value}
                   </span>
                 </div>
@@ -92,7 +92,8 @@ export default function ClientDetailsView({ client }: ClientDetailsViewProps) {
             </div>
           </div>
         ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

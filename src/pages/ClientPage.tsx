@@ -374,24 +374,22 @@ export default function ClientDashboard() {
             setDetailsClient(null);
           }}
           title={
-            <div className="flex justify-between items-center w-full pr-8">
-              <div className="flex items-center gap-3">
-                <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
-                  Client Profile
-                </h2>
-                {detailsClient?.is_blacklisted && (
-                  <span className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest border border-black rounded-sm shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">Blacklisted</span>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleEditFromDetails}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                >
-                  Edit
-                </button>
-              </div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
+                Client Profile
+              </h2>
+              {detailsClient?.is_blacklisted && (
+                <span className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest border border-black rounded-sm shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">Blacklisted</span>
+              )}
             </div>
+          }
+          actions={
+            <button
+              onClick={handleEditFromDetails}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+            >
+              Edit
+            </button>
           }
         >
           {detailsClient && <ClientDetailsView client={detailsClient} />}
