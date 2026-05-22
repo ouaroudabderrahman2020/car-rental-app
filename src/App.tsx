@@ -14,7 +14,7 @@ import Reservations from './pages/ResPage';
 import Archive from './pages/Archive';
 import Fleet from './pages/Fleet';
 import Financials from './pages/Financials';
-import ClientDashboard from './pages/clientpage';
+import ClientDashboard from './pages/ClientPage';
 import Tools from './pages/Tools';
 
 export default function App() {

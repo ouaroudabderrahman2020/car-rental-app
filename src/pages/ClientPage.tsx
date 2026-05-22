@@ -266,7 +266,8 @@ export default function ClientDashboard() {
                     <thead>
                       <tr className="bg-slate-800 text-white text-[10px] md:text-xs font-black uppercase tracking-[0.2em] border-b border-slate-800">
                         <th className="py-3 px-6 text-start">{t('crm.table.customer', 'Customer')}</th>
-                        <th className="py-3 px-4 text-start">{t('crm.table.identity', 'ID / License')}</th>
+                        <th className="py-3 px-4 text-start">{t('crm.table.nationalId', 'ID')}</th>
+                        <th className="py-3 px-4 text-start">{t('crm.table.license', 'License')}</th>
                         <th className="py-3 px-4 text-center">{t('crm.table.reservations', 'Res.')}</th>
                         <th className="py-3 px-4 text-start">{t('crm.table.lastRental', 'Last/Active Rental')}</th>
                         <th className="py-3 px-6 text-end">{t('crm.table.ranking', 'Ranking')}</th>
@@ -275,7 +276,7 @@ export default function ClientDashboard() {
                     <tbody className="divide-y divide-slate-100">
                       {isLoading ? (
                         <tr>
-                          <td colSpan={5} className="py-20 text-center">
+                          <td colSpan={6} className="py-20 text-center">
                             <div className="flex flex-col items-center gap-4">
                               <Activity className="w-8 h-8 text-primary animate-pulse" />
                               <span className="font-bold text-ink/40 uppercase tracking-widest text-fluid-sm">{t('common.loading')}</span>
@@ -286,7 +287,7 @@ export default function ClientDashboard() {
                         <>
                           {filteredClients.length === 0 && (
                             <tr>
-                              <td colSpan={5} className="empty-table-cell">
+                              <td colSpan={6} className="empty-table-cell">
                                 {t('common.noData')}
                               </td>
                             </tr>
@@ -304,16 +305,17 @@ export default function ClientDashboard() {
                                     <div className={`font-black uppercase tracking-tight text-sm ${client.is_blacklisted ? 'text-red-600' : 'text-slate-900 group-hover:text-blue-600'}`}>
                                       {client.name}
                                     </div>
-                                    <div className="text-[11px] font-bold text-slate-400 font-mono">
-                                      {client.phone}
-                                    </div>
                                   </div>
                                 </div>
                               </td>
 
-                              {/* ID / Driver License */}
-                              <td className="py-2.5 px-4 text-start" data-label={t('crm.table.identity')}>
-                                <span className="text-sm font-bold text-slate-800">{client.national_id || client.id_card_number || '---'} / {client.license_number || '---'}</span>
+                              {/* ID */}
+                              <td className="py-2.5 px-4 text-start" data-label={t('crm.table.nationalId', 'ID')}>
+                                <span className="text-sm font-bold text-slate-800">{client.national_id || client.id_card_number || '---'}</span>
+                              </td>
+                              {/* License */}
+                              <td className="py-2.5 px-4 text-start" data-label={t('crm.table.license', 'License')}>
+                                <span className="text-sm font-bold text-slate-800">{client.license_number || '---'}</span>
                               </td>
 
                               {/* Number of Reservations */}
