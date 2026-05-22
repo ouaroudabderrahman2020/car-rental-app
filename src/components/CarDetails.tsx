@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { Settings, FileText, Calendar, Gauge } from 'lucide-react';
+import { Settings, FileText, Calendar, Gauge, ExternalLink } from 'lucide-react';
 import { FormattedCar } from '../types';
+import { getDrivePreviewUrl } from '../lib/gas';
 
 interface CardetailsProps {
   car: FormattedCar;
@@ -28,11 +29,11 @@ export default function Cardetails({ car }: CardetailsProps) {
       title: t('carForm.documents', 'Documents'),
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.uploadImage', 'Vehicle Image'), value: car.image_url ? t('common.attached', 'Attached') : '---' },
-        { label: t('carForm.registrationCard', 'Registration Card'), value: car.registration_card_url ? t('common.attached', 'Attached') : '---' },
-        { label: t('carForm.insurance', 'Insurance'), value: car.insurance_url ? t('common.attached', 'Attached') : '---' },
-        { label: t('carForm.vignette', 'Vignette'), value: car.vignette_url ? t('common.attached', 'Attached') : '---' },
-        { label: t('carForm.pdfLabel', 'Documentation'), value: car.documentation_url ? t('common.attached', 'Attached') : '---' },
+        { label: t('carForm.uploadImage', 'Vehicle Image'), url: car.image_url },
+        { label: t('carForm.registrationCard', 'Registration Card'), url: car.registration_card_url },
+        { label: t('carForm.insurance', 'Insurance'), url: car.insurance_url },
+        { label: t('carForm.vignette', 'Vignette'), url: car.vignette_url },
+        { label: t('carForm.pdfLabel', 'Documentation'), url: car.documentation_url },
       ],
     },
     {
@@ -68,12 +69,11 @@ export default function Cardetails({ car }: CardetailsProps) {
 
   return (
     <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-      <div className="flex flex-wrap gap-6">
+      <div className="columns-2 2xl:columns-3 gap-6" style={{ columnWidth: '300px' }}>
         {sections.map((section, sIdx) => (
           <div
             key={sIdx}
-            className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm"
-            style={{ flexBasis: '300px', flexShrink: 1, minWidth: '250px', maxWidth: '100%' }}
+            className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm break-inside-avoid mb-6"
           >
             {section.title && (
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 pb-3 mb-4 border-b border-slate-200 bg-slate-50 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
@@ -82,14 +82,34 @@ export default function Cardetails({ car }: CardetailsProps) {
               </div>
             )}
             <div className="flex flex-col gap-4">
-              {section.fields.map((field, fIdx) => (
+              {section.fields.map((field: any, fIdx) => (
                 <div key={fIdx} className="w-full flex flex-col">
-                  <span className="text-xs font-semibold text-slate-600 mb-1">
-                    {field.label}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
-                    {field.value}
-                  </span>
+                  {'url' in field ? (
+                    field.url ? (
+                      <a
+                        href={getDrivePreviewUrl(field.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-[12px] px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors"
+                      >
+                        {field.label}
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0 ml-auto" />
+                      </a>
+                    ) : (
+                      <span className="w-full text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
+                        {field.label}
+                      </span>
+                    )
+                  ) : (
+                    <>
+                      <span className="text-xs font-semibold text-slate-600 mb-1">
+                        {field.label}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
+                        {field.value}
+                      </span>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
