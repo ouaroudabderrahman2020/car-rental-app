@@ -21,7 +21,7 @@ export interface ReservationFormData {
   extendedReturnDate: string;
   dailyRate: number;
   prepayment: number;
-  prepaymentType: 'fully_paid' | 'amount';
+  prepaymentType: 'fully_paid' | 'partial';
   depositType: string;
   depositAmount: number;
   odometerOut: string;
@@ -820,7 +820,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                   className="bg-slate-50 border-r border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wider focus:outline-none appearance-none cursor-pointer"
                 >
                   <option value="fully_paid">{t('reservations.form.fullyPaid', 'Fully Paid')}</option>
-                  <option value="amount">{t('reservations.form.partial', 'Partial')}</option>
+                  <option value="partial">{t('reservations.form.partial', 'Partial')}</option>
                 </select>
                 <input
                   type="number"

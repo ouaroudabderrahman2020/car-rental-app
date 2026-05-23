@@ -54,7 +54,7 @@ export default function Reservations() {
     extendedReturnDate: res.extended_return_date?.slice(0, 16) || '',
     dailyRate: res.car?.daily_rate || 0,
     prepayment: res.prepayment || 0,
-    prepaymentType: res.prepayment && res.total_price && res.prepayment >= res.total_price ? 'fully_paid' : 'amount',
+    prepaymentType: res.prepayment && res.total_price && res.prepayment >= res.total_price ? 'fully_paid' : 'partial',
     depositType: res.deposit_type || '',
     depositAmount: res.deposit_amount || 0,
     odometerOut: res.odometer_out?.toString() || '',
