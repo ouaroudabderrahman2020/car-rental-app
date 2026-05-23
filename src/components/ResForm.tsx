@@ -948,9 +948,8 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       <div className="flex flex-col gap-4">
         {section.fields.map((field, fIdx) => {
           const fieldName = (field as any).name as string | undefined;
-          const hasError = fieldName ? !!errors[fieldName] : false;
           return (
-          <div key={fIdx} className={`w-full flex flex-col${hasError ? ' p-0.5 -m-0.5 rounded-[12px] ring-2 ring-red-200' : ''}`}>
+          <div key={fIdx} className="w-full flex flex-col">
             <span className="text-xs font-semibold text-slate-600 mb-1">
               {field.label}
               {(field as any).required && <span className="text-red-500 ml-0.5">*</span>}

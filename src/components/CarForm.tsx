@@ -44,11 +44,11 @@ interface CarFormProps {
 }
 
 const InputField = (props: any) => {
-  const { label: _, ...rest } = props;
+  const { label: _, hasError, ...rest } = props;
   return (
     <input
       {...rest}
-      className={`w-full bg-white border border-slate-200 rounded-[12px] px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-100 disabled:text-slate-500 ${props.className || ''}`}
+      className={`w-full bg-white border rounded-[12px] px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 transition-all disabled:bg-slate-100 disabled:text-slate-500 ${hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-slate-200 focus:border-blue-400 focus:ring-blue-100'} ${props.className || ''}`}
     />
   );
 };
@@ -235,9 +235,9 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       title: `1 ${t('carDetailsView.basicInfo', 'Basic Info')}`,
       icon: <Settings className="w-4 h-4" />,
       fields: [
-        { name: 'brand', label: t('carDetailsView.fields.brand', 'Brand'), required: true, input: <InputField type="text" value={car?.brand || ''} onChange={(e: any) => set('brand', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { name: 'model', label: t('carDetailsView.fields.model', 'Model'), required: true, input: <InputField type="text" value={car?.model || ''} onChange={(e: any) => set('model', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { name: 'plate', label: t('carDetailsView.fields.plate', 'Plate'), required: true, input: <InputField type="text" value={car?.plate || ''} onChange={(e: any) => set('plate', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} className="uppercase" /> },
+        { name: 'brand', label: t('carDetailsView.fields.brand', 'Brand'), required: true, input: <InputField hasError={errors.brand} type="text" value={car?.brand || ''} onChange={(e: any) => set('brand', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { name: 'model', label: t('carDetailsView.fields.model', 'Model'), required: true, input: <InputField hasError={errors.model} type="text" value={car?.model || ''} onChange={(e: any) => set('model', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
+        { name: 'plate', label: t('carDetailsView.fields.plate', 'Plate'), required: true, input: <InputField hasError={errors.plate} type="text" value={car?.plate || ''} onChange={(e: any) => set('plate', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} className="uppercase" /> },
         {
           label: t('carDetailsView.fields.color', 'Color'),
           input: (
@@ -256,7 +256,7 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
           input: (
             <div className="flex items-center gap-1">
               <span className="text-sm font-semibold text-slate-500">$</span>
-              <div className="flex-1"><InputField type="number" value={car?.daily_rate || ''} onChange={(e: any) => set('daily_rate', parseFloat(e.target.value) || 0)} placeholder="0" /></div>
+              <div className="flex-1"><InputField hasError={errors.daily_rate} type="number" value={car?.daily_rate || ''} onChange={(e: any) => set('daily_rate', parseFloat(e.target.value) || 0)} placeholder="0" /></div>
               <span className="text-xs text-slate-500 whitespace-nowrap">{t('common.perDay')}</span>
             </div>
           ),
@@ -337,19 +337,15 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
         </div>
       )}
       <div className="flex flex-col gap-4">
-        {section.fields.map((field, fIdx) => {
-          const fieldName = (field as any).name as string | undefined;
-          const hasError = fieldName ? errors[fieldName] : false;
-          return (
-          <div key={fIdx} className={`w-full flex flex-col${hasError ? ' p-0.5 -m-0.5 rounded-[12px] ring-2 ring-red-200' : ''}`}>
+        {section.fields.map((field, fIdx) => (
+          <div key={fIdx} className="w-full flex flex-col">
             <span className="text-xs font-semibold text-slate-600 mb-1">
               {field.label}
               {(field as any).required && <span className="text-red-500 ml-0.5">*</span>}
             </span>
             {field.input}
           </div>
-          );
-        })}
+        ))}
       </div>
     </div>
   );
