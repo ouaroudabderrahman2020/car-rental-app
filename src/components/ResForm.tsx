@@ -270,7 +270,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       status: effectiveStatus,
       total_price: totalPrice,
       balance_due: balanceDue,
-      prepayment: reservation?.prepayment || 0,
+      prepayment: reservation?.prepaymentType === 'fully_paid' ? totalPrice : (reservation?.prepayment || 0),
       deposit_type: reservation?.depositType || null,
       deposit_amount: reservation?.depositAmount || 0,
       odometer_out: reservation?.odometerOut ? parseInt(reservation.odometerOut, 10) : undefined,
@@ -353,6 +353,25 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     if (!confirmed) return;
     setIsSaving(true);
     try {
+      const { data: docs } = await supabase
+        .from('reservation_documents')
+        .select('file_url')
+        .eq('reservation_id', editId);
+
+      if (docs && docs.length > 0) {
+        const bucket = 'reservation-files';
+        const storagePaths = docs
+          .map(d => {
+            const marker = `/object/public/${bucket}/`;
+            const idx = d.file_url.indexOf(marker);
+            return idx !== -1 ? d.file_url.slice(idx + marker.length) : null;
+          })
+          .filter(Boolean) as string[];
+        if (storagePaths.length > 0) {
+          await supabase.storage.from(bucket).remove(storagePaths);
+        }
+      }
+
       const { error } = await supabase.from('reservations').delete().eq('id', editId);
       if (error) throw error;
       showToast('Reservation deleted', 'success');
@@ -968,8 +987,28 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       fields: [
         { label: 'Starting KM', input: <InputField type="number" value={reservation?.odometerOut || ''} onChange={(e: any) => set('odometerOut', e.target.value)} placeholder="KM" /> },
         { label: 'Arrival KM', input: <InputField type="number" value={reservation?.odometerIn || ''} onChange={(e: any) => set('odometerIn', e.target.value)} placeholder="KM" /> },
-        { label: 'Starting Fuel', input: <InputField type="number" value={reservation?.fuelOut || ''} onChange={(e: any) => set('fuelOut', e.target.value)} placeholder="%" /> },
-        { label: 'Arrival Fuel', input: <InputField type="number" value={reservation?.fuelIn || ''} onChange={(e: any) => set('fuelIn', e.target.value)} placeholder="%" /> },
+        {
+          label: 'Starting Fuel',
+          input: (
+            <SelectField value={reservation?.fuelOut?.toString() || ''} onChange={(e: any) => set('fuelOut', e.target.value)}>
+              <option value="">-- % --</option>
+              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(v => (
+                <option key={v} value={v}>{v}%</option>
+              ))}
+            </SelectField>
+          ),
+        },
+        {
+          label: 'Arrival Fuel',
+          input: (
+            <SelectField value={reservation?.fuelIn?.toString() || ''} onChange={(e: any) => set('fuelIn', e.target.value)}>
+              <option value="">-- % --</option>
+              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(v => (
+                <option key={v} value={v}>{v}%</option>
+              ))}
+            </SelectField>
+          ),
+        },
         {
           label: t('reservations.form.cleaningState', 'Pick-up clean state'),
           input: (
