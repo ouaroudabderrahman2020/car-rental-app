@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check, Archive } from 'lucide-react';
@@ -155,9 +155,6 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           name: reservation.clientName,
           national_id: reservation.clientId,
           license_number: reservation.clientLicense,
-          phone: '',
-          trust_rank: 3,
-          is_blacklisted: false
         }]);
       if (insertError) throw insertError;
       setRegistrationStatus({ type: 'success', message: 'client added' });
@@ -340,6 +337,9 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     }
   };
 
+  const handleSaveRef = useRef(handleSave);
+  handleSaveRef.current = handleSave;
+
   useEffect(() => {
     onActionsReady?.(
       <div className="flex items-center gap-3">
@@ -351,7 +351,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         )}
         {mode === 'edit' ? (
           <button
-            onClick={() => handleSave('Completed')}
+            onClick={() => handleSaveRef.current('Completed')}
             disabled={isSaving}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-emerald-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
           >
@@ -360,7 +360,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           </button>
         ) : (
           <button
-            onClick={() => handleSave('Cancelled')}
+            onClick={() => handleSaveRef.current('Cancelled')}
             disabled={isSaving}
             className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-violet-600 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
           >
@@ -369,7 +369,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           </button>
         )}
         <button
-          onClick={() => handleSave()}
+          onClick={() => handleSaveRef.current()}
           disabled={isSaving}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
         >
@@ -378,7 +378,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         </button>
       </div>
     );
-  }, [handleSave, isSaving, saveError, onActionsReady, mode]);
+  }, [isSaving, saveError, onActionsReady, mode]);
 
   useEffect(() => {
     onSavingChange?.(isSaving);
