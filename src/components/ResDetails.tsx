@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Phone, Calendar, Car as CarIcon, Gauge, Fuel, DollarSign, Star, ClipboardList, CreditCard, Monitor } from 'lucide-react';
+import { User, Search, Car as CarIcon, CreditCard, FileText, Monitor } from 'lucide-react';
 import { FormattedReservation, Car } from '../types';
 
 interface ReservationDetailsViewProps {
@@ -12,11 +12,22 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
   const rate = carInfo.daily_rate || 0;
   const prepay = reservation.prepayment || 0;
   const total = reservation.total_price != null ? reservation.total_price : (Number(rate) * 1);
-  const balance = reservation.balance_due != null ? reservation.balance_due : (total - prepay);
+
+  const getReservationState = () => {
+    const now = new Date();
+    const start = new Date(reservation.start_date);
+    const end = new Date(reservation.end_date);
+    if (!reservation.start_date || !reservation.end_date) return '---';
+    const extEnd = reservation.extended_return_date ? new Date(reservation.extended_return_date) : null;
+    const effectiveEnd = (extEnd && !isNaN(extEnd.getTime())) ? extEnd : end;
+    if (now < start) return 'Reserved';
+    if (now > effectiveEnd) return 'Overdue';
+    return 'Active';
+  };
 
   const sections = [
     {
-      title: '1 Customer',
+      title: '1 Client',
       icon: <User className="w-4 h-4" />,
       fields: [
         { label: 'Name', value: reservation.customer_name || reservation.client },
@@ -25,8 +36,8 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
       ],
     },
     {
-      title: '2 Vehicle & Schedule',
-      icon: <CarIcon className="w-4 h-4" />,
+      title: '2 Schedule',
+      icon: <Search className="w-4 h-4" />,
       fields: [
         { label: 'Car', value: `${carInfo.brand || ''} ${carInfo.model || ''}`.trim() || reservation.carName },
         { label: 'Plate', value: reservation.carPlate || carInfo.plate },
@@ -40,36 +51,37 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
           const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
           return `${Math.floor(hours / 24)}d ${Math.floor(hours % 24)}h`;
         })() },
+        { label: 'Reservation State', value: getReservationState() },
       ],
     },
     {
       title: '3 Billing',
-      icon: <DollarSign className="w-4 h-4" />,
+      icon: <CreditCard className="w-4 h-4" />,
       fields: [
         { label: 'Daily Rate', value: `${rate} DH` },
         { label: 'Total Price', value: `${Number(total).toFixed(2)} DH` },
         { label: 'Prepayment', value: `${Number(prepay).toFixed(2)} DH` },
-        { label: 'Balance Due', value: `${Number(balance).toFixed(2)} DH` },
         { label: 'Deposit Type', value: reservation.deposit_type },
         { label: 'Deposit Amount', value: reservation.deposit_amount ? `${reservation.deposit_amount} DH` : '---' },
-        { label: 'Rating', value: typeof reservation.rating === 'number' && reservation.rating > 0 ? `${'★'.repeat(reservation.rating)}${'☆'.repeat(5 - reservation.rating)}` : '---' },
       ],
     },
     {
-      title: '4 Vehicle Inspection',
-      icon: <Gauge className="w-4 h-4" />,
+      title: '4 Documentation',
+      icon: <FileText className="w-4 h-4" />,
+      fields: [
+        { label: 'Vehicle State', value: reservation.vehicle_state_urls?.length ? `${reservation.vehicle_state_urls.length} file(s)` : '---' },
+        { label: 'Paper Contract', value: reservation.paper_contract_urls?.length ? `${reservation.paper_contract_urls.length} file(s)` : '---' },
+      ],
+    },
+    {
+      title: '5 Vehicle Inspection',
+      icon: <Monitor className="w-4 h-4" />,
       fields: [
         { label: 'Starting KM', value: reservation.odometer_out?.toString() },
         { label: 'Arrival KM', value: reservation.odometer_in?.toString() },
         { label: 'Starting Fuel', value: reservation.fuel_level_out != null ? `${reservation.fuel_level_out}%` : '---' },
         { label: 'Arrival Fuel', value: reservation.fuel_level_in != null ? `${reservation.fuel_level_in}%` : '---' },
-        { label: 'Cleaned Before Return', value: reservation.cleaned_before },
-      ],
-    },
-    {
-      title: '5 Notes & Items',
-      icon: <ClipboardList className="w-4 h-4" />,
-      fields: [
+        { label: 'Pick-up clean state', value: reservation.cleaned_before },
         { label: 'Included Items', value: reservation.included_items?.length ? reservation.included_items.join(', ') : '---' },
         { label: 'Notes', value: reservation.notes || '---' },
       ],
