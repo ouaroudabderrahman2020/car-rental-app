@@ -155,6 +155,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           name: reservation.clientName,
           national_id: reservation.clientId,
           license_number: reservation.clientLicense,
+          trust_rank: 0,
         }]);
       if (insertError) throw insertError;
       setRegistrationStatus({ type: 'success', message: 'client added' });
