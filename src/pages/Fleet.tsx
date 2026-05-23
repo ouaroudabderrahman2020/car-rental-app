@@ -1,5 +1,5 @@
 import { Plus, Car as CarIcon, Loader2, Edit, Check, Trash2 } from 'lucide-react';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import CarForm, { CarFormHandle } from '../components/CarForm';
@@ -33,6 +33,10 @@ export default function Fleet() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const handleFormChange = useCallback((partial: Partial<FormattedCar>) => {
+    setFormData(prev => ({ ...prev, ...partial }));
+  }, []);
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'USD' }).format(val);
@@ -312,7 +316,7 @@ export default function Fleet() {
             </>
           }
         >
-          <CarForm ref={carFormRef} car={formData} onChange={setFormData} />
+          <CarForm ref={carFormRef} car={formData} onChange={handleFormChange} />
         </BaseModal>
         <BaseModal
           isOpen={isDetailsOpen}

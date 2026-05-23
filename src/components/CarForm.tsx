@@ -1,4 +1,4 @@
-import React, { useRef, useLayoutEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../contexts/NotificationContext';
 import { Settings, FileText, Calendar, Gauge, Upload, Trash2 } from 'lucide-react';
@@ -144,7 +144,7 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
   const [selectedService, setSelectedService] = React.useState(serviceOptions[0].value);
 
   const set = (field: string, value: any) => {
-    onChange({ ...(car || {}), [field]: value } as Partial<FormattedCar>);
+    onChange({ [field]: value } as Partial<FormattedCar>);
     setErrors(prev => {
       if (!prev[field]) return prev;
       const next = { ...prev };
@@ -324,57 +324,14 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
     </div>
   );
 
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [colLeft, setColLeft] = useState<typeof sections>([]);
-  const [colRight, setColRight] = useState<typeof sections>([]);
-  const [layoutReady, setLayoutReady] = useState(false);
-
-  useLayoutEffect(() => {
-    if (layoutReady) return;
-    const heights = cardRefs.current.map(r => r?.offsetHeight || 0);
-    if (heights.some(h => h === 0)) return;
-    const left: typeof sections = [];
-    const right: typeof sections = [];
-    let leftH = 0, rightH = 0;
-    sections.forEach((s, i) => {
-      if (i === 0) { left.push(s); leftH += heights[i]; }
-      else if (i === 1) { right.push(s); rightH += heights[i]; }
-      else if (leftH <= rightH) { left.push(s); leftH += heights[i]; }
-      else { right.push(s); rightH += heights[i]; }
-    });
-    setColLeft(left);
-    setColRight(right);
-    setLayoutReady(true);
-  }, [layoutReady, sections]);
-
-  if (!layoutReady) {
-    return (
-      <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-        <div className="flex gap-6">
-          <div className="flex-1 flex flex-col gap-6 min-w-0">
-            {sections.map((section, i) => (
-              <div key={i} ref={el => cardRefs.current[i] = el}>{renderCard(section)}</div>
-            ))}
-          </div>
-          <div className="flex-1 flex flex-col gap-6 min-w-0" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-      <div className="flex gap-6">
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
-          {colLeft.map((section, i) => (
-            <div key={i}>{renderCard(section)}</div>
-          ))}
-        </div>
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
-          {colRight.map((section, i) => (
-            <div key={i}>{renderCard(section)}</div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {sections.map((section, i) => (
+          <div key={i} className="w-full">
+            {renderCard(section)}
+          </div>
+        ))}
       </div>
     </div>
   );
