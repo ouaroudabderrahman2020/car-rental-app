@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, FileText, Calendar, Star, Upload, Trash2, RotateCcw } from 'lucide-react';
 import { Client } from '../types';
@@ -94,7 +94,7 @@ const DocField = ({ docType, label, value, onChange }: {
   );
 };
 
-const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client, onChange }, ref) => {
+const ClientForm = forwardRef<ClientFormHandle, ClientFormProps>(({ client, onChange }, ref) => {
   const { t } = useTranslation();
   const { showToast } = useNotification();
   const [errors, setErrors] = React.useState<Record<string, boolean>>({});
@@ -116,7 +116,7 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
 
   const set = (field: string, value: any) => {
     if (errors[field]) setErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
-    onChange({ ...(client || {}), [field]: value } as Partial<Client>);
+    onChange({ [field]: value } as Partial<Client>);
   };
 
   const getDoc = (type: string) => (client?.documents || []).find(d => d.doc_type === type);
@@ -237,57 +237,14 @@ const ClientForm = React.forwardRef<ClientFormHandle, ClientFormProps>(({ client
     </div>
   );
 
-  const cardRefs = React.useRef<(HTMLDivElement | null)[]>([]);
-  const [colLeft, setColLeft] = React.useState<typeof sections>([]);
-  const [colRight, setColRight] = React.useState<typeof sections>([]);
-  const [layoutReady, setLayoutReady] = React.useState(false);
-
-  React.useLayoutEffect(() => {
-    if (layoutReady) return;
-    const heights = cardRefs.current.map(r => r?.offsetHeight || 0);
-    if (heights.some(h => h === 0)) return;
-    const left: typeof sections = [];
-    const right: typeof sections = [];
-    let leftH = 0, rightH = 0;
-    sections.forEach((s, i) => {
-      if (i === 0) { left.push(s); leftH += heights[i]; }
-      else if (i === 1) { right.push(s); rightH += heights[i]; }
-      else if (leftH <= rightH) { left.push(s); leftH += heights[i]; }
-      else { right.push(s); rightH += heights[i]; }
-    });
-    setColLeft(left);
-    setColRight(right);
-    setLayoutReady(true);
-  }, [layoutReady, sections]);
-
-  if (!layoutReady) {
-    return (
-      <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-        <div className="flex gap-6">
-          <div className="flex-1 flex flex-col gap-6 min-w-0">
-            {sections.map((section, i) => (
-              <div key={i} ref={el => cardRefs.current[i] = el}>{renderCard(section)}</div>
-            ))}
-          </div>
-          <div className="flex-1 flex flex-col gap-6 min-w-0" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-      <div className="flex gap-6">
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
-          {colLeft.map((section, i) => (
-            <div key={i}>{renderCard(section)}</div>
-          ))}
-        </div>
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
-          {colRight.map((section, i) => (
-            <div key={i}>{renderCard(section)}</div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {sections.map((section, i) => (
+          <div key={i} className="w-full">
+            {renderCard(section)}
+          </div>
+        ))}
       </div>
     </div>
   );

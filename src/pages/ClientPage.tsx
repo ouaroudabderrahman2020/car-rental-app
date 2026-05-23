@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity, FileText, Loader2, Check, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -31,6 +31,10 @@ export default function ClientDashboard() {
   const [formData, setFormData] = useState<Partial<Client>>({});
   const [isSaving, setIsSaving] = useState(false);
   const formRef = React.useRef<ClientFormHandle>(null);
+
+  const handleClientFormChange = useCallback((partial: Partial<Client>) => {
+    setFormData(prev => ({ ...prev, ...partial }));
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -433,7 +437,7 @@ export default function ClientDashboard() {
             </>
           }
         >
-          <ClientForm ref={formRef} client={formData} onChange={setFormData} />
+          <ClientForm ref={formRef} client={formData} onChange={handleClientFormChange} />
         </BaseModal>
       </div>
     </Layout>

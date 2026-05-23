@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check, Archive } from 'lucide-react';
@@ -963,43 +963,17 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     </div>
   );
 
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [colLeft, setColLeft] = useState<typeof sections>([]);
-  const [colRight, setColRight] = useState<typeof sections>([]);
-  const [layoutReady, setLayoutReady] = useState(false);
 
-  useLayoutEffect(() => {
-    if (layoutReady) return;
-    const heights = cardRefs.current.map(r => r?.offsetHeight || 0);
-    if (heights.some(h => h === 0)) return;
-    const left: typeof sections = [];
-    const right: typeof sections = [];
-    let leftH = 0, rightH = 0;
-    sections.forEach((s, i) => {
-      if (i === 0) { left.push(s); leftH += heights[i]; }
-      else if (i === 1) { right.push(s); rightH += heights[i]; }
-      else if (leftH <= rightH) { left.push(s); leftH += heights[i]; }
-      else { right.push(s); rightH += heights[i]; }
-    });
-    setColLeft(left);
-    setColRight(right);
-    setLayoutReady(true);
-  }, [layoutReady, sections]);
 
   return (
     <>
     <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-      <div className="flex gap-6">
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
-          {(layoutReady ? colLeft : sections).map((section, i) => (
-            <div key={i} ref={!layoutReady ? (el => { cardRefs.current[i] = el; }) : undefined}>{renderCard(section)}</div>
-          ))}
-        </div>
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
-          {layoutReady && colRight.map((section, i) => (
-            <div key={i}>{renderCard(section)}</div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {sections.map((section, i) => (
+          <div key={i} className="w-full">
+            {renderCard(section)}
+          </div>
+        ))}
       </div>
     </div>
       {isCarSelectorOpen && (
