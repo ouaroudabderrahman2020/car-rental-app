@@ -49,7 +49,7 @@ export default function ClientDashboard() {
       // but let's try fetching companies/customers first.
       const { data: customersData, error: customersError } = await supabase
         .from('clients')
-        .select('*, client_documents(*)');
+        .select('*, documents:client_documents(*)');
 
       const { data: resData, error: resError } = await supabase
         .from('reservations')
@@ -57,13 +57,9 @@ export default function ClientDashboard() {
 
       if (customersError) {
         console.error('Customers fetch error:', customersError);
-        // Fallback or seed some data if empty
         setClients([]);
       } else {
-        setClients((customersData || []).map((c: any) => ({
-          ...c,
-          documents: c.client_documents || [],
-        })));
+        setClients(customersData || []);
       }
 
       if (resError) throw resError;
@@ -208,7 +204,10 @@ export default function ClientDashboard() {
         for (const row of newDocRows) {
           const { error: docError } = await supabase
             .from('client_documents')
-            .insert([{ ...row, client_id: savedClient.id }]);
+            .upsert(
+              { ...row, client_id: savedClient.id, updated_at: new Date().toISOString() },
+              { onConflict: 'client_id,doc_type', ignoreDuplicates: false }
+            );
           if (docError) throw new Error(`Failed to save document ${row.doc_type}: ${docError.message}`);
         }
       }
