@@ -352,11 +352,15 @@ export default function Fleet() {
             <div className="w-full flex flex-col gap-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {loading && fleetData.length === 0 ? (
-                  Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="bg-white border-2 border-black flex flex-col items-center justify-center h-[400px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                      <div className="flex flex-col items-center gap-4">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                        <span className="font-black uppercase tracking-[0.3em] text-midnight-ink text-xs">LOADING...</span>
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="rounded-2xl border border-slate-200 flex flex-col overflow-hidden animate-pulse">
+                      <div className="aspect-video bg-slate-200" />
+                      <div className="p-5 flex flex-col gap-3">
+                        <div className="h-4 bg-slate-200 rounded w-3/4" />
+                        <div className="h-3 bg-slate-200 rounded w-1/3" />
+                        <div className="mt-2 pt-4 border-t border-slate-100">
+                          <div className="h-4 bg-slate-200 rounded w-1/2" />
+                        </div>
                       </div>
                     </div>
                   ))
