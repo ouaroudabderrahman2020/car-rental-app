@@ -1033,15 +1033,15 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
   ];
 
   const renderCard = (section: typeof sections[0]) => (
-    <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
+    <div className="bg-white border border-slate-200 rounded-[16px] shadow-sm overflow-hidden">
       {section.title && (
-        <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+        <div className="flex items-center gap-2 text-xs font-semibold text-white bg-sky-600 px-5 py-3.5">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
           {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
           <span>{section.title.split(' ').slice(1).join(' ')}</span>
         </div>
       )}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 p-5">
         {section.fields.map((field, fIdx) => {
           const fieldName = (field as any).name as string | undefined;
           return (
@@ -1063,12 +1063,17 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
   return (
     <>
     <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {sections.map((section, i) => (
-          <div key={i} className="w-full">
-            {renderCard(section)}
-          </div>
-        ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="flex flex-col gap-6">
+          {[sections[0], sections[2], sections[4]].map((section, i) => (
+            <div key={i}>{renderCard(section)}</div>
+          ))}
+        </div>
+        <div className="flex flex-col gap-6">
+          {[sections[1], sections[3]].map((section, i) => (
+            <div key={i}>{renderCard(section)}</div>
+          ))}
+        </div>
       </div>
     </div>
       {isCarSelectorOpen && (
