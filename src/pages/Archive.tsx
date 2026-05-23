@@ -69,6 +69,8 @@ export default function Archive() {
     reservationStateColor: '',
     selectedCarId: res.car_id || null,
     reservationStatus: res.status,
+    vehicleStateUrls: res.vehicle_state_urls || [],
+    paperContractUrls: res.paper_contract_urls || [],
   });
 
   const fetchArchive = async () => {

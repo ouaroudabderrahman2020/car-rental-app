@@ -74,17 +74,17 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
         const pcUrls = reservation.paper_contract_urls || [];
         const items: { label: string; url?: string }[] = [];
         if (vsUrls.length === 0) {
-          items.push({ label: 'Vehicle State' });
+          items.push({ label: 'Vehicle State (Before/After)' });
         } else {
           vsUrls.forEach((url, i) => {
-            items.push({ label: `Vehicle State${vsUrls.length > 1 ? ` ${i + 1}` : ''}`, url });
+            items.push({ label: `Vehicle State (Before/After)${vsUrls.length > 1 ? ` ${i + 1}` : ''}`, url });
           });
         }
         if (pcUrls.length === 0) {
-          items.push({ label: 'Paper Contract' });
+          items.push({ label: 'Paper Contract PDF' });
         } else {
           pcUrls.forEach((url, i) => {
-            items.push({ label: `Paper Contract${pcUrls.length > 1 ? ` ${i + 1}` : ''}`, url });
+            items.push({ label: `Paper Contract PDF${pcUrls.length > 1 ? ` ${i + 1}` : ''}`, url });
           });
         }
         return items;

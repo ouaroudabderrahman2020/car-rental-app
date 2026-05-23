@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check, Archive, Trash2 } from 'lucide-react';
+import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check, Archive, Trash2, ExternalLink } from 'lucide-react';
 import { useNotification } from '../contexts/NotificationContext';
 import { supabase } from '../lib/supabase';
 
@@ -41,6 +41,8 @@ export interface ReservationFormData {
   reservationStateColor: string;
   selectedCarId: string | null;
   reservationStatus?: string;
+  vehicleStateUrls?: string[];
+  paperContractUrls?: string[];
 }
 
 interface ResFormProps {
@@ -872,6 +874,16 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           label: t('reservations.form.vehicleState', 'Vehicle State (Before/After)'),
           input: (
             <div className="flex flex-col gap-2">
+              {reservation?.vehicleStateUrls && reservation.vehicleStateUrls.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-1">
+                  {reservation.vehicleStateUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-[12px] px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors">
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                      {t('reservations.form.vehicleState', 'Vehicle State (Before/After)')}{reservation.vehicleStateUrls!.length > 1 ? ` ${i + 1}` : ''}
+                    </a>
+                  ))}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -907,6 +919,16 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           label: t('reservations.form.paperContract', 'Paper Contract PDF'),
           input: (
             <div className="flex flex-col gap-2">
+              {reservation?.paperContractUrls && reservation.paperContractUrls.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-1">
+                  {reservation.paperContractUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-[12px] px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors">
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                      {t('reservations.form.paperContract', 'Paper Contract PDF')}{reservation.paperContractUrls!.length > 1 ? ` ${i + 1}` : ''}
+                    </a>
+                  ))}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => {
