@@ -60,7 +60,10 @@ export default function ClientDashboard() {
         // Fallback or seed some data if empty
         setClients([]);
       } else {
-        setClients(customersData || []);
+        setClients((customersData || []).map((c: any) => ({
+          ...c,
+          documents: c.client_documents || [],
+        })));
       }
 
       if (resError) throw resError;
@@ -157,11 +160,10 @@ export default function ClientDashboard() {
         let fileUrl = (doc as any).file_url;
         if ((doc as any).file_data) {
           const url = await uploadFile('client-docs', (doc as any).file_data.replace(/^data:.*?;base64,/, ''), (doc as any).file_name || `${doc.doc_type}.pdf`, (doc as any).mime_type || 'image/png', folderName);
-          if (url) fileUrl = url;
+          if (!url) throw new Error(`Upload failed for ${(doc as any).doc_type}: ${(doc as any).file_name}`);
+          fileUrl = url;
         }
-        if (fileUrl) {
-          newDocRows.push({ doc_type: doc.doc_type, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
-        }
+        newDocRows.push({ doc_type: doc.doc_type, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
       }
 
       const payload = {
@@ -203,7 +205,12 @@ export default function ClientDashboard() {
       }
 
       if (newDocRows.length > 0) {
-        await supabase.from('client_documents').insert(newDocRows.map(r => ({ ...r, client_id: savedClient.id })));
+        for (const row of newDocRows) {
+          const { error: docError } = await supabase
+            .from('client_documents')
+            .insert([{ ...row, client_id: savedClient.id }]);
+          if (docError) throw new Error(`Failed to save document ${row.doc_type}: ${docError.message}`);
+        }
       }
 
       setStatus('Action Completed', 'success');
