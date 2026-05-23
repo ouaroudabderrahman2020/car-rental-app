@@ -1,6 +1,7 @@
 import React from 'react';
-import { User, Search, Car as CarIcon, CreditCard, FileText, Monitor } from 'lucide-react';
+import { User, Search, Car as CarIcon, CreditCard, FileText, Monitor, ExternalLink } from 'lucide-react';
 import { FormattedReservation, Car } from '../types';
+
 
 interface ReservationDetailsViewProps {
   reservation: FormattedReservation;
@@ -68,10 +69,26 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
     {
       title: '4 Documentation',
       icon: <FileText className="w-4 h-4" />,
-      fields: [
-        { label: 'Vehicle State', value: reservation.vehicle_state_urls?.length ? `${reservation.vehicle_state_urls.length} file(s)` : '---' },
-        { label: 'Paper Contract', value: reservation.paper_contract_urls?.length ? `${reservation.paper_contract_urls.length} file(s)` : '---' },
-      ],
+      fields: (() => {
+        const vsUrls = reservation.vehicle_state_urls || [];
+        const pcUrls = reservation.paper_contract_urls || [];
+        const items: { label: string; url?: string }[] = [];
+        if (vsUrls.length === 0) {
+          items.push({ label: 'Vehicle State' });
+        } else {
+          vsUrls.forEach((url, i) => {
+            items.push({ label: `Vehicle State${vsUrls.length > 1 ? ` ${i + 1}` : ''}`, url });
+          });
+        }
+        if (pcUrls.length === 0) {
+          items.push({ label: 'Paper Contract' });
+        } else {
+          pcUrls.forEach((url, i) => {
+            items.push({ label: `Paper Contract${pcUrls.length > 1 ? ` ${i + 1}` : ''}`, url });
+          });
+        }
+        return items;
+      })(),
     },
     {
       title: '5 Vehicle Inspection',
@@ -97,19 +114,39 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
           <span>{section.title.split(' ').slice(1).join(' ')}</span>
         </div>
       )}
-      <div className="flex flex-col gap-0">
-        {section.fields.map((field, fIdx) => (
-          <div
-            key={fIdx}
-            className="flex items-baseline py-2 border-b border-slate-100 last:border-0 gap-2 w-full min-w-0"
-          >
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap shrink-0">
-              {field.label} :
-            </span>
-            <span className="text-sm font-semibold text-slate-900 break-words flex-grow min-w-0">
-              {field.value}
-            </span>
-          </div>
+      <div className="flex flex-col gap-2">
+        {section.fields.map((field: any, fIdx) => (
+          'url' in field ? (
+            <div key={fIdx} className="w-full">
+              {field.url ? (
+                <a
+                  href={field.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-[12px] px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors"
+                >
+                  {field.label}
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0 ml-auto" />
+                </a>
+              ) : (
+                <span className="w-full text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
+                  {field.label}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div
+              key={fIdx}
+              className="flex items-baseline py-2 border-b border-slate-100 last:border-0 gap-2 w-full min-w-0"
+            >
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 whitespace-nowrap shrink-0">
+                {field.label} :
+              </span>
+              <span className="text-sm font-semibold text-slate-900 break-words flex-grow min-w-0">
+                {field.value}
+              </span>
+            </div>
+          )
         ))}
       </div>
     </div>

@@ -133,6 +133,12 @@ export default function Reservations() {
               state: stateLabel,
               statusColor,
               price: `$${parseFloat(String(r.total_price || 0)).toFixed(2)}`,
+              vehicle_state_urls: (r.reservation_documents || [])
+                .filter((d: any) => d.doc_type === 'vehicle_state')
+                .map((d: any) => d.file_url),
+              paper_contract_urls: (r.reservation_documents || [])
+                .filter((d: any) => d.doc_type === 'paper_contract')
+                .map((d: any) => d.file_url),
             };
           });
 

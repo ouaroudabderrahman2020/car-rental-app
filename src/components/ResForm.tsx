@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check, Archive } from 'lucide-react';
+import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check, Archive, Trash2 } from 'lucide-react';
 import { useNotification } from '../contexts/NotificationContext';
 import { supabase } from '../lib/supabase';
-import { getDriveImageUrl } from '../lib/gas';
+
 import { fileToBase64 } from '../lib/utils';
 import { uploadFile } from '../lib/storage';
 import { useReservations } from '../hooks/useReservations';
@@ -87,7 +87,7 @@ const TextareaField = (props: any) => {
 
 export default function ResForm({ reservation, onChange, onSaved, mode = 'add', editId = null, onActionsReady, onSavingChange }: ResFormProps) {
   const { t } = useTranslation();
-  const { showToast } = useNotification();
+  const { showToast, confirm: showConfirm } = useNotification();
   const [allCustomers, setAllCustomers] = useState<any[]>([]);
   const [isClientSearchListActive, setIsClientSearchListActive] = useState(false);
 
@@ -258,6 +258,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
 
     const baseData: any = {
       car_id: reservation?.selectedCarId || undefined,
+      client_id: selectedCustomer?.id || null,
       customer_name: reservation?.clientName || '',
       customer_national_id: reservation?.clientId || null,
       customer_license: reservation?.clientLicense || null,
@@ -338,6 +339,29 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     }
   };
 
+  const handleDelete = async () => {
+    if (!editId) return;
+    const confirmed = await showConfirm({
+      title: 'Delete Reservation',
+      message: 'Are you sure you want to delete this reservation? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      type: 'danger',
+    });
+    if (!confirmed) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('reservations').delete().eq('id', editId);
+      if (error) throw error;
+      showToast('Reservation deleted', 'success');
+      onSaved?.();
+    } catch (err: any) {
+      showToast(err.message || 'Error deleting reservation', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSaveRef = useRef(handleSave);
   handleSaveRef.current = handleSave;
 
@@ -351,14 +375,24 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           </div>
         )}
         {mode === 'edit' ? (
-          <button
-            onClick={() => handleSaveRef.current('Completed')}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-emerald-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
-          >
-            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-            {isSaving ? 'Saving...' : 'Complete'}
-          </button>
+          <>
+            <button
+              onClick={handleDelete}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-red-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              {isSaving ? 'Deleting...' : 'Delete'}
+            </button>
+            <button
+              onClick={() => handleSaveRef.current('Completed')}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-emerald-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+              {isSaving ? 'Saving...' : 'Complete'}
+            </button>
+          </>
         ) : (
           <button
             onClick={() => handleSaveRef.current('Cancelled')}
@@ -1013,7 +1047,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                       <img
                         alt={car.model}
                         className="w-full h-full object-contain mix-blend-multiply"
-                        src={getDriveImageUrl(((car.car_documents || []).find((d: any) => d.doc_type === 'image')?.file_url))}
+                        src={((car.car_documents || []).find((d: any) => d.doc_type === 'image')?.file_url)}
                         referrerPolicy="no-referrer"
                       />
                     ) : (
