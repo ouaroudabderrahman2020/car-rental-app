@@ -284,6 +284,10 @@ export default function Fleet() {
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
+            if (modalMode === 'edit' && selectedCar) {
+              setDetailsCar(selectedCar);
+              setIsDetailsOpen(true);
+            }
             setSelectedCar(null);
             setFormData({});
           }}
