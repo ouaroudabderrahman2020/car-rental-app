@@ -68,42 +68,43 @@ export default function Cardetails({ car }: CardetailsProps) {
   ];
 
   const renderCard = (section: typeof sections[0]) => (
-    <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
+    <div className="bg-white border border-slate-200 rounded-[16px] overflow-hidden shadow-sm">
       {section.title && (
-        <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
+        <div className="flex items-center gap-2 text-xs font-semibold text-white bg-sky-600 px-5 py-3.5">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
           {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
           <span>{section.title.split(' ').slice(1).join(' ')}</span>
         </div>
       )}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col">
         {section.fields.map((field: any, fIdx) => (
-          <div key={fIdx} className="w-full flex flex-col">
+          <div key={fIdx} className={`w-full flex items-start gap-2.5 px-5 py-3 ${fIdx % 2 === 0 ? 'bg-slate-50/70' : ''}`}>
+            <span className="mt-[5px] w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
             {'url' in field ? (
               field.url ? (
                 <a
                   href={getDrivePreviewUrl(field.url)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full text-sm font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-[12px] px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors"
+                  className="flex-1 text-sm font-semibold text-blue-700 inline-flex items-center gap-2 hover:underline"
                 >
                   {field.label}
                   <ExternalLink className="w-3.5 h-3.5 shrink-0 ml-auto" />
                 </a>
               ) : (
-                <span className="w-full text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
+                <span className="flex-1 text-sm font-semibold text-slate-900">
                   {field.label}
                 </span>
               )
             ) : (
-              <>
-                <span className="text-xs font-semibold text-slate-600 mb-1">
+              <div className="flex-1 flex items-baseline justify-between gap-4">
+                <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
                   {field.label}
                 </span>
-                <span className="text-sm font-semibold text-slate-900 bg-white border border-slate-200 rounded-[12px] px-3 py-1.5 inline-block">
+                <span className="text-sm font-bold text-slate-900 text-right">
                   {field.value}
                 </span>
-              </>
+              </div>
             )}
           </div>
         ))}
@@ -113,12 +114,17 @@ export default function Cardetails({ car }: CardetailsProps) {
 
   return (
     <div className="p-6 max-h-[calc(100vh-180px)] overflow-y-auto black-scrollbar">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {sections.map((section, i) => (
-          <div key={i} className="w-full">
-            {renderCard(section)}
-          </div>
-        ))}
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex-1 flex flex-col gap-6">
+          {[sections[0], sections[2], sections[3]].map((section, i) => (
+            <div key={i}>{renderCard(section)}</div>
+          ))}
+        </div>
+        <div className="flex-1 flex flex-col gap-6">
+          {[sections[1]].map((section, i) => (
+            <div key={i}>{renderCard(section)}</div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -86,7 +86,7 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isImage = docType === 'image';
-  const imgSrc = value?.file_data || value?.file_url;
+  const fileSrc = value?.file_data || value?.file_url;
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
@@ -111,19 +111,32 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
       {isImage ? (
         value ? (
           <div className="relative inline-flex">
-            <div
-              onClick={() => inputRef.current?.click()}
-              className="inline-flex h-32 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 cursor-pointer hover:border-blue-500 hover:bg-blue-100 transition-colors overflow-hidden"
+            <a
+              href={fileSrc}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-32 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 overflow-hidden"
             >
-              <img src={imgSrc} alt={value.file_name || label} className="h-full w-auto object-contain" />
+              <img src={fileSrc} alt={value.file_name || label} className="h-full w-auto object-contain" />
+            </a>
+            <div className="absolute top-0 left-0 right-0 flex justify-between p-1 opacity-0 hover:opacity-100 transition-opacity">
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); inputRef.current?.click(); }}
+                className="p-1 bg-white/80 rounded-full hover:bg-white shadow-sm"
+                title="Replace"
+              >
+                <Upload className="w-3 h-3 text-slate-600" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); onChange(null); }}
+                className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-sm"
+                title="Delete"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onChange(null); }}
-              className="absolute -top-1.5 -right-1.5 p-0.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
           </div>
         ) : (
           <div
@@ -137,16 +150,21 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
         <div className="flex flex-col gap-2 w-full">
           {value ? (
             <div className="flex items-center justify-between px-3 h-10 bg-blue-50 border border-blue-200 rounded-[12px]">
-              <div className="flex items-center gap-2 min-w-0">
+              <a
+                href={fileSrc}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 min-w-0 flex-1 hover:underline"
+              >
                 <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                 <span className="text-[10px] font-bold text-blue-900 truncate">
                   {value.file_name || label}
                 </span>
-              </div>
+              </a>
               <button
                 type="button"
                 onClick={() => onChange(null)}
-                className="p-1.5 hover:bg-red-100 rounded-full text-red-500 transition-colors"
+                className="p-1.5 hover:bg-red-100 rounded-full text-red-500 transition-colors shrink-0"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
