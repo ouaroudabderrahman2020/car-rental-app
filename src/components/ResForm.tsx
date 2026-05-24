@@ -1082,7 +1082,14 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           onClose={() => setIsCarSelectorOpen(false)}
           title={t('reservations.form.selectCar', 'Select Car')}
         >
-          <div className="p-6">
+          <div className="p-6 relative">
+            <button
+              onClick={() => setIsCarSelectorOpen(false)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all z-10"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {availableCars.map(car => (
                 <div
