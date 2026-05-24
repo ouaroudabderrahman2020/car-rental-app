@@ -427,16 +427,14 @@ export default function Fleet() {
                         )}
                       </div>
 
-                      <div className="p-5 grow flex flex-col justify-between">
-                        <div className="space-y-1">
-                          <h3 className="font-bold text-sm text-slate-900 leading-tight truncate">
-                            {car.name}
-                          </h3>
-                          <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
-                            {car.plate}
-                          </div>
+                      <div className="p-5 grow flex flex-col justify-center gap-3">
+                        <h3 className="font-bold text-sm text-slate-900 leading-tight truncate">
+                          {car.name}
+                        </h3>
+                        <div className="inline-block self-start px-2 py-0.5 bg-sky-100 border border-sky-300 rounded-lg text-[15px] font-black text-black tracking-[0.15em] font-mono antialiased">
+                          {car.plate}
                         </div>
-                        <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                        <div className="flex items-center justify-between">
                           <span className="text-sm font-black text-black">
                             ${car.daily_rate} / <span className="text-[10px] text-slate-400 font-bold">{t('common.day', 'DAY')}</span>
                           </span>
