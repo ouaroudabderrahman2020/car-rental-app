@@ -1,5 +1,5 @@
-import { Plus, Loader2, Edit } from 'lucide-react';
-import { useState, useEffect, ReactNode } from 'react';
+import { Plus, Loader2, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, ReactNode, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import BaseModal from '../components/BaseModal';
@@ -10,6 +10,8 @@ import Section2 from '../components/Section2';
 import { supabase } from '../lib/supabase';
 import { FormattedReservation } from '../types';
 import { RESERVATION_STATUSES } from '../constants';
+
+const PAGE_SIZE = 25;
 
 const defaultFormData: ReservationFormData = {
   clientSearchQuery: '',
@@ -43,6 +45,8 @@ export default function Reservations() {
   const [editReservationId, setEditReservationId] = useState<string | null>(null);
   const [saveActions, setSaveActions] = useState<ReactNode>(null);
   const [isResSaving, setIsResSaving] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const mapReservationToForm = (res: FormattedReservation): ReservationFormData => ({
     clientSearchQuery: res.customer_name || '',
@@ -78,80 +82,90 @@ export default function Reservations() {
     paperContractUrls: res.paper_contract_urls || [],
   });
 
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async (pageNum = 0) => {
     setLoading(true);
     try {
-        const { data, error } = await supabase
-          .from('reservations')
-          .select(`
-            *,
-            car:cars (
-              brand,
-              model,
-              plate,
-              daily_rate,
-              odometer,
-              essentials
-            ),
-            reservation_documents (*)
-          `)
-          .order('created_at', { ascending: false });
+      const from = pageNum * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { count } = await supabase
+        .from('reservations')
+        .select('*', { count: 'exact', head: true })
+        .not('status', 'in', '("Completed","Cancelled")');
+      setTotalCount(count || 0);
+
+      const { data, error } = await supabase
+        .from('reservations')
+        .select(`
+          *,
+          car:cars (
+            brand,
+            model,
+            plate,
+            daily_rate,
+            odometer,
+            essentials
+          ),
+          reservation_documents (*)
+        `)
+        .not('status', 'in', '("Completed","Cancelled")')
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
 
       if (data) {
-        const active: FormattedReservation[] = data
-          .filter(r => r.status !== 'Completed' && r.status !== 'Cancelled')
-          .map(r => {
-            const now = new Date();
-            const start = new Date(r.start_date);
-            const endDate = new Date(r.end_date);
-            const extEnd = r.extended_return_date ? new Date(r.extended_return_date) : null;
-            const end = (extEnd && !isNaN(extEnd.getTime())) ? extEnd : endDate;
+        const active: FormattedReservation[] = data.map(r => {
+          const now = new Date();
+          const start = new Date(r.start_date);
+          const endDate = new Date(r.end_date);
+          const extEnd = r.extended_return_date ? new Date(r.extended_return_date) : null;
+          const end = (extEnd && !isNaN(extEnd.getTime())) ? extEnd : endDate;
 
-            let stateLabel = 'measuring...';
-            let statusColor = 'bg-slate-200 text-slate-700';
-            if (r.start_date && (r.end_date || r.extended_return_date)) {
-              if (now < start) {
-                stateLabel = 'Reserved';
-                statusColor = 'bg-sky-400 text-white';
-              } else if (now > end) {
-                stateLabel = 'Overdue';
-                statusColor = 'bg-red-600 text-white';
-              } else {
-                stateLabel = 'Active';
-                statusColor = 'bg-primary text-white';
-              }
+          let stateLabel = 'measuring...';
+          let statusColor = 'bg-slate-200 text-slate-700';
+          if (r.start_date && (r.end_date || r.extended_return_date)) {
+            if (now < start) {
+              stateLabel = 'Reserved';
+              statusColor = 'bg-sky-400 text-white';
+            } else if (now > end) {
+              stateLabel = 'Overdue';
+              statusColor = 'bg-red-600 text-white';
+            } else {
+              stateLabel = 'Active';
+              statusColor = 'bg-primary text-white';
             }
+          }
 
-            return {
-              ...r,
-              id_short: r.id.slice(0, 8).toUpperCase(),
-              client: r.customer_name,
-              carName: r.car ? `${r.car.brand} ${r.car.model}` : t('common.noData'),
-              carPlate: r.car?.plate || '—',
-              pickup: new Date(r.start_date).toLocaleDateString(i18n.language),
-              return: new Date(r.end_date).toLocaleDateString(i18n.language),
-              state: stateLabel,
-              statusColor,
-              price: `$${parseFloat(String(r.total_price || 0)).toFixed(2)}`,
-              vehicle_state_urls: (r.reservation_documents || [])
-                .filter((d: any) => d.doc_type === 'vehicle_state')
-                .map((d: any) => d.file_url),
-              paper_contract_urls: (r.reservation_documents || [])
-                .filter((d: any) => d.doc_type === 'paper_contract')
-                .map((d: any) => d.file_url),
-            };
-          });
+          return {
+            ...r,
+            id_short: r.id.slice(0, 8).toUpperCase(),
+            client: r.customer_name,
+            carName: r.car ? `${r.car.brand} ${r.car.model}` : t('common.noData'),
+            carPlate: r.car?.plate || '—',
+            pickup: new Date(r.start_date).toLocaleDateString(),
+            return: new Date(r.end_date).toLocaleDateString(),
+            state: stateLabel,
+            statusColor,
+            price: `$${parseFloat(String(r.total_price || 0)).toFixed(2)}`,
+            vehicle_state_urls: (r.reservation_documents || [])
+              .filter((d: any) => d.doc_type === 'vehicle_state')
+              .map((d: any) => d.file_url),
+            paper_contract_urls: (r.reservation_documents || [])
+              .filter((d: any) => d.doc_type === 'paper_contract')
+              .map((d: any) => d.file_url),
+          };
+        });
 
         setActiveReservations(active);
+        setPage(pageNum);
       }
     } catch (error) {
       console.error('Error fetching reservations:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   const filteredActive = activeReservations.filter(res => {
     const matchesSearch = res.client.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -162,9 +176,11 @@ export default function Reservations() {
     return matchesSearch && matchesStatus;
   });
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
   useEffect(() => {
-    fetchReservations();
-  }, [i18n.language]);
+    fetchReservations(0);
+  }, [fetchReservations]);
 
   const handleOpenDetails = (res: FormattedReservation) => {
     setDetailsReservation(res);
@@ -222,11 +238,11 @@ export default function Reservations() {
         />
         <BaseModal
           isOpen={isModalOpen}
-          onClose={() => {
+            onClose={() => {
             setIsModalOpen(false);
             setResFormData(defaultFormData);
             setEditReservationId(null);
-            fetchReservations();
+            fetchReservations(page);
           }}
           title={
             <div className="flex items-center gap-3">
@@ -245,7 +261,7 @@ export default function Reservations() {
               setIsModalOpen(false);
               setResFormData(defaultFormData);
               setEditReservationId(null);
-              fetchReservations();
+              fetchReservations(0);
             }}
             mode={resFormMode}
             editId={editReservationId}
@@ -331,6 +347,29 @@ export default function Reservations() {
                   </tbody>
                 </table>
               </div>
+              {!loading && totalCount > PAGE_SIZE && (
+                <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-slate-200">
+                  <span className="text-xs text-slate-500">
+                    {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => fetchReservations(page - 1)}
+                      disabled={page === 0}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                    </button>
+                    <button
+                      onClick={() => fetchReservations(page + 1)}
+                      disabled={page >= totalPages - 1}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      Next <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </Section2>
         </div>

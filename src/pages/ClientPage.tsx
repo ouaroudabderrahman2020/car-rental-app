@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity, FileText, Loader2, Check, Trash2 } from 'lucide-react';
+import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity, FileText, Loader2, Check, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Client, Reservation } from '../types';
@@ -15,6 +15,8 @@ import Section2 from '../components/Section2';
 import { useStatus } from '../contexts/StatusContext';
 import { useNotification } from '../contexts/NotificationContext';
 
+const PAGE_SIZE = 25;
+
 export default function ClientDashboard() {
   const { t } = useTranslation();
   const { setStatus } = useStatus();
@@ -22,6 +24,8 @@ export default function ClientDashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,29 +41,39 @@ export default function ClientDashboard() {
   }, []);
 
   useEffect(() => {
-    fetchData();
+    fetchData(0);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (pageNum = 0) => {
     setIsLoading(true);
     setStatus(t('common.loading'), 'processing', 0);
     try {
-      // In a real app we'd fetch from customers table.
-      // If table doesn't exist, we might have to infer from reservations, 
-      // but let's try fetching companies/customers first.
+      const from = pageNum * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { count } = await supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true });
+      setTotalCount(count || 0);
+
       const { data: customersData, error: customersError } = await supabase
         .from('clients')
-        .select('*, documents:client_documents(*)');
+        .select('*, documents:client_documents(*)')
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       const { data: resData, error: resError } = await supabase
         .from('reservations')
-        .select('*, car:cars(*)');
+        .select('*, car:cars(*)')
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (customersError) {
         console.error('Customers fetch error:', customersError);
         setClients([]);
       } else {
         setClients(customersData || []);
+        setPage(pageNum);
       }
 
       if (resError) throw resError;
@@ -216,7 +230,7 @@ export default function ClientDashboard() {
       setIsModalOpen(false);
       setSelectedClient(null);
       setFormData({});
-      fetchData();
+      fetchData(0);
     } catch (err: any) {
       console.error('Save error:', err);
       setStatus(`Error: ${err.message || ''}`, 'error');
@@ -246,7 +260,7 @@ export default function ClientDashboard() {
       setIsModalOpen(false);
       setSelectedClient(null);
       setFormData({});
-      fetchData();
+      fetchData(page);
     } catch (err: any) {
       console.error('Delete error:', err);
       setStatus('Error', 'error');
@@ -375,6 +389,29 @@ export default function ClientDashboard() {
                   </table>
                 </div>
               </div>
+              {!isLoading && totalCount > PAGE_SIZE && (
+                <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-slate-200">
+                  <span className="text-xs text-slate-500">
+                    {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => fetchData(page - 1)}
+                      disabled={page === 0}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                    </button>
+                    <button
+                      onClick={() => fetchData(page + 1)}
+                      disabled={page >= Math.ceil(totalCount / PAGE_SIZE) - 1}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      Next <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </Section2>
         </div>

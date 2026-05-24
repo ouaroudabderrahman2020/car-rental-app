@@ -1,4 +1,4 @@
-import { Plus, Car as CarIcon, Loader2, Edit, Check, Trash2 } from 'lucide-react';
+import { Plus, Car as CarIcon, Loader2, Edit, Check, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
@@ -33,6 +33,9 @@ export default function Fleet() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 24;
 
   const handleFormChange = useCallback((partial: Partial<FormattedCar>) => {
     setFormData(prev => ({ ...prev, ...partial }));
@@ -42,13 +45,22 @@ export default function Fleet() {
     return new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'USD' }).format(val);
   };
 
-  const fetchFleet = async () => {
+  const fetchFleet = async (pageNum = 0) => {
     setLoading(true);
     try {
+      const from = pageNum * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { count } = await supabase
+        .from('cars')
+        .select('*', { count: 'exact', head: true });
+      setTotalCount(count || 0);
+
       const { data, error } = await supabase
         .from('cars')
         .select('*, car_documents(*)')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
 
@@ -62,7 +74,7 @@ export default function Fleet() {
             ...car,
             documents: docs,
             name: `${car.brand} ${car.model}`,
-            rate: `${formatCurrency(car.daily_rate)} ${t('common.perDay')}`,
+            rate: `$${car.daily_rate} / ${t('common.day', 'day')}`,
             statusColor: car.status === 'Available' ? 'bg-primary' : 
                          car.status === 'In Maintenance' ? 'bg-workshop-amber' : 
                          car.status === 'Rented' ? 'bg-indigo-600' : 'bg-slate-500',
@@ -71,6 +83,7 @@ export default function Fleet() {
           };
         });
         setFleetData(formattedData);
+        setPage(pageNum);
         localStorage.setItem('fleet_cache', JSON.stringify(formattedData));
       }
     } catch (error) {
@@ -81,8 +94,8 @@ export default function Fleet() {
   };
 
   useEffect(() => {
-    fetchFleet();
-  }, [i18n.language]);
+    fetchFleet(0);
+  }, []);
 
   const handleOpenDetails = (car: FormattedCar) => {
     setDetailsCar(car);
@@ -176,12 +189,11 @@ export default function Fleet() {
         savedCar.documents = [];
       }
 
-      handleOptimisticUpdate(savedCar);
-
       setStatus(t('common.actionCompleted'), 'success');
       setIsModalOpen(false);
       setSelectedCar(null);
       setFormData({});
+      fetchFleet(page);
     } catch (error: any) {
       console.error('Save error:', error);
       setStatus(`${t('common.error')}: ${error.message || ''}`, 'error');
@@ -209,16 +221,11 @@ export default function Fleet() {
         .eq('id', selectedCar.id);
       if (error) throw error;
 
-      setFleetData(prev => {
-        const next = prev.filter(c => c.id !== selectedCar.id);
-        localStorage.setItem('fleet_cache', JSON.stringify(next));
-        return next;
-      });
-
       setStatus(t('common.actionCompleted', 'Done'), 'success');
       setIsModalOpen(false);
       setSelectedCar(null);
       setFormData({});
+      fetchFleet(page);
     } catch (error: any) {
       setStatus(`${t('common.error')}: ${error.message || ''}`, 'error');
     } finally {
@@ -439,6 +446,29 @@ export default function Fleet() {
                     ))
                   )}
                 </div>
+              {!loading && totalCount > PAGE_SIZE && (
+                <div className="flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-lg">
+                  <span className="text-xs text-slate-500">
+                    {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => fetchFleet(page - 1)}
+                      disabled={page === 0}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                    </button>
+                    <button
+                      onClick={() => fetchFleet(page + 1)}
+                      disabled={page >= Math.ceil(totalCount / PAGE_SIZE) - 1}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      Next <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </Section2>
           </div>
