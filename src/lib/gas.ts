@@ -95,14 +95,23 @@ export const gasService = {
     return callGasAction('deleteClientFolder', { clientFolderName });
   },
 
-  async uploadReservationFile(fileData: { base64: string; fileName: string; contentType: string; reservationFolderName: string; oldFileId?: string }) {
+  async uploadReservationFile(fileData: { base64: string; fileName: string; contentType: string; reservationFolderName: string; oldFileId?: string; oldReservationFolderName?: string }) {
     return callGasAction('uploadReservationFile', {
       base64: fileData.base64,
       fileName: fileData.fileName,
       contentType: fileData.contentType,
       reservationFolderName: fileData.reservationFolderName,
       oldFileId: fileData.oldFileId,
+      oldReservationFolderName: fileData.oldReservationFolderName,
     });
+  },
+
+  async renameReservationFolder(oldName: string, newName: string) {
+    return callGasAction('renameReservationFolder', { oldName, newName });
+  },
+
+  async deleteReservationFiles(fileIds: string[]) {
+    return callGasAction('deleteReservationFiles', { fileIds });
   },
 
   async deleteReservationFolder(reservationFolderName: string) {

@@ -4,7 +4,7 @@ import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity,
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Client, Reservation } from '../types';
-import { gasService } from '../lib/gas';
+import { gasService, getFileIdFromUrl } from '../lib/gas';
 import Layout from '../components/Layout';
 import ClientForm, { type ClientFormHandle } from '../components/ClientForm';
 import BaseModal from '../components/BaseModal';
@@ -161,18 +161,41 @@ export default function ClientDashboard() {
         }
       }
 
-      // Upload pending docs to Google Drive via GAS
+      // Track old docs for GDrive cleanup
       const rawDocs = formData.documents || [];
+      const oldDocs = modalMode === 'edit' && selectedClient?.documents ? selectedClient.documents : [];
+
+      // Build a map of old docs by doc_type
+      const oldByType: Record<string, any> = {};
+      const staleFileIds: string[] = [];
+      for (const doc of oldDocs) {
+        oldByType[doc.doc_type] = doc;
+      }
+
+      // Determine which old files need to be deleted from GDrive
+      for (const oldDoc of oldDocs) {
+        const stillExists = rawDocs.some((d: any) => d.doc_type === oldDoc.doc_type);
+        if (!stillExists) {
+          const id = getFileIdFromUrl(oldDoc.file_url);
+          if (id) staleFileIds.push(id);
+        }
+      }
+
+      // Upload pending docs to Google Drive via GAS
       const newDocRows: any[] = [];
       for (const doc of rawDocs) {
         let fileUrl = (doc as any).file_url;
         if ((doc as any).file_data) {
+          const oldDoc = oldByType[doc.doc_type];
+          const oldFileId = oldDoc ? getFileIdFromUrl(oldDoc.file_url) : undefined;
+
           const ext = (doc as any).mime_type?.includes('pdf') ? 'pdf' : 'png';
           const result = await gasService.uploadClientFile({
             base64: (doc as any).file_data,
             fileName: (doc as any).file_name || `${doc.doc_type}.${ext}`,
             contentType: (doc as any).mime_type || 'image/png',
             clientFolderName: folderName,
+            oldFileId,
           });
           if (result?.status === 'success' && result?.fileUrl) {
             fileUrl = result.fileUrl;
@@ -181,6 +204,11 @@ export default function ClientDashboard() {
           }
         }
         newDocRows.push({ doc_type: doc.doc_type, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
+      }
+
+      // Delete truly removed files from GDrive
+      if (staleFileIds.length > 0) {
+        await gasService.deleteCarFiles(staleFileIds);
       }
 
       const payload = {

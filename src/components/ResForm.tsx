@@ -6,7 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { supabase } from '../lib/supabase';
 
 import { fileToBase64 } from '../lib/utils';
-import { gasService } from '../lib/gas';
+import { gasService, getFileIdFromUrl } from '../lib/gas';
 import { useReservations } from '../hooks/useReservations';
 import BaseModal from './BaseModal';
 import ItemSection from './ItemSection';
@@ -43,6 +43,7 @@ export interface ReservationFormData {
   reservationStatus?: string;
   vehicleStateUrls?: string[];
   paperContractUrls?: string[];
+  _originalFolderName?: string;
 }
 
 interface ResFormProps {
@@ -300,11 +301,40 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         await supabase.from('cars').update(carUpdate).eq('id', reservation.selectedCarId);
       }
 
+      const clientId = reservation?.clientId || '';
+      const carPlate = reservation?.licensePlate || '';
+
       const resData = result.data?.[0];
       if (resData?.id) {
-        const resFolderName = resData.id;
+        const resFolderName = `${resData.id} ${clientId} ${carPlate}`.trim();
+
+        // On edit: rename GDrive folder if client ID or car plate changed
+        if (mode === 'edit') {
+          const oldFolderName = reservation?._originalFolderName || `${editId} ${clientId} ${carPlate}`.trim();
+          if (oldFolderName !== resFolderName) {
+            await gasService.renameReservationFolder(oldFolderName, resFolderName).catch(() => {});
+          }
+        }
+
         const newDocRows: any[] = [];
         const uploadTasks: Promise<any>[] = [];
+        const staleFileIds: string[] = [];
+
+        // On edit: collect stale GDrive file IDs for doc_types that have new uploads
+        if (mode === 'edit') {
+          if (docFiles.vehicle_state.length > 0) {
+            (reservation?.vehicleStateUrls || []).forEach(url => {
+              const id = getFileIdFromUrl(url);
+              if (id) staleFileIds.push(id);
+            });
+          }
+          if (docFiles.paper_contract.length > 0) {
+            (reservation?.paperContractUrls || []).forEach(url => {
+              const id = getFileIdFromUrl(url);
+              if (id) staleFileIds.push(id);
+            });
+          }
+        }
 
         Object.entries(docFiles).forEach(([key, fileList]) => {
           (fileList as any[]).forEach((fileObj: any) => {
@@ -332,6 +362,16 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
 
         await Promise.allSettled(uploadTasks);
 
+        // Delete stale GDrive files (old files replaced by new uploads)
+        if (staleFileIds.length > 0) {
+          await gasService.deleteReservationFiles(staleFileIds).catch(() => {});
+        }
+
+        // On edit: delete old reservation_documents, then insert fresh ones
+        if (mode === 'edit' && newDocRows.length > 0) {
+          await supabase.from('reservation_documents').delete().eq('reservation_id', resData.id);
+        }
+
         if (newDocRows.length > 0) {
           await supabase.from('reservation_documents').insert(newDocRows);
         }
@@ -357,7 +397,8 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     if (!confirmed) return;
     setIsSaving(true);
     try {
-      await gasService.deleteReservationFolder(editId);
+      const folderName = `${editId} ${reservation?.clientId || ''} ${reservation?.licensePlate || ''}`.trim();
+      await gasService.deleteReservationFolder(folderName);
 
       const { error } = await supabase.from('reservations').delete().eq('id', editId);
       if (error) throw error;

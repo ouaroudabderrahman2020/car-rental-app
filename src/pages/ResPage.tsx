@@ -80,6 +80,7 @@ export default function Reservations() {
     reservationStatus: res.status,
     vehicleStateUrls: res.vehicle_state_urls || [],
     paperContractUrls: res.paper_contract_urls || [],
+    _originalFolderName: `${res.id} ${res.customer_national_id || ''} ${res.car?.plate || ''}`.trim(),
   });
 
   const fetchReservations = useCallback(async (pageNum = 0) => {
