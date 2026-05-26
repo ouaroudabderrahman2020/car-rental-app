@@ -57,16 +57,32 @@ export default function Fleet() {
 
       const { data, error } = await supabase
         .from('cars')
-        .select('*, car_documents(*)')
+        .select('*')
         .order('created_at', { ascending: false })
         .range(from, to);
 
       if (error) throw error;
 
       if (data) {
+        const carIds = data.map(car => car.id);
+        const docsByCarId: Record<string, any[]> = {};
+        if (carIds.length > 0) {
+          try {
+            const { data: docs } = await supabase
+              .from('car_documents')
+              .select('*')
+              .in('car_id', carIds);
+            for (const doc of docs || []) {
+              if (!docsByCarId[doc.car_id]) docsByCarId[doc.car_id] = [];
+              docsByCarId[doc.car_id].push(doc);
+            }
+          } catch {
+            // car_documents table may not exist yet
+          }
+        }
+
         const formattedData: FormattedCar[] = data.map(car => {
-          const docs = (car as any).car_documents || [];
-          delete (car as any).car_documents;
+          const docs = docsByCarId[car.id] || [];
           const imageDoc = docs.find((d: any) => d.doc_type === 'image');
           const transformedImage = imageDoc?.file_url ? getDriveImageUrl(imageDoc.file_url) : null;
           return {
@@ -214,12 +230,20 @@ export default function Fleet() {
       }
 
       if (modalMode === 'edit' && selectedCar?.id) {
-        await supabase.from('car_documents').delete().eq('car_id', carId);
+        try {
+          await supabase.from('car_documents').delete().eq('car_id', carId);
+        } catch {
+          // car_documents table may not exist yet
+        }
       }
 
       if (newDocs.length > 0) {
-        const { data: insertedDocs } = await supabase.from('car_documents').insert(newDocs).select();
-        savedCar.documents = insertedDocs || newDocs;
+        try {
+          const { data: insertedDocs } = await supabase.from('car_documents').insert(newDocs).select();
+          savedCar.documents = insertedDocs || newDocs;
+        } catch {
+          savedCar.documents = newDocs;
+        }
       } else {
         savedCar.documents = [];
       }

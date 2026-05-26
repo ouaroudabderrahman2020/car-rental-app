@@ -122,10 +122,22 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
   useEffect(() => {
     const fetchData = async () => {
       const [{ data: cars }, { data: customers }] = await Promise.all([
-        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, essentials, car_documents(*)').neq('status', 'Decommissioned'),
+        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, essentials').neq('status', 'Decommissioned'),
         supabase.from('clients').select('*')
       ]);
-      if (cars) setAvailableCars(cars);
+      if (cars) {
+        let docsByCarId: Record<string, any[]> = {};
+        try {
+          const { data: allDocs } = await supabase.from('car_documents').select('*');
+          for (const doc of allDocs || []) {
+            if (!docsByCarId[doc.car_id]) docsByCarId[doc.car_id] = [];
+            docsByCarId[doc.car_id].push(doc);
+          }
+        } catch {
+          // car_documents table may not exist yet
+        }
+        setAvailableCars(cars.map(car => ({ ...car, car_documents: docsByCarId[car.id] || [] })));
+      }
       if (customers) setAllCustomers(customers);
     };
     fetchData();
