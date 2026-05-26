@@ -1,8 +1,9 @@
-import React, { useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../contexts/NotificationContext';
-import { Settings, FileText, Calendar, Gauge, Upload, Trash2, X } from 'lucide-react';
+import { Settings, FileText, Calendar, Gauge, Upload, Trash2, X, Check, Loader2 } from 'lucide-react';
 import ImageToPdf from './tools/ImageToPdf';
+import { PDFDocument } from 'pdf-lib';
 import { FormattedCar, MaintenanceInterval, EssentialItem } from '../types';
 import { getDriveImageUrl } from '../lib/gas';
 import { FUEL_TYPES, TRANSMISSIONS } from '../constants';
@@ -86,9 +87,34 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
 }) => {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const isImage = docType === 'image';
-  const fileSrc = value?.file_data || value?.file_url;
+  const fileSrc = previewUrl || value?.file_url || value?.file_data;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = () => onChange({
+      doc_type: docType,
+      file_data: reader.result as string,
+      file_name: file.name,
+      mime_type: file.type,
+    });
+    reader.readAsDataURL(file);
+  };
+
+  const handleDelete = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    onChange(null);
+  };
+
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
@@ -97,18 +123,7 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
         ref={inputRef}
         accept={isPdf ? "application/pdf" : "image/*,application/pdf"}
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => onChange({
-            doc_type: docType,
-            file_data: reader.result as string,
-            file_name: file.name,
-            mime_type: file.type,
-          });
-          reader.readAsDataURL(file);
-        }}
+        onChange={handleFileChange}
       />
       {isImage ? (
         value ? (
@@ -132,7 +147,7 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
               </button>
               <button
                 type="button"
-                onClick={(e) => { e.preventDefault(); onChange(null); }}
+                onClick={handleDelete}
                 className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-sm"
                 title="Delete"
               >
@@ -165,7 +180,7 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
               </a>
               <button
                 type="button"
-                onClick={() => onChange(null)}
+                onClick={handleDelete}
                 className="p-1.5 hover:bg-red-100 rounded-full text-red-500 transition-colors shrink-0"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -207,6 +222,70 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       setShowImageToPdf(false);
     };
     reader.readAsDataURL(pdf.blob);
+  };
+
+  const [mergeAllSuccess, setMergeAllSuccess] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
+
+  const handleMergeAll = async () => {
+    const docTypes = ['image', 'registration_card', 'insurance', 'vignette'];
+    const docs = docTypes
+      .map(t => getDoc(t))
+      .filter(d => d?.file_data) as { file_data: string; file_name?: string; mime_type?: string }[];
+
+    if (docs.length === 0) {
+      showToast('No documents to merge', 'error');
+      return;
+    }
+
+    setIsMerging(true);
+    try {
+      const pdfDoc = await PDFDocument.create();
+
+      for (const doc of docs) {
+        const base64 = doc.file_data.split(',')[1];
+        const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+
+        if (doc.mime_type?.startsWith('image/')) {
+          const embedded = doc.mime_type === 'image/jpeg' || doc.mime_type === 'image/jpg'
+            ? await pdfDoc.embedJpg(bytes)
+            : await pdfDoc.embedPng(bytes);
+          const page = pdfDoc.addPage();
+          const { width, height } = page.getSize();
+          const s = Math.min(width / embedded.width, height / embedded.height) * 0.97;
+          page.drawImage(embedded, {
+            x: (width - embedded.width * s) / 2,
+            y: (height - embedded.height * s) / 2,
+            width: embedded.width * s,
+            height: embedded.height * s,
+          });
+        } else if (doc.mime_type === 'application/pdf') {
+          const existingPdf = await PDFDocument.load(bytes);
+          const pages = await pdfDoc.copyPages(existingPdf, existingPdf.getPageIndices());
+          pages.forEach(p => pdfDoc.addPage(p));
+        }
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes.buffer], { type: 'application/pdf' });
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        setDoc('documentation', {
+          file_data: reader.result as string,
+          file_name: 'merged_documents.pdf',
+          mime_type: 'application/pdf',
+        });
+        setMergeAllSuccess(true);
+        setIsMerging(false);
+        setTimeout(() => setMergeAllSuccess(false), 2000);
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Merge failed', error);
+      showToast('Failed to merge documents', 'error');
+      setIsMerging(false);
+    }
   };
 
   const set = (field: string, value: any) => {
@@ -326,6 +405,15 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
               className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[12px] transition-all"
             >
               open tool
+            </button>
+            <button
+              type="button"
+              disabled={isMerging}
+              onClick={handleMergeAll}
+              className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-[12px] transition-all flex items-center gap-1 ${mergeAllSuccess ? 'bg-green-500 text-white' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'}`}
+            >
+              {isMerging ? <Loader2 className="w-3 h-3 animate-spin" /> : mergeAllSuccess ? <Check className="w-3 h-3" /> : null}
+              merge all
             </button>
           </div>
         ) },
