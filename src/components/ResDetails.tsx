@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { User, Search, Car as CarIcon, CreditCard, FileText, Monitor, ExternalLink } from 'lucide-react';
 import { FormattedReservation, Car } from '../types';
+import { getDrivePreviewUrl } from '../lib/gas';
 
 interface ReservationDetailsViewProps {
   reservation: FormattedReservation;
@@ -124,7 +125,7 @@ export default function ReservationDetailsView({ reservation }: ReservationDetai
             {'url' in field ? (
               field.url ? (
                 <a
-                  href={field.url}
+                  href={getDrivePreviewUrl(field.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 text-sm font-semibold text-blue-700 inline-flex items-center gap-2 hover:underline"

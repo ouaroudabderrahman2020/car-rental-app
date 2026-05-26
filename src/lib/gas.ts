@@ -95,6 +95,20 @@ export const gasService = {
     return callGasAction('deleteClientFolder', { clientFolderName });
   },
 
+  async uploadReservationFile(fileData: { base64: string; fileName: string; contentType: string; reservationFolderName: string; oldFileId?: string }) {
+    return callGasAction('uploadReservationFile', {
+      base64: fileData.base64,
+      fileName: fileData.fileName,
+      contentType: fileData.contentType,
+      reservationFolderName: fileData.reservationFolderName,
+      oldFileId: fileData.oldFileId,
+    });
+  },
+
+  async deleteReservationFolder(reservationFolderName: string) {
+    return callGasAction('deleteReservationFolder', { reservationFolderName });
+  },
+
   // Legacy stubs
   async updateCarFile(fileData: any) {
     return this.uploadCarFile({

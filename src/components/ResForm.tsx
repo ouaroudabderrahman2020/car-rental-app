@@ -6,7 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { supabase } from '../lib/supabase';
 
 import { fileToBase64 } from '../lib/utils';
-import { uploadFile } from '../lib/storage';
+import { gasService } from '../lib/gas';
 import { useReservations } from '../hooks/useReservations';
 import BaseModal from './BaseModal';
 import ItemSection from './ItemSection';
@@ -302,7 +302,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
 
       const resData = result.data?.[0];
       if (resData?.id) {
-        const resFolderName = `${resData.id}_${new Date().toISOString().split('T')[0]}`.replace(/\s+/g, '_');
+        const resFolderName = resData.id;
         const newDocRows: any[] = [];
         const uploadTasks: Promise<any>[] = [];
 
@@ -310,18 +310,22 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           (fileList as any[]).forEach((fileObj: any) => {
             const fileName = `${key}_${fileObj.name}`;
             uploadTasks.push(
-              uploadFile('reservation-files', fileObj.base64Data, fileName, fileObj.contentType, resFolderName)
-                .then(url => {
-                  if (url) {
-                    newDocRows.push({
-                      reservation_id: resData.id,
-                      doc_type: key,
-                      file_url: url,
-                      file_name: fileObj.name,
-                      mime_type: fileObj.contentType,
-                    });
-                  }
-                })
+              gasService.uploadReservationFile({
+                base64: fileObj.base64Data,
+                fileName,
+                contentType: fileObj.contentType,
+                reservationFolderName: resFolderName,
+              }).then(result => {
+                if (result?.status === 'success' && result?.fileUrl) {
+                  newDocRows.push({
+                    reservation_id: resData.id,
+                    doc_type: key,
+                    file_url: result.fileUrl,
+                    file_name: fileObj.name,
+                    mime_type: fileObj.contentType,
+                  });
+                }
+              })
             );
           });
         });
@@ -353,24 +357,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     if (!confirmed) return;
     setIsSaving(true);
     try {
-      const { data: docs } = await supabase
-        .from('reservation_documents')
-        .select('file_url')
-        .eq('reservation_id', editId);
-
-      if (docs && docs.length > 0) {
-        const bucket = 'reservation-files';
-        const storagePaths = docs
-          .map(d => {
-            const marker = `/object/public/${bucket}/`;
-            const idx = d.file_url.indexOf(marker);
-            return idx !== -1 ? d.file_url.slice(idx + marker.length) : null;
-          })
-          .filter(Boolean) as string[];
-        if (storagePaths.length > 0) {
-          await supabase.storage.from(bucket).remove(storagePaths);
-        }
-      }
+      await gasService.deleteReservationFolder(editId);
 
       const { error } = await supabase.from('reservations').delete().eq('id', editId);
       if (error) throw error;
