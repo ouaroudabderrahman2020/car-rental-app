@@ -58,7 +58,7 @@ export default function ClientDashboard() {
 
       const { data: customersData, error: customersError } = await supabase
         .from('clients')
-        .select('*, documents:client_documents(*)')
+        .select('*')
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -238,7 +238,6 @@ export default function ClientDashboard() {
           .single();
         if (error) throw error;
         savedClient = data;
-        await supabase.from('client_documents').delete().eq('client_id', selectedClient.id);
       } else {
         const { data, error } = await supabase
           .from('clients')
@@ -249,17 +248,8 @@ export default function ClientDashboard() {
         savedClient = data;
       }
 
-      if (newDocRows.length > 0) {
-        for (const row of newDocRows) {
-          const { error: docError } = await supabase
-            .from('client_documents')
-            .upsert(
-              { ...row, client_id: savedClient.id, updated_at: new Date().toISOString() },
-              { onConflict: 'client_id,doc_type', ignoreDuplicates: false }
-            );
-          if (docError) throw new Error(`Failed to save document ${row.doc_type}: ${docError.message}`);
-        }
-      }
+      // Save documents to the client's documents JSONB column
+      await supabase.from('clients').update({ documents: newDocRows }).eq('id', savedClient.id);
 
       setStatus('Action Completed', 'success');
       setIsModalOpen(false);
