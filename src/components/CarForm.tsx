@@ -1,7 +1,8 @@
 import React, { useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../contexts/NotificationContext';
-import { Settings, FileText, Calendar, Gauge, Upload, Trash2 } from 'lucide-react';
+import { Settings, FileText, Calendar, Gauge, Upload, Trash2, X } from 'lucide-react';
+import ImageToPdf from './tools/ImageToPdf';
 import { FormattedCar, MaintenanceInterval, EssentialItem } from '../types';
 import { getDriveImageUrl } from '../lib/gas';
 import { FUEL_TYPES, TRANSMISSIONS } from '../constants';
@@ -191,6 +192,22 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
   const { showToast } = useNotification();
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [selectedService, setSelectedService] = React.useState(serviceOptions[0].value);
+  const [showImageToPdf, setShowImageToPdf] = useState(false);
+
+  const handleImageToPdfAssign = async (pdfs: { id: string; name: string; blob: Blob; previewUrl: string }[]) => {
+    const pdf = pdfs[0];
+    if (!pdf) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDoc('documentation', {
+        file_data: reader.result as string,
+        file_name: pdf.name,
+        mime_type: 'application/pdf',
+      });
+      setShowImageToPdf(false);
+    };
+    reader.readAsDataURL(pdf.blob);
+  };
 
   const set = (field: string, value: any) => {
     onChange({ [field]: value } as Partial<FormattedCar>);
@@ -346,13 +363,22 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
     },
   ];
 
-  const renderCard = (section: typeof sections[0]) => (
+  const renderCard = (section: typeof sections[0], sectionIndex?: number) => (
     <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
       {section.title && (
         <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
           {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
           <span>{section.title.split(' ').slice(1).join(' ')}</span>
+          {sectionIndex === 1 && (
+            <button
+              type="button"
+              onClick={() => setShowImageToPdf(true)}
+              className="ml-auto text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
+            >
+              img to pdf
+            </button>
+          )}
         </div>
       )}
       <div className="flex flex-col gap-4">
@@ -374,10 +400,24 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {sections.map((section, i) => (
           <div key={i} className="w-full">
-            {renderCard(section)}
+            {renderCard(section, i)}
           </div>
         ))}
       </div>
+      {showImageToPdf && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="relative w-[90vw] h-[90vh] bg-white rounded-xl shadow-2xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowImageToPdf(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white rounded-full shadow-sm transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <ImageToPdf onAssign={handleImageToPdfAssign} />
+          </div>
+        </div>
+      )}
     </div>
   );
 });
