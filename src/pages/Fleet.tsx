@@ -64,25 +64,8 @@ export default function Fleet() {
       if (error) throw error;
 
       if (data) {
-        const carIds = data.map(car => car.id);
-        const docsByCarId: Record<string, any[]> = {};
-        if (carIds.length > 0) {
-          try {
-            const { data: docs } = await supabase
-              .from('car_documents')
-              .select('*')
-              .in('car_id', carIds);
-            for (const doc of docs || []) {
-              if (!docsByCarId[doc.car_id]) docsByCarId[doc.car_id] = [];
-              docsByCarId[doc.car_id].push(doc);
-            }
-          } catch {
-            // car_documents table may not exist yet
-          }
-        }
-
         const formattedData: FormattedCar[] = data.map(car => {
-          const docs = docsByCarId[car.id] || [];
+          const docs = (car.documents || []) as any[];
           const imageDoc = docs.find((d: any) => d.doc_type === 'image');
           const transformedImage = imageDoc?.file_url ? getDriveImageUrl(imageDoc.file_url) : null;
           return {
@@ -173,7 +156,7 @@ export default function Fleet() {
         savedCar = data;
       }
 
-      // Upload pending docs to Google Drive via GAS and save to car_documents
+      // Upload pending docs to Google Drive via GAS and save to car.documents JSONB
       const carId = savedCar.id;
       const carFolderName = `${formData.brand} ${formData.model} ${formData.plate}`;
       const rawDocs = formData.documents || [];
@@ -190,7 +173,6 @@ export default function Fleet() {
       for (const oldDoc of oldDocs) {
         const stillExists = rawDocs.some((d: any) => d.doc_type === oldDoc.doc_type);
         if (!stillExists) {
-          // doc was removed entirely
           const id = getFileIdFromUrl(oldDoc.file_url);
           if (id) staleFileIds.push(id);
         }
@@ -220,7 +202,7 @@ export default function Fleet() {
         }
 
         if (fileUrl) {
-          newDocs.push({ car_id: carId, doc_type: docType, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
+          newDocs.push({ doc_type: docType, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
         }
       }
 
@@ -229,24 +211,9 @@ export default function Fleet() {
         await gasService.deleteCarFiles(staleFileIds);
       }
 
-      if (modalMode === 'edit' && selectedCar?.id) {
-        try {
-          await supabase.from('car_documents').delete().eq('car_id', carId);
-        } catch {
-          // car_documents table may not exist yet
-        }
-      }
-
-      if (newDocs.length > 0) {
-        try {
-          const { data: insertedDocs } = await supabase.from('car_documents').insert(newDocs).select();
-          savedCar.documents = insertedDocs || newDocs;
-        } catch {
-          savedCar.documents = newDocs;
-        }
-      } else {
-        savedCar.documents = [];
-      }
+      // Save documents to the car's documents JSONB column
+      await supabase.from('cars').update({ documents: newDocs }).eq('id', carId);
+      savedCar.documents = newDocs;
 
       setStatus(t('common.actionCompleted'), 'success');
       setIsModalOpen(false);

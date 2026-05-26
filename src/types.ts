@@ -16,15 +16,10 @@ export interface EssentialItem {
 }
 
 export interface CarDocument {
-  id: string;
-  car_id: string;
   doc_type: 'image' | 'registration_card' | 'insurance' | 'vignette' | 'documentation';
   file_url: string;
   file_name?: string;
-  file_size?: number;
   mime_type?: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface Car {

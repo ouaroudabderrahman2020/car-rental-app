@@ -122,21 +122,11 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
   useEffect(() => {
     const fetchData = async () => {
       const [{ data: cars }, { data: customers }] = await Promise.all([
-        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, essentials').neq('status', 'Decommissioned'),
+        supabase.from('cars').select('id, brand, model, plate, status, daily_rate, odometer, essentials, documents').neq('status', 'Decommissioned'),
         supabase.from('clients').select('*')
       ]);
       if (cars) {
-        let docsByCarId: Record<string, any[]> = {};
-        try {
-          const { data: allDocs } = await supabase.from('car_documents').select('*');
-          for (const doc of allDocs || []) {
-            if (!docsByCarId[doc.car_id]) docsByCarId[doc.car_id] = [];
-            docsByCarId[doc.car_id].push(doc);
-          }
-        } catch {
-          // car_documents table may not exist yet
-        }
-        setAvailableCars(cars.map(car => ({ ...car, car_documents: docsByCarId[car.id] || [] })));
+        setAvailableCars(cars.map(car => ({ ...car, documents: (car as any).documents || [] })));
       }
       if (customers) setAllCustomers(customers);
     };
@@ -1156,11 +1146,11 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                   }`}
                 >
                   <div className="w-full aspect-[4/3] bg-slate-50 border border-black/5 rounded-[12px] mb-3 overflow-hidden flex items-center justify-center p-2">
-                    {(() => { const img = (car.car_documents || []).find((d: any) => d.doc_type === 'image'); return img?.file_url; })() ? (
+                    {(() => { const img = (car.documents || []).find((d: any) => d.doc_type === 'image'); return img?.file_url; })() ? (
                       <img
                         alt={car.model}
                         className="w-full h-full object-contain mix-blend-multiply"
-                        src={((car.car_documents || []).find((d: any) => d.doc_type === 'image')?.file_url)}
+                        src={((car.documents || []).find((d: any) => d.doc_type === 'image')?.file_url)}
                         referrerPolicy="no-referrer"
                       />
                     ) : (
