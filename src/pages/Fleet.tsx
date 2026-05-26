@@ -8,7 +8,7 @@ import Cardetails from '../components/CarDetails';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 import { supabase } from '../lib/supabase';
-import { getDriveImageUrl, gasService } from '../lib/gas';
+import { getDriveImageUrl, getFileIdFromUrl, gasService } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { FormattedCar, CarDocument } from '../types';
@@ -159,21 +159,44 @@ export default function Fleet() {
 
       // Upload pending docs to Google Drive via GAS and save to car_documents
       const carId = savedCar.id;
-      const newDocs: any[] = [];
+      const carFolderName = `${formData.brand} ${formData.model} ${formData.plate}`;
       const rawDocs = formData.documents || [];
+      const oldDocs = modalMode === 'edit' && selectedCar?.documents ? selectedCar.documents : [];
 
+      // Build a map of old docs by doc_type for quick lookup
+      const oldByType: Record<string, any> = {};
+      const staleFileIds: string[] = [];
+      for (const doc of oldDocs) {
+        oldByType[doc.doc_type] = doc;
+      }
+
+      // Determine which old files need to be deleted from GDrive
+      for (const oldDoc of oldDocs) {
+        const stillExists = rawDocs.some((d: any) => d.doc_type === oldDoc.doc_type);
+        if (!stillExists) {
+          // doc was removed entirely
+          const id = getFileIdFromUrl(oldDoc.file_url);
+          if (id) staleFileIds.push(id);
+        }
+      }
+
+      // Upload and build new docs
+      const newDocs: any[] = [];
       for (const doc of rawDocs) {
         const docType = doc.doc_type;
         let fileUrl = (doc as any).file_url;
 
         if ((doc as any).file_data) {
+          const oldDoc = oldByType[docType];
+          const oldFileId = oldDoc ? getFileIdFromUrl(oldDoc.file_url) : undefined;
+
           const ext = (doc as any).mime_type?.includes('pdf') ? 'pdf' : 'png';
-          const carFolderName = `${formData.brand} ${formData.model} ${formData.plate}`;
           const result = await gasService.uploadCarFile({
             base64: (doc as any).file_data,
             fileName: `${docType}_${Date.now()}.${ext}`,
             contentType: (doc as any).mime_type || 'image/png',
             carFolderName,
+            oldFileId,
           });
           if (result?.status === 'success' && result?.fileUrl) {
             fileUrl = result.fileUrl;
@@ -183,6 +206,11 @@ export default function Fleet() {
         if (fileUrl) {
           newDocs.push({ car_id: carId, doc_type: docType, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
         }
+      }
+
+      // Delete truly removed files (not replaced — those were handled by oldFileId above)
+      if (staleFileIds.length > 0) {
+        await gasService.deleteCarFiles(staleFileIds);
       }
 
       if (modalMode === 'edit' && selectedCar?.id) {
@@ -223,7 +251,7 @@ export default function Fleet() {
     setIsSaving(true);
     try {
       const carFolderName = `${selectedCar.brand} ${selectedCar.model} ${selectedCar.plate}`;
-      await gasService.deleteCarFolder({ carFolderName });
+      await gasService.deleteCarFolder(carFolderName);
 
       const { error } = await supabase
         .from('cars')

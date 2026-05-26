@@ -109,6 +109,10 @@ export const gasService = {
     return callGasAction('deleteReservationFolder', { reservationFolderName });
   },
 
+  async deleteCarFiles(fileIds: string[]) {
+    return callGasAction('deleteCarFiles', { fileIds });
+  },
+
   async getConfig() {
     return callGasAction('getConfig', {});
   },
