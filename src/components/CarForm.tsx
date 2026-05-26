@@ -221,6 +221,141 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
   );
 };
 
+const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
+  docType: string;
+  label: string;
+  value?: { file_data?: string; file_name?: string; mime_type?: string; file_url?: string };
+  onChange: (doc: { doc_type: string; file_data?: string; file_name?: string; mime_type?: string } | null) => void;
+  isPdf?: boolean;
+  emptyActions?: React.ReactNode;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileDataRef = useRef<string | null>(null);
+
+  const fileSrc = previewUrl || value?.file_url || value?.file_data;
+  const hasFile = !!(previewUrl || value?.file_url || value?.file_data);
+  const isImageType = !isPdf && (value?.mime_type?.startsWith('image/') || (!value?.mime_type && !isPdf));
+
+  useEffect(() => {
+    if (value?.file_data && value.file_data !== fileDataRef.current) {
+      fileDataRef.current = value.file_data;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const [header, base64] = value.file_data.split(',');
+      if (!base64) return;
+      const mimeType = header?.match(/:(.*?);/)?.[1] || 'application/octet-stream';
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      setPreviewUrl(URL.createObjectURL(new Blob([bytes], { type: mimeType })));
+    }
+  }, [value?.file_data]);
+
+  const processFile = (file: File) => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = () => {
+      fileDataRef.current = reader.result as string;
+      onChange({
+        doc_type: docType,
+        file_data: reader.result as string,
+        file_name: file.name,
+        mime_type: file.type,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    fileDataRef.current = null;
+    onChange(null);
+  };
+
+  const handleCellClick = () => {
+    if (hasFile) {
+      window.open(fileSrc, '_blank');
+    } else {
+      inputRef.current?.click();
+    }
+  };
+
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+  return (
+    <div
+      className="relative w-full h-full cursor-pointer"
+      onClick={handleCellClick}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
+      <input
+        type="file"
+        ref={inputRef}
+        accept={isPdf ? "application/pdf" : "image/*,application/pdf"}
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      {hasFile ? (
+        <div className="w-full h-full relative group">
+          {isImageType ? (
+            <img src={getDriveImageUrl(fileSrc)} alt={value?.file_name || label} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
+              <FileText className="w-10 h-10 text-slate-400" />
+              <span className="mt-1 text-[9px] font-bold text-slate-500 truncate px-2 max-w-full">{value?.file_name || label}</span>
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-1.5 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+              className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 bg-white/90 hover:bg-white text-slate-700 rounded-[6px]"
+            >
+              Change
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-3 hover:bg-slate-50 transition-colors">
+          <Upload className="w-6 h-6 text-slate-300" />
+          <span className="text-[10px] font-semibold text-slate-500 text-center leading-tight">{label}</span>
+          <span className="text-[8px] text-slate-400 text-center">Drag & Drop or Click</span>
+          {emptyActions && <div className="mt-1 flex flex-col gap-1 w-full px-2">{emptyActions}</div>}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, onChange }: CarFormProps, ref) {
   const { t } = useTranslation();
   const { showToast } = useNotification();
@@ -412,28 +547,41 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       icon: <FileText className="w-4 h-4" />,
       fields: [
         { label: t('carForm.uploadImage', 'Vehicle Image'), input: <DocField docType="image" label="Vehicle Image" value={getDoc('image')} onChange={(v) => setDoc('image', v)} /> },
-        { label: t('carForm.registrationCard', 'Registration Card'), input: <DocField docType="registration_card" label="Registration Card" value={getDoc('registration_card')} onChange={(v) => setDoc('registration_card', v)} /> },
-        { label: t('carForm.insurance', 'Insurance'), input: <DocField docType="insurance" label="Insurance" value={getDoc('insurance')} onChange={(v) => setDoc('insurance', v)} /> },
-        { label: t('carForm.vignette', 'Vignette'), input: <DocField docType="vignette" label="Vignette" value={getDoc('vignette')} onChange={(v) => setDoc('vignette', v)} /> },
-        { label: t('carForm.pdfLabel', 'All-in-one Documentation'), input: <DocField docType="documentation" label="Documentation" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf />, customLabel: (
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-semibold text-slate-600">{t('carForm.pdfLabel', 'All-in-one Documentation')}</span>
-            <button
-              type="button"
-              onClick={() => setShowImageToPdf(true)}
-              className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[12px] transition-all"
-            >
-              open tool
-            </button>
-            <button
-              type="button"
-              disabled={isMerging}
-              onClick={handleMergeAll}
-              className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-[12px] transition-all flex items-center gap-1 ${mergeAllSuccess ? 'bg-green-500 text-white' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'}`}
-            >
-              {isMerging ? <Loader2 className="w-3 h-3 animate-spin" /> : mergeAllSuccess ? <Check className="w-3 h-3" /> : null}
-              merge all
-            </button>
+        { label: '', hideLabel: true, input: (
+          <div className="border border-slate-200 rounded-[12px] overflow-hidden">
+            <div className="grid grid-cols-2">
+              <div className="aspect-[3/4] border-r border-b border-slate-200">
+                <GridDocCell docType="registration_card" label={t('carForm.registrationCard', 'Registration Card')} value={getDoc('registration_card')} onChange={(v) => setDoc('registration_card', v)} />
+              </div>
+              <div className="aspect-[3/4] border-b border-slate-200">
+                <GridDocCell docType="insurance" label={t('carForm.insurance', 'Insurance')} value={getDoc('insurance')} onChange={(v) => setDoc('insurance', v)} />
+              </div>
+              <div className="aspect-[3/4] border-r border-slate-200">
+                <GridDocCell docType="vignette" label={t('carForm.vignette', 'Vignette')} value={getDoc('vignette')} onChange={(v) => setDoc('vignette', v)} />
+              </div>
+              <div className="aspect-[3/4]">
+                <GridDocCell docType="documentation" label="full car docs" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf emptyActions={
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setShowImageToPdf(true); }}
+                      className="flex-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[6px] transition-all"
+                    >
+                      open tool
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isMerging}
+                      onClick={(e) => { e.stopPropagation(); handleMergeAll(); }}
+                      className={`flex-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-1 rounded-[6px] transition-all flex items-center justify-center gap-0.5 ${mergeAllSuccess ? 'bg-green-500 text-white' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'}`}
+                    >
+                      {isMerging ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : mergeAllSuccess ? <Check className="w-2.5 h-2.5" /> : null}
+                      merge all
+                    </button>
+                  </div>
+                } />
+              </div>
+            </div>
           </div>
         ) },
       ],
@@ -493,12 +641,12 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       <div className="flex flex-col gap-4">
         {section.fields.map((field, fIdx) => (
           <div key={fIdx} className="w-full flex flex-col">
-            {(field as any).customLabel || (
+            {(field as any).customLabel || ((field as any).hideLabel ? null : (
               <span className="text-xs font-semibold text-slate-600 mb-1">
                 {field.label}
                 {(field as any).required && <span className="text-red-500 ml-0.5">*</span>}
               </span>
-            )}
+            ))}
             {field.input}
           </div>
         ))}
