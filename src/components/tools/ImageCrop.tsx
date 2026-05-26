@@ -16,7 +16,7 @@ type InteractionState = 'idle' | 'drawing' | 'adjust';
 
 export default function ImageCrop({ onAssign }: ImageCropProps) {
   const [image, setImage] = useState<{ url: string; file: File } | null>(null);
-  const [mode, setMode] = useState<CropMode>('free');
+  const [mode, setMode] = useState<CropMode>('16:9');
   const [interaction, setInteraction] = useState<InteractionState>('idle');
   const [freePath, setFreePath] = useState<{ x: number; y: number }[]>([]);
   const [rect, setRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
@@ -90,6 +90,19 @@ export default function ImageCrop({ onAssign }: ImageCropProps) {
       }
       ctx.drawImage(img, dx, dy, dw, dh);
       imageInfoRef.current = { x: dx, y: dy, w: dw, h: dh, imgW: img.width, imgH: img.height };
+      const pad = 15;
+      const maxW = dw - 2 * pad;
+      const maxH = dh - 2 * pad;
+      const aspect = 16 / 9;
+      let rectW, rectH;
+      if (maxW / maxH > aspect) {
+        rectH = maxH;
+        rectW = rectH * aspect;
+      } else {
+        rectW = maxW;
+        rectH = rectW / aspect;
+      }
+      setRect({ x: dx + (dw - rectW) / 2, y: dy + (dh - rectH) / 2, w: rectW, h: rectH });
     };
     img.src = image.url;
   }, [image]);
@@ -455,6 +468,7 @@ export default function ImageCrop({ onAssign }: ImageCropProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     resetDrawing();
+    setInteraction('adjust');
     const reader = new FileReader();
     reader.onload = () => {
       setImage({ url: reader.result as string, file });
@@ -609,23 +623,6 @@ export default function ImageCrop({ onAssign }: ImageCropProps) {
             </div>
 
             <div className="flex flex-col gap-2 shrink-0">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setMode('free'); resetDrawing(); }}
-                  className={`flex-1 py-3 font-black uppercase text-sm tracking-widest transition-all industrial-shadow ${mode === 'free' ? 'bg-midnight-ink text-white' : 'bg-white border-2 border-slate-300 text-slate-600 hover:bg-slate-50'}`}
-                  style={{ borderRadius: '12px' }}
-                >
-                  Custom Shape
-                </button>
-                <button
-                  onClick={() => { setMode('16:9'); resetDrawing(); }}
-                  className={`flex-1 py-3 font-black uppercase text-sm tracking-widest transition-all industrial-shadow ${mode === '16:9' ? 'bg-midnight-ink text-white' : 'bg-white border-2 border-slate-300 text-slate-600 hover:bg-slate-50'}`}
-                  style={{ borderRadius: '12px' }}
-                >
-                  16:9
-                </button>
-              </div>
-
               <div className="flex gap-2">
                 <button
                   onClick={resetDrawing}

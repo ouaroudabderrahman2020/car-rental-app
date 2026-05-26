@@ -6,7 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { supabase } from '../lib/supabase';
 
 import { fileToBase64 } from '../lib/utils';
-import { gasService, getFileIdFromUrl } from '../lib/gas';
+import { gasService, getFileIdFromUrl, getDriveImageUrl } from '../lib/gas';
 import { useReservations } from '../hooks/useReservations';
 import BaseModal from './BaseModal';
 import ItemSection from './ItemSection';
@@ -1136,7 +1136,11 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
               <X className="w-5 h-5" />
             </button>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {availableCars.map(car => (
+              {availableCars.map(car => {
+                const carImage = (() => { const img = (car.documents || []).find((d: any) => d.doc_type === 'image'); return img?.file_url ? getDriveImageUrl(img.file_url) : null; })();
+                const isSelected = reservation?.selectedCarId === car.id;
+                const needsMaint = car.status === 'In Maintenance' || car.status === 'Workshop';
+                return (
                 <div
                   key={car.id}
                   onClick={() => {
@@ -1154,46 +1158,56 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                     } as Partial<ReservationFormData>);
                     setIsCarSelectorOpen(false);
                   }}
-                  className={`group flex flex-col p-3 cursor-pointer transition-all duration-200 border-2 border-black rounded-[12px] bg-white relative ${
-                    reservation?.selectedCarId === car.id
-                      ? 'shadow-[0px_0px_0px_1px_rgba(0,0,0,1),0px_0px_0px_4px_rgba(59,130,246,0.1),-3px_3px_0px_0px_rgba(0,0,0,1)] -translate-y-0.5 translate-x-0.5 bg-blue-50/50'
-                      : 'shadow-[-2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 hover:translate-x-0.5 hover:shadow-[-3px_3px_0px_0px_rgba(0,0,0,1)]'
+                  className={`bg-white rounded-2xl shadow-sm border group flex flex-col h-full cursor-pointer hover:shadow-md hover:border-slate-200 transition-all duration-300 overflow-hidden ${
+                    isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'border-slate-100'
                   }`}
                 >
-                  <div className="w-full aspect-[4/3] bg-slate-50 border border-black/5 rounded-[12px] mb-3 overflow-hidden flex items-center justify-center p-2">
-                    {(() => { const img = (car.documents || []).find((d: any) => d.doc_type === 'image'); return img?.file_url; })() ? (
-                      <img
-                        alt={car.model}
-                        className="w-full h-full object-contain mix-blend-multiply"
-                        src={((car.documents || []).find((d: any) => d.doc_type === 'image')?.file_url)}
-                        referrerPolicy="no-referrer"
-                      />
+                  <div className="aspect-video overflow-hidden bg-slate-50 relative">
+                    {carImage ? (
+                      <>
+                        <img
+                          alt={`${car.brand} ${car.model}`}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          src={carImage}
+                          referrerPolicy="no-referrer"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                        <div className="w-full h-full items-center justify-center bg-slate-50 hidden absolute inset-0">
+                          <CarIcon className="w-8 h-8 text-slate-200" />
+                        </div>
+                      </>
                     ) : (
-                      <div className="w-full h-full opacity-5 flex items-center justify-center" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000, #000 12px, transparent 12px, transparent 24px)' }}>
-                        <CarIcon className="w-10 h-10 text-black" />
+                      <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                        <CarIcon className="w-8 h-8 text-slate-200" />
+                      </div>
+                    )}
+                    {needsMaint && (
+                      <div className="absolute top-3 left-3 px-2 py-1 bg-workshop-amber/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight rounded-lg shadow-sm z-10">
+                        SERVICE
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <h3 className="text-[13px] font-black text-black uppercase leading-tight tracking-tight truncate">
+                  <div className="p-5 grow flex flex-col justify-center gap-3">
+                    <h3 className="font-bold text-sm text-slate-900 leading-tight truncate">
                       {car.brand} {car.model}
                     </h3>
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest truncate">
+                    <div className="inline-block self-start px-2 py-0.5 bg-sky-100 border border-sky-300 rounded-lg text-[15px] font-black text-black tracking-[0.15em] font-mono antialiased">
                       {car.plate}
-                    </p>
-                    <div className="flex items-center justify-between mt-2 gap-2">
-                      <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-tighter border border-black/10 rounded-[12px] transition-transform group-hover:scale-105 ${
-                        car.status === 'Available' ? 'bg-[#22C55E] text-white' : 'bg-[#F59E0B] text-white'
-                      }`}>
-                        {car.status}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-black text-black">
+                        ${car.daily_rate} / <span className="text-[10px] text-slate-400 font-bold">DAY</span>
                       </span>
-                      <div className="text-[12px] font-black text-black whitespace-nowrap">
-                        {car.daily_rate} <span className="text-[9px] font-bold opacity-30">DH/D</span>
-                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </BaseModal>
