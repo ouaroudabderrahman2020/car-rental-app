@@ -145,10 +145,10 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
         onChange={handleFileChange}
       />
       {isImage ? (
-        <div className="relative inline-flex">
+        <div className="relative inline-flex max-w-56">
           <div
             onClick={() => value ? window.open(fileSrc, '_blank') : inputRef.current?.click()}
-            className="inline-flex h-32 w-full rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            className="inline-flex aspect-[16/9] w-full rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
           >
             {value ? (
               <img src={getDriveImageUrl(fileSrc)} alt={value.file_name || label} className="h-full w-full object-contain" />
