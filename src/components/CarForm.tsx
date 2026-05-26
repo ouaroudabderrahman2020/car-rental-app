@@ -235,7 +235,6 @@ const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
 
   const fileSrc = previewUrl || value?.file_url || value?.file_data;
   const hasFile = !!(previewUrl || value?.file_url || value?.file_data);
-  const isImageType = !isPdf && (value?.mime_type?.startsWith('image/') || (!value?.mime_type && !isPdf));
 
   useEffect(() => {
     if (value?.file_data && value.file_data !== fileDataRef.current) {
@@ -315,18 +314,26 @@ const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
         ref={inputRef}
         accept={isPdf ? "application/pdf" : "image/*,application/pdf"}
         className="hidden"
+        onClick={(e) => e.stopPropagation()}
         onChange={handleFileChange}
       />
       {hasFile ? (
         <div className="w-full h-full relative group">
-          {isImageType ? (
-            <img src={getDriveImageUrl(fileSrc)} alt={value?.file_name || label} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
-              <FileText className="w-10 h-10 text-slate-400" />
-              <span className="mt-1 text-[9px] font-bold text-slate-500 truncate px-2 max-w-full">{value?.file_name || label}</span>
-            </div>
-          )}
+          <img
+            src={getDriveImageUrl(fileSrc)}
+            alt={value?.file_name || label}
+            className="w-full h-full object-contain bg-slate-50"
+            onError={(e) => {
+              const target = e.currentTarget;
+              target.style.display = 'none';
+              const fallback = target.parentElement?.querySelector('.file-fallback');
+              if (fallback) fallback.classList.remove('hidden');
+            }}
+          />
+          <div className="hidden file-fallback absolute inset-0 flex flex-col items-center justify-center bg-slate-100 pointer-events-none">
+            <FileText className="w-10 h-10 text-slate-400" />
+            <span className="mt-1 text-[9px] font-bold text-slate-500 truncate px-2 max-w-full">{value?.file_name || label}</span>
+          </div>
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-1.5 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               type="button"
@@ -346,9 +353,9 @@ const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
         </div>
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-3 hover:bg-slate-50 transition-colors">
-          <Upload className="w-6 h-6 text-slate-300" />
-          <span className="text-[10px] font-semibold text-slate-500 text-center leading-tight">{label}</span>
-          <span className="text-[8px] text-slate-400 text-center">Drag & Drop or Click</span>
+          <Upload className="w-8 h-8 text-slate-300" />
+          <span className="text-[13px] font-semibold text-slate-500 text-center leading-tight">{label}</span>
+          <span className="text-[10px] text-slate-400 text-center">Drag & Drop or Click</span>
           {emptyActions && <div className="mt-1 flex flex-col gap-1 w-full px-2">{emptyActions}</div>}
         </div>
       )}
@@ -550,16 +557,16 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
         { label: '', hideLabel: true, input: (
           <div className="border border-slate-200 rounded-[12px] overflow-hidden">
             <div className="grid grid-cols-2">
-              <div className="aspect-[3/4] border-r border-b border-slate-200">
+              <div className="aspect-[3/4] overflow-hidden border-r border-b border-slate-200">
                 <GridDocCell docType="registration_card" label={t('carForm.registrationCard', 'Registration Card')} value={getDoc('registration_card')} onChange={(v) => setDoc('registration_card', v)} />
               </div>
-              <div className="aspect-[3/4] border-b border-slate-200">
+              <div className="aspect-[3/4] overflow-hidden border-b border-slate-200">
                 <GridDocCell docType="insurance" label={t('carForm.insurance', 'Insurance')} value={getDoc('insurance')} onChange={(v) => setDoc('insurance', v)} />
               </div>
-              <div className="aspect-[3/4] border-r border-slate-200">
+              <div className="aspect-[3/4] overflow-hidden border-r border-slate-200">
                 <GridDocCell docType="vignette" label={t('carForm.vignette', 'Vignette')} value={getDoc('vignette')} onChange={(v) => setDoc('vignette', v)} />
               </div>
-              <div className="aspect-[3/4]">
+              <div className="aspect-[3/4] overflow-hidden">
                 <GridDocCell docType="documentation" label="full car docs" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf emptyActions={
                   <div className="flex gap-1">
                     <button
