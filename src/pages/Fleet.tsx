@@ -8,11 +8,10 @@ import Cardetails from '../components/CarDetails';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 import { supabase } from '../lib/supabase';
-import { getDriveImageUrl } from '../lib/gas';
+import { getDriveImageUrl, gasService } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { FormattedCar, CarDocument } from '../types';
-import { uploadFile } from '../lib/storage';
 
 export default function Fleet() {
   const { t, i18n } = useTranslation();
@@ -158,7 +157,7 @@ export default function Fleet() {
         savedCar = data;
       }
 
-      // Upload pending docs and save to car_documents
+      // Upload pending docs to Google Drive via GAS and save to car_documents
       const carId = savedCar.id;
       const newDocs: any[] = [];
       const rawDocs = formData.documents || [];
@@ -169,8 +168,16 @@ export default function Fleet() {
 
         if ((doc as any).file_data) {
           const ext = (doc as any).mime_type?.includes('pdf') ? 'pdf' : 'png';
-          const url = await uploadFile('car-docs', (doc as any).file_data.replace(/^data:.*?;base64,/, ''), `${docType}_${Date.now()}.${ext}`, (doc as any).mime_type || 'image/png', carId);
-          if (url) fileUrl = url;
+          const carFolderName = `${formData.brand} ${formData.model} ${formData.plate}`;
+          const result = await gasService.uploadCarFile({
+            base64: (doc as any).file_data,
+            fileName: `${docType}_${Date.now()}.${ext}`,
+            contentType: (doc as any).mime_type || 'image/png',
+            carFolderName,
+          });
+          if (result?.status === 'success' && result?.fileUrl) {
+            fileUrl = result.fileUrl;
+          }
         }
 
         if (fileUrl) {
@@ -215,6 +222,9 @@ export default function Fleet() {
 
     setIsSaving(true);
     try {
+      const carFolderName = `${selectedCar.brand} ${selectedCar.model} ${selectedCar.plate}`;
+      await gasService.deleteCarFolder({ carFolderName });
+
       const { error } = await supabase
         .from('cars')
         .delete()
