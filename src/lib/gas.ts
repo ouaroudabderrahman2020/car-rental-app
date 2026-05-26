@@ -109,6 +109,10 @@ export const gasService = {
     return callGasAction('deleteReservationFolder', { reservationFolderName });
   },
 
+  async getConfig() {
+    return callGasAction('getConfig', {});
+  },
+
   // Legacy stubs
   async updateCarFile(fileData: any) {
     return this.uploadCarFile({
@@ -194,4 +198,14 @@ export function getDriveImageUrl(url?: string) {
   if (id) return `https://lh3.googleusercontent.com/d/${id}`;
   
   return url;
+}
+
+export function getDocUrl(docId?: string) {
+  if (!docId) return '';
+  return `https://docs.google.com/document/d/${docId}/edit`;
+}
+
+export function getSheetUrl(sheetId?: string) {
+  if (!sheetId) return '';
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
 }

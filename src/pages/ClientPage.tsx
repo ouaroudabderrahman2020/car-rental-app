@@ -4,7 +4,7 @@ import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity,
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Client, Reservation } from '../types';
-import { uploadFile, deleteFiles, listFolderFiles } from '../lib/storage';
+import { gasService } from '../lib/gas';
 import Layout from '../components/Layout';
 import ClientForm, { type ClientFormHandle } from '../components/ClientForm';
 import BaseModal from '../components/BaseModal';
@@ -153,25 +153,32 @@ export default function ClientDashboard() {
 
     try {
       const folderName = `${name} ${nationalId}`.trim();
-      let oldFolderName: string | undefined;
 
       if (modalMode === 'edit' && selectedClient) {
-        oldFolderName = `${selectedClient.name} ${selectedClient.national_id || selectedClient.id_card_number || ''}`.trim();
+        const oldFolderName = `${selectedClient.name} ${selectedClient.national_id || selectedClient.id_card_number || ''}`.trim();
         if (oldFolderName !== folderName) {
-          const oldFiles = await listFolderFiles('client-docs', oldFolderName);
-          if (oldFiles.length > 0) await deleteFiles('client-docs', oldFiles);
+          await gasService.renameClientFolder(oldFolderName, folderName);
         }
       }
 
-      // Upload pending docs to client-docs bucket
+      // Upload pending docs to Google Drive via GAS
       const rawDocs = formData.documents || [];
       const newDocRows: any[] = [];
       for (const doc of rawDocs) {
         let fileUrl = (doc as any).file_url;
         if ((doc as any).file_data) {
-          const url = await uploadFile('client-docs', (doc as any).file_data.replace(/^data:.*?;base64,/, ''), (doc as any).file_name || `${doc.doc_type}.pdf`, (doc as any).mime_type || 'image/png', folderName);
-          if (!url) throw new Error(`Upload failed for ${(doc as any).doc_type}: ${(doc as any).file_name}`);
-          fileUrl = url;
+          const ext = (doc as any).mime_type?.includes('pdf') ? 'pdf' : 'png';
+          const result = await gasService.uploadClientFile({
+            base64: (doc as any).file_data,
+            fileName: (doc as any).file_name || `${doc.doc_type}.${ext}`,
+            contentType: (doc as any).mime_type || 'image/png',
+            clientFolderName: folderName,
+          });
+          if (result?.status === 'success' && result?.fileUrl) {
+            fileUrl = result.fileUrl;
+          } else {
+            throw new Error(`Upload failed for ${(doc as any).doc_type}: ${(doc as any).file_name}`);
+          }
         }
         newDocRows.push({ doc_type: doc.doc_type, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
       }
@@ -247,8 +254,7 @@ export default function ClientDashboard() {
 
     try {
       const folderName = `${selectedClient.name} ${selectedClient.national_id || selectedClient.id_card_number || ''}`.trim();
-      const oldFiles = await listFolderFiles('client-docs', folderName);
-      if (oldFiles.length > 0) await deleteFiles('client-docs', oldFiles);
+      await gasService.deleteClientFolder(folderName);
 
       const { error } = await supabase
         .from('clients')
