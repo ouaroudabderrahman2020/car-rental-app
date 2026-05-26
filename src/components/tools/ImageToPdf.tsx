@@ -65,6 +65,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
   const [splitFile, setSplitFile] = useState<{ id: string; name: string; url: string; file: File } | null>(null);
   const [splitPages, setSplitPages] = useState<PageInfo[]>([]);
   const [splitResultType, setSplitResultType] = useState<'pdf' | 'images'>('pdf');
+  const [splitPdfMode, setSplitPdfMode] = useState<'one' | 'separate'>('one');
   const [isLoadingPages, setIsLoadingPages] = useState(false);
 
   useEffect(() => {
@@ -280,18 +281,32 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
     setIsProcessing(true);
     try {
       if (splitResultType === 'pdf') {
-        const pdfDoc = await PDFDocument.create();
         const arrayBuffer = await splitFile.file.arrayBuffer();
         const existing = await PDFDocument.load(arrayBuffer);
-        const indices = selected.map(p => p.pageIndex - 1);
-        const pages = await pdfDoc.copyPages(existing, indices);
-        pages.forEach(p => pdfDoc.addPage(p));
-        const bytes = await pdfDoc.save();
-        const blob = new Blob([bytes.buffer], { type: 'application/pdf' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `split_${splitFile.name.replace(/\.[^.]+$/, '')}_pages.pdf`;
-        link.click();
+        if (splitPdfMode === 'one') {
+          const pdfDoc = await PDFDocument.create();
+          const indices = selected.map(p => p.pageIndex - 1);
+          const pages = await pdfDoc.copyPages(existing, indices);
+          pages.forEach(p => pdfDoc.addPage(p));
+          const bytes = await pdfDoc.save();
+          const blob = new Blob([bytes.buffer], { type: 'application/pdf' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `split_${splitFile.name.replace(/\.[^.]+$/, '')}_pages.pdf`;
+          link.click();
+        } else {
+          for (const p of selected) {
+            const pdfDoc = await PDFDocument.create();
+            const [page] = await pdfDoc.copyPages(existing, [p.pageIndex - 1]);
+            pdfDoc.addPage(page);
+            const bytes = await pdfDoc.save();
+            const blob = new Blob([bytes.buffer], { type: 'application/pdf' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `page_${p.pageIndex}.pdf`;
+            link.click();
+          }
+        }
       } else {
         for (const p of selected) {
           const blob = await renderPageToImage(splitFile.file, p.pageIndex, 2);
@@ -337,6 +352,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
     setSplitFile(null);
     setSplitPages([]);
     setSplitResultType('pdf');
+    setSplitPdfMode('one');
   };
 
   const assignToReservation = async () => {
@@ -648,6 +664,15 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
                 <SegmentedBtn active={splitResultType === 'images'} onClick={() => setSplitResultType('images')} label="Images" />
               </div>
             </div>
+            {splitResultType === 'pdf' && (
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-black uppercase tracking-widest text-midnight-ink/40 shrink-0">PDF Mode</label>
+                <div className="flex gap-2 flex-1">
+                  <SegmentedBtn active={splitPdfMode === 'one'} onClick={() => setSplitPdfMode('one')} label="One File" />
+                  <SegmentedBtn active={splitPdfMode === 'separate'} onClick={() => setSplitPdfMode('separate')} label="Separate Files" />
+                </div>
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={reset}
