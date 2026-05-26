@@ -3,8 +3,6 @@ import { Upload, X, FileText, Download, RotateCcw, Link as LinkIcon, Image as Im
 import { PDFDocument } from 'pdf-lib';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStatus } from '../../contexts/StatusContext';
-import { supabase } from '../../lib/supabase';
-import { Reservation } from '../../types';
 
 interface ConversionResult {
   id: string;
@@ -12,6 +10,27 @@ interface ConversionResult {
   blob: Blob;
   previewUrl: string;
 }
+
+const convertToPngBytes = (dataUrl: string): Promise<Uint8Array> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      const pngDataUrl = canvas.toDataURL('image/png');
+      const base64 = pngDataUrl.split(',')[1];
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      resolve(bytes);
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+};
 
 interface ImageToPdfProps {
   onAssign?: (pdfs: ConversionResult[]) => void;
@@ -80,12 +99,11 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
     if (images.length === 0) return;
     setIsSimulatingConversion(true);
     setProgress(0);
-    
-    // Simulating progress bar for 1 second
+
     const duration = 1000;
     const interval = 50;
     const step = (interval / duration) * 100;
-    
+
     const timer = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -103,32 +121,46 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
     setResults([]);
     setSelectedResultIds([]);
 
+    const embedImage = async (pdfDoc: PDFDocument, file: File, dataUrl: string) => {
+      const bytes = await file.arrayBuffer();
+      let embedded;
+      if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+        embedded = await pdfDoc.embedJpg(bytes);
+      } else if (file.type === 'image/png') {
+        embedded = await pdfDoc.embedPng(bytes);
+      } else {
+        const pngBytes = await convertToPngBytes(dataUrl);
+        embedded = await pdfDoc.embedPng(pngBytes);
+      }
+      const page = pdfDoc.addPage();
+      const { width, height } = page.getSize();
+      const s = Math.min(width / embedded.width, height / embedded.height) * 0.97;
+      page.drawImage(embedded, {
+        x: (width - embedded.width * s) / 2,
+        y: (height - embedded.height * s) / 2,
+        width: embedded.width * s,
+        height: embedded.height * s,
+      });
+    };
+
+    const embedPdf = async (pdfDoc: PDFDocument, file: File) => {
+      const bytes = await file.arrayBuffer();
+      const existing = await PDFDocument.load(bytes);
+      const pages = await pdfDoc.copyPages(existing, existing.getPageIndices());
+      pages.forEach(p => pdfDoc.addPage(p));
+    };
+
     try {
       if (mode === 'single') {
         const pdfDoc = await PDFDocument.create();
-        for (const img of images) {
-          const imageBytes = await img.file.arrayBuffer();
-          let embeddedImg;
-          if (img.file.type === 'image/jpeg' || img.file.type === 'image/jpg') {
-            embeddedImg = await pdfDoc.embedJpg(imageBytes);
-          } else if (img.file.type === 'image/png') {
-            embeddedImg = await pdfDoc.embedPng(imageBytes);
+        let previewUrl = '';
+        for (const item of images) {
+          if (item.file.type.startsWith('image/')) {
+            await embedImage(pdfDoc, item.file, item.url);
           } else {
-            continue;
+            await embedPdf(pdfDoc, item.file);
           }
-
-          const page = pdfDoc.addPage();
-          const { width, height } = page.getSize();
-          const scale = Math.min(width / embeddedImg.width, height / embeddedImg.height) * 0.97;
-          const imgWidth = embeddedImg.width * scale;
-          const imgHeight = embeddedImg.height * scale;
-
-          page.drawImage(embeddedImg, {
-            x: (width - imgWidth) / 2,
-            y: (height - imgHeight) / 2,
-            width: imgWidth,
-            height: imgHeight,
-          });
+          if (!previewUrl) previewUrl = item.url;
         }
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([pdfBytes.buffer], { type: 'application/pdf' });
@@ -136,48 +168,30 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
           id: 'single-result',
           name: 'converted_images.pdf',
           blob,
-          previewUrl: images[0].url
+          previewUrl,
         }]);
       } else {
         const newResults: ConversionResult[] = [];
-        for (const img of images) {
+        for (const item of images) {
           const pdfDoc = await PDFDocument.create();
-          const imageBytes = await img.file.arrayBuffer();
-          let embeddedImg;
-          if (img.file.type === 'image/jpeg' || img.file.type === 'image/jpg') {
-            embeddedImg = await pdfDoc.embedJpg(imageBytes);
-          } else if (img.file.type === 'image/png') {
-            embeddedImg = await pdfDoc.embedPng(imageBytes);
+          if (item.file.type.startsWith('image/')) {
+            await embedImage(pdfDoc, item.file, item.url);
           } else {
-            continue;
+            await embedPdf(pdfDoc, item.file);
           }
-
-          const page = pdfDoc.addPage();
-          const { width, height } = page.getSize();
-          const scale = Math.min(width / embeddedImg.width, height / embeddedImg.height) * 0.97;
-          const imgWidth = embeddedImg.width * scale;
-          const imgHeight = embeddedImg.height * scale;
-
-          page.drawImage(embeddedImg, {
-            x: (width - imgWidth) / 2,
-            y: (height - imgHeight) / 2,
-            width: imgWidth,
-            height: imgHeight,
-          });
-
           const pdfBytes = await pdfDoc.save();
           newResults.push({
-            id: img.id,
-            name: `${img.name.split('.')[0]}.pdf`,
+            id: item.id,
+            name: `${item.name.split('.')[0]}.pdf`,
             blob: new Blob([pdfBytes.buffer], { type: 'application/pdf' }),
-            previewUrl: img.url
+            previewUrl: item.url,
           });
         }
         setResults(newResults);
       }
     } catch (error) {
       console.error('PDF Generation failed', error);
-      setStatus('Error generating PDF. Please ensure all images are JPG or PNG.', 'error');
+      setStatus('Error generating PDF. Please ensure all files are valid images or PDFs.', 'error');
     } finally {
       setIsProcessing(false);
       setIsSimulatingConversion(false);
@@ -253,7 +267,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
                     DROP IMAGES HERE
                   </p>
                   <p className="text-sm uppercase tracking-[0.2em] text-midnight-ink/40 mt-4 text-center font-bold">
-                    Support for JPG, PNG. Max 10MB per file.
+                    Support for all images and PDFs
                   </p>
                 </div>
                 <input 
@@ -261,7 +275,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
                   hidden 
                   ref={fileInputRef} 
                   multiple 
-                  accept="image/jpeg,image/png" 
+                  accept="image/*,application/pdf" 
                   onChange={handleFileUpload} 
                 />
               </div>
@@ -311,7 +325,14 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
                         className="relative aspect-square industrial-shadow border-2 border-midnight-ink group overflow-hidden"
                         style={{ borderRadius: '12px' }}
                       >
-                        <img src={img.url || undefined} alt={img.name} className="w-full h-full object-cover" />
+                        {img.file.type.startsWith('image/') ? (
+                          <img src={img.url || undefined} alt={img.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center">
+                            <FileText className="w-10 h-10 text-slate-400" />
+                            <span className="mt-1 text-[8px] font-bold uppercase text-slate-400 text-center truncate px-1 leading-tight">{img.name}</span>
+                          </div>
+                        )}
                         <button 
                           onClick={() => removeImage(img.id)}
                           className="absolute top-1 right-1 bg-red-600 text-white p-1 shadow-lg hover:scale-110 transition-transform"
@@ -335,7 +356,7 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
                         hidden 
                         ref={fileInputRef} 
                         multiple 
-                        accept="image/jpeg,image/png" 
+                        accept="image/*,application/pdf" 
                         onChange={handleFileUpload} 
                       />
                     </motion.div>
@@ -391,12 +412,13 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
                       </div>
                     </div>
                     <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-2">
-                       <div className="relative w-full flex-1 overflow-hidden industrial-shadow border border-midnight-ink" style={{ borderRadius: '12px' }}>
-                        <img src={res.previewUrl || undefined} className="w-full h-full object-cover opacity-60" alt="Preview"/>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <FileText className="w-10 h-10 text-midnight-ink" />
-                        </div>
-                      </div>
+                       <div className="relative w-full flex-1 overflow-hidden industrial-shadow border border-midnight-ink flex items-center justify-center" style={{ borderRadius: '12px' }}>
+                         {res.previewUrl && res.previewUrl.startsWith('data:image/') ? (
+                           <img src={res.previewUrl} className="w-full h-full object-cover opacity-60" alt="Preview"/>
+                         ) : (
+                           <FileText className="w-14 h-14 text-midnight-ink/40" />
+                         )}
+                       </div>
                       <p className="mt-3 text-sm font-black uppercase text-midnight-ink text-center truncate w-full">{res.name}</p>
                     </div>
                   </motion.div>
