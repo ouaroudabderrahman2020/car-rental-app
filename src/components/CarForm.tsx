@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNotification } from '../contexts/NotificationContext';
 import { Settings, FileText, Calendar, Gauge, Upload, Trash2 } from 'lucide-react';
 import { FormattedCar, MaintenanceInterval, EssentialItem } from '../types';
+import { getDriveImageUrl } from '../lib/gas';
 import { FUEL_TYPES, TRANSMISSIONS } from '../constants';
 import ItemSection from './ItemSection';
 
@@ -117,7 +118,7 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
               rel="noopener noreferrer"
               className="inline-flex h-32 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 overflow-hidden"
             >
-              <img src={fileSrc} alt={value.file_name || label} className="h-full w-auto object-contain" />
+              <img src={getDriveImageUrl(fileSrc)} alt={value.file_name || label} className="h-full w-auto object-contain" />
             </a>
             <div className="absolute top-0 left-0 right-0 flex justify-between p-1 opacity-0 hover:opacity-100 transition-opacity">
               <button

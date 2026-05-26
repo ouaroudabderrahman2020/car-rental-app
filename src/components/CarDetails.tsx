@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Settings, FileText, Calendar, Gauge, ExternalLink } from 'lucide-react';
 import { FormattedCar } from '../types';
-import { getDrivePreviewUrl } from '../lib/gas';
+import { getDrivePreviewUrl, getDriveImageUrl } from '../lib/gas';
 
 interface CardetailsProps {
   car: FormattedCar;
@@ -29,7 +29,7 @@ export default function Cardetails({ car }: CardetailsProps) {
       title: `2 ${t('carForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.uploadImage', 'Vehicle Image'), url: (car.documents || []).find(d => d.doc_type === 'image')?.file_url },
+        { label: t('carForm.uploadImage', 'Vehicle Image'), url: (car.documents || []).find(d => d.doc_type === 'image')?.file_url, isImage: true },
         { label: t('carForm.registrationCard', 'Registration Card'), url: (car.documents || []).find(d => d.doc_type === 'registration_card')?.file_url },
         { label: t('carForm.insurance', 'Insurance'), url: (car.documents || []).find(d => d.doc_type === 'insurance')?.file_url },
         { label: t('carForm.vignette', 'Vignette'), url: (car.documents || []).find(d => d.doc_type === 'vignette')?.file_url },
@@ -81,7 +81,16 @@ export default function Cardetails({ car }: CardetailsProps) {
           <div key={fIdx} className={`w-full flex items-start gap-2.5 px-5 py-3 ${fIdx % 2 === 0 ? 'bg-slate-50/70' : ''}`}>
             <span className="mt-[5px] w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
             {'url' in field ? (
-              field.url ? (
+              field.isImage && field.url ? (
+                <a
+                  href={getDrivePreviewUrl(field.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-32 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 overflow-hidden"
+                >
+                  <img src={getDriveImageUrl(field.url)} alt={field.label} className="h-full w-auto object-contain" />
+                </a>
+              ) : field.url ? (
                 <a
                   href={getDrivePreviewUrl(field.url)}
                   target="_blank"
