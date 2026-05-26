@@ -440,7 +440,7 @@ const ImageSlot = ({ value, onChange, onOpenCrop }: {
 
   return (
     <div
-      className="relative w-full aspect-[16/9] cursor-pointer border-2 border-dashed border-slate-300 rounded-[12px] overflow-hidden bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+      className="relative w-full max-w-56 sm:max-w-72 md:max-w-80 aspect-[16/9] cursor-pointer border-2 border-dashed border-slate-300 rounded-[12px] overflow-hidden bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-colors"
       onClick={handleClick}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
@@ -456,15 +456,17 @@ const ImageSlot = ({ value, onChange, onOpenCrop }: {
         </div>
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-3 hover:bg-slate-50 transition-colors">
-          <Upload className="w-8 h-8 text-slate-300" />
-          <span className="text-[13px] font-semibold text-slate-500 text-center leading-tight">Vehicle Image</span>
-          <span className="text-[10px] text-slate-400 text-center">Drag & Drop or Click</span>
+          <div className="flex flex-col items-center justify-center gap-1 sm:gap-1.5">
+            <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-slate-300" />
+            <span className="text-[11px] sm:text-[13px] font-semibold text-slate-500 text-center leading-tight">Vehicle Image</span>
+            <span className="text-[9px] sm:text-[10px] text-slate-400 text-center">Drag & Drop or Click</span>
+          </div>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onOpenCrop(); }}
-            className="mt-1 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[6px] transition-all"
+            className="flex items-center gap-1 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2.5 sm:px-3 py-1 sm:py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[6px] transition-all"
           >
-            <Crop className="w-3 h-3" /> Crop Tool
+            <Crop className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Crop Tool
           </button>
         </div>
       )}
