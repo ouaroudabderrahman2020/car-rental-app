@@ -88,9 +88,24 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileDataRef = useRef<string | null>(null);
 
   const isImage = docType === 'image';
   const fileSrc = previewUrl || value?.file_url || value?.file_data;
+
+  useEffect(() => {
+    if (value?.file_data && value.file_data !== fileDataRef.current) {
+      fileDataRef.current = value.file_data;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const [header, base64] = value.file_data.split(',');
+      if (!base64) return;
+      const mimeType = header?.match(/:(.*?);/)?.[1] || 'application/octet-stream';
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      setPreviewUrl(URL.createObjectURL(new Blob([bytes], { type: mimeType })));
+    }
+  }, [value?.file_data]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,12 +113,15 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(URL.createObjectURL(file));
     const reader = new FileReader();
-    reader.onload = () => onChange({
-      doc_type: docType,
-      file_data: reader.result as string,
-      file_name: file.name,
-      mime_type: file.type,
-    });
+    reader.onload = () => {
+      fileDataRef.current = reader.result as string;
+      onChange({
+        doc_type: docType,
+        file_data: reader.result as string,
+        file_name: file.name,
+        mime_type: file.type,
+      });
+    };
     reader.readAsDataURL(file);
   };
 
@@ -111,6 +129,7 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
     e?.preventDefault();
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
+    fileDataRef.current = null;
     onChange(null);
   };
 
