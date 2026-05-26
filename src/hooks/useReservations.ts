@@ -14,8 +14,7 @@ export function useReservations() {
         .from('reservations')
         .select(`
           *,
-          car:cars (*),
-          reservation_documents (*)
+          car:cars (*)
         `)
         .order('start_date', { ascending: false });
 

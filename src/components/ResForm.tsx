@@ -369,14 +369,29 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           await gasService.deleteReservationFiles(staleFileIds).catch(() => {});
         }
 
-        // On edit: delete old reservation_documents, then insert fresh ones
-        if (mode === 'edit' && newDocRows.length > 0) {
-          await supabase.from('reservation_documents').delete().eq('reservation_id', resData.id);
+        // Build complete documents list, preserving existing docs for unchanged types
+        let docEntries: any[] = [];
+
+        if (mode === 'add') {
+          docEntries = newDocRows.map(({ reservation_id, ...rest }) => ({ ...rest }));
+        } else {
+          if (docFiles.vehicle_state.length === 0) {
+            for (const url of (reservation?.vehicleStateUrls || [])) {
+              docEntries.push({ doc_type: 'vehicle_state', file_url: url });
+            }
+          }
+          if (docFiles.paper_contract.length === 0) {
+            for (const url of (reservation?.paperContractUrls || [])) {
+              docEntries.push({ doc_type: 'paper_contract', file_url: url });
+            }
+          }
+          for (const row of newDocRows) {
+            docEntries.push({ doc_type: row.doc_type, file_url: row.file_url, file_name: row.file_name, mime_type: row.mime_type });
+          }
         }
 
-        if (newDocRows.length > 0) {
-          await supabase.from('reservation_documents').insert(newDocRows);
-        }
+        // Save to the reservation's documents JSONB column
+        await supabase.from('reservations').update({ documents: docEntries }).eq('id', resData.id);
       }
 
       onSaved?.();

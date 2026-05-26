@@ -78,8 +78,8 @@ export default function Reservations() {
     reservationStateColor: '',
     selectedCarId: res.car_id || null,
     reservationStatus: res.status,
-    vehicleStateUrls: res.vehicle_state_urls || [],
-    paperContractUrls: res.paper_contract_urls || [],
+    vehicleStateUrls: (res.documents || []).filter((d: any) => d.doc_type === 'vehicle_state').map((d: any) => d.file_url),
+    paperContractUrls: (res.documents || []).filter((d: any) => d.doc_type === 'paper_contract').map((d: any) => d.file_url),
     _originalFolderName: `${res.id} ${res.customer_national_id || ''} ${res.car?.plate || ''}`.trim(),
   });
 
@@ -107,7 +107,6 @@ export default function Reservations() {
             odometer,
             essentials
           ),
-          reservation_documents (*)
         `)
         .not('status', 'in', '("Completed","Cancelled")')
         .order('created_at', { ascending: false })
@@ -149,10 +148,10 @@ export default function Reservations() {
             state: stateLabel,
             statusColor,
             price: `$${parseFloat(String(r.total_price || 0)).toFixed(2)}`,
-            vehicle_state_urls: (r.reservation_documents || [])
+            vehicle_state_urls: (r.documents || [])
               .filter((d: any) => d.doc_type === 'vehicle_state')
               .map((d: any) => d.file_url),
-            paper_contract_urls: (r.reservation_documents || [])
+            paper_contract_urls: (r.documents || [])
               .filter((d: any) => d.doc_type === 'paper_contract')
               .map((d: any) => d.file_url),
           };

@@ -58,15 +58,10 @@ export interface FormattedCar extends Car {
 }
 
 export interface ReservationDocument {
-  id: string;
-  reservation_id: string;
-  doc_type: 'vehicle_state' | 'paper_contract';
+  doc_type: 'vehicle_state' | 'paper_contract' | 'id_card' | 'license';
   file_url: string;
   file_name?: string;
-  file_size?: number;
   mime_type?: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface Reservation {

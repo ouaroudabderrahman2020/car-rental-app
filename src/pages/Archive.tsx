@@ -69,8 +69,8 @@ export default function Archive() {
     reservationStateColor: '',
     selectedCarId: res.car_id || null,
     reservationStatus: res.status,
-    vehicleStateUrls: res.vehicle_state_urls || [],
-    paperContractUrls: res.paper_contract_urls || [],
+    vehicleStateUrls: (res.documents || []).filter((d: any) => d.doc_type === 'vehicle_state').map((d: any) => d.file_url),
+    paperContractUrls: (res.documents || []).filter((d: any) => d.doc_type === 'paper_contract').map((d: any) => d.file_url),
     _originalFolderName: `${res.id} ${res.customer_national_id || ''} ${res.car?.plate || ''}`.trim(),
   });
 
@@ -88,7 +88,6 @@ export default function Archive() {
             odometer,
             daily_rate
           ),
-          reservation_documents (*)
         `)
         .in('status', ['Completed', 'Cancelled'])
         .order('end_date', { ascending: false });
