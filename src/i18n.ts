@@ -441,6 +441,7 @@ const resources = {
         calculator: "Calculator",
         calendar: "Calendar",
         imageToPdf: "Image to PDF",
+        imageCrop: "Image Crop",
         imageToPdfTools: {
           dropzoneTitle: "Conversion Engine",
           dropzoneDesc: "Drag & Drop high-resolution images or click to select.",
@@ -860,6 +861,7 @@ const resources = {
         calculator: "Calculatrice",
         calendar: "Calendrier",
         imageToPdf: "Image en PDF",
+        imageCrop: "Recadrage d'Image",
         imageToPdfTools: {
           dropzoneTitle: "Moteur de Conversion",
           dropzoneDesc: "Glissez-déposez des images haute résolution ou cliquez pour sélectionner.",
@@ -1303,6 +1305,7 @@ const resources = {
         calculator: "حاسبة",
         calendar: "تقويم",
         imageToPdf: "تحويل صورة إلى PDF",
+        imageCrop: "قص الصورة",
         imageToPdfTools: {
           dropzoneTitle: "محرك التحويل",
           dropzoneDesc: "قم بسحب وإسقاط الصور عالية الدقة أو انقر للاختيار.",

@@ -1,4 +1,4 @@
-import { Calculator, Calendar, FileType, X } from 'lucide-react';
+import { Calculator, Calendar, FileType, Crop, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
@@ -9,6 +9,7 @@ import Section2 from '../components/Section2';
 import CalculatorTool from '../components/tools/CalculatorTool';
 import CalendarTool from '../components/tools/CalendarTool';
 import ImageToPdf from '../components/tools/ImageToPdf';
+import ImageCrop from '../components/tools/ImageCrop';
 
 export default function Tools() {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ export default function Tools() {
     { name: t('tools.calculator'), key: 'Calculator', icon: Calculator, color: 'text-primary' },
     { name: t('tools.calendar'), key: 'Calendar', icon: Calendar, color: 'text-primary' },
     { name: t('tools.imageToPdf'), key: 'Image to PDF', icon: FileType, color: 'text-primary' },
+    { name: t('tools.imageCrop'), key: 'Image Crop', icon: Crop, color: 'text-primary' },
   ];
 
   const renderTool = () => {
@@ -25,6 +27,7 @@ export default function Tools() {
       case 'Calculator': return <CalculatorTool />;
       case 'Calendar': return <CalendarTool />;
       case 'Image to PDF': return <ImageToPdf />;
+      case 'Image Crop': return <ImageCrop />;
       default: return null;
     }
   };
