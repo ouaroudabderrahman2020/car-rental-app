@@ -97,11 +97,11 @@ export default function Cardetails({ car }: CardetailsProps) {
                 </span>
               )
             ) : (
-              <div className="flex-1 flex items-baseline justify-between gap-4">
-                <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
+              <div className="flex-1 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-4">
+                <span className="text-xs font-semibold text-slate-700">
                   {field.label}
                 </span>
-                <span className="text-sm font-bold text-slate-900 text-right">
+                <span className="text-sm font-bold text-slate-900 sm:text-right">
                   {field.value}
                 </span>
               </div>
