@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../contexts/NotificationContext';
-import { Settings, FileText, Calendar, Gauge, Upload, Trash2, X, Check, Loader2 } from 'lucide-react';
+import { Settings, FileText, Calendar, Gauge, Upload, Trash2, X, Check, Loader2, Crop } from 'lucide-react';
 import ImageToPdf from './tools/ImageToPdf';
+import ImageCrop from './tools/ImageCrop';
 import { PDFDocument } from 'pdf-lib';
 import { FormattedCar, MaintenanceInterval, EssentialItem } from '../types';
 import { getDriveImageUrl } from '../lib/gas';
@@ -360,12 +361,137 @@ const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
   );
 };
 
+const ImageSlot = ({ value, onChange, onOpenCrop }: {
+  value?: { file_data?: string; file_name?: string; mime_type?: string; file_url?: string };
+  onChange: (doc: { doc_type: string; file_data?: string; file_name?: string; mime_type?: string } | null) => void;
+  onOpenCrop: () => void;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileDataRef = useRef<string | null>(null);
+  const fileSrc = previewUrl || value?.file_url || value?.file_data;
+  const hasFile = !!(previewUrl || value?.file_url || value?.file_data);
+
+  useEffect(() => {
+    if (value?.file_data && value.file_data !== fileDataRef.current) {
+      fileDataRef.current = value.file_data;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const [header, base64] = value.file_data.split(',');
+      if (!base64) return;
+      const mimeType = header?.match(/:(.*?);/)?.[1] || 'application/octet-stream';
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      setPreviewUrl(URL.createObjectURL(new Blob([bytes], { type: mimeType })));
+    }
+  }, [value?.file_data]);
+
+  const processFile = (file: File) => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = () => {
+      fileDataRef.current = reader.result as string;
+      onChange({
+        doc_type: 'image',
+        file_data: reader.result as string,
+        file_name: file.name,
+        mime_type: file.type,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    fileDataRef.current = null;
+    onChange(null);
+  };
+
+  const handleClick = () => {
+    if (hasFile) {
+      window.open(fileSrc, '_blank');
+    } else {
+      inputRef.current?.click();
+    }
+  };
+
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+  return (
+    <div
+      className="relative w-full aspect-[16/9] cursor-pointer border-2 border-dashed border-slate-300 rounded-[12px] overflow-hidden bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+      onClick={handleClick}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
+      <input type="file" ref={inputRef} accept="image/*" className="hidden" onClick={(e) => e.stopPropagation()} onChange={handleFileChange} />
+      {hasFile ? (
+        <div className="w-full h-full relative group">
+          <img src={getDriveImageUrl(fileSrc)} alt={value?.file_name || 'Vehicle Image'} className="w-full h-full object-contain bg-slate-50" />
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-1.5 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+            <button type="button" onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }} className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 bg-white/90 hover:bg-white text-slate-700 rounded-[6px]">Change</button>
+            <button type="button" onClick={handleDelete} className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full"><X className="w-3 h-3" /></button>
+          </div>
+        </div>
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-3 hover:bg-slate-50 transition-colors">
+          <Upload className="w-8 h-8 text-slate-300" />
+          <span className="text-[13px] font-semibold text-slate-500 text-center leading-tight">Vehicle Image</span>
+          <span className="text-[10px] text-slate-400 text-center">Drag & Drop or Click</span>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onOpenCrop(); }}
+            className="mt-1 flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[6px] transition-all"
+          >
+            <Crop className="w-3 h-3" /> Crop Tool
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, onChange }: CarFormProps, ref) {
   const { t } = useTranslation();
   const { showToast } = useNotification();
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [selectedService, setSelectedService] = React.useState(serviceOptions[0].value);
   const [showImageToPdf, setShowImageToPdf] = useState(false);
+  const [showCropTool, setShowCropTool] = useState(false);
+
+  const handleCropAssign = (result: { dataUrl: string; blob: Blob }) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDoc('image', {
+        file_data: reader.result as string,
+        file_name: 'cropped_image.png',
+        mime_type: 'image/png',
+      });
+      setShowCropTool(false);
+    };
+    reader.readAsDataURL(result.blob);
+  };
 
   const handleImageToPdfAssign = async (pdfs: { id: string; name: string; blob: Blob; previewUrl: string }[]) => {
     const pdf = pdfs[0];
@@ -550,7 +676,7 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       title: `2 ${t('carForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.uploadImage', 'Vehicle Image'), input: <DocField docType="image" label="Vehicle Image" value={getDoc('image')} onChange={(v) => setDoc('image', v)} /> },
+        { label: t('carForm.uploadImage', 'Vehicle Image'), hideLabel: true, input: <ImageSlot value={getDoc('image')} onChange={(v) => setDoc('image', v)} onOpenCrop={() => setShowCropTool(true)} /> },
         { label: '', hideLabel: true, input: (
           <div className="border border-slate-200 rounded-[12px] overflow-hidden">
             <div className="grid grid-cols-2">
@@ -678,6 +804,20 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
               <X className="w-5 h-5" />
             </button>
             <ImageToPdf onAssign={handleImageToPdfAssign} hideSplit />
+          </div>
+        </div>
+      )}
+      {showCropTool && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="relative w-[90vw] h-[90vh] bg-white rounded-xl shadow-2xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowCropTool(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white rounded-full shadow-sm transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <ImageCrop onAssign={handleCropAssign} />
           </div>
         </div>
       )}
