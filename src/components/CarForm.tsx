@@ -317,7 +317,18 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
         { label: t('carForm.registrationCard', 'Registration Card'), input: <DocField docType="registration_card" label="Registration Card" value={getDoc('registration_card')} onChange={(v) => setDoc('registration_card', v)} /> },
         { label: t('carForm.insurance', 'Insurance'), input: <DocField docType="insurance" label="Insurance" value={getDoc('insurance')} onChange={(v) => setDoc('insurance', v)} /> },
         { label: t('carForm.vignette', 'Vignette'), input: <DocField docType="vignette" label="Vignette" value={getDoc('vignette')} onChange={(v) => setDoc('vignette', v)} /> },
-        { label: t('carForm.pdfLabel', 'All-in-one Documentation'), input: <DocField docType="documentation" label="Documentation" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf /> },
+        { label: t('carForm.pdfLabel', 'All-in-one Documentation'), input: <DocField docType="documentation" label="Documentation" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf />, customLabel: (
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-semibold text-slate-600">{t('carForm.pdfLabel', 'All-in-one Documentation')}</span>
+            <button
+              type="button"
+              onClick={() => setShowImageToPdf(true)}
+              className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[12px] transition-all"
+            >
+              open tool
+            </button>
+          </div>
+        ) },
       ],
     },
     {
@@ -363,31 +374,24 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
     },
   ];
 
-  const renderCard = (section: typeof sections[0], sectionIndex?: number) => (
+  const renderCard = (section: typeof sections[0]) => (
     <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
       {section.title && (
         <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
           {section.icon && <span className="shrink-0 text-white">{section.icon}</span>}
           <span>{section.title.split(' ').slice(1).join(' ')}</span>
-          {sectionIndex === 1 && (
-            <button
-              type="button"
-              onClick={() => setShowImageToPdf(true)}
-              className="ml-auto text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
-            >
-              img to pdf
-            </button>
-          )}
         </div>
       )}
       <div className="flex flex-col gap-4">
         {section.fields.map((field, fIdx) => (
           <div key={fIdx} className="w-full flex flex-col">
-            <span className="text-xs font-semibold text-slate-600 mb-1">
-              {field.label}
-              {(field as any).required && <span className="text-red-500 ml-0.5">*</span>}
-            </span>
+            {(field as any).customLabel || (
+              <span className="text-xs font-semibold text-slate-600 mb-1">
+                {field.label}
+                {(field as any).required && <span className="text-red-500 ml-0.5">*</span>}
+              </span>
+            )}
             {field.input}
           </div>
         ))}
@@ -400,7 +404,7 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {sections.map((section, i) => (
           <div key={i} className="w-full">
-            {renderCard(section, i)}
+            {renderCard(section)}
           </div>
         ))}
       </div>
@@ -414,7 +418,7 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
             >
               <X className="w-5 h-5" />
             </button>
-            <ImageToPdf onAssign={handleImageToPdfAssign} />
+            <ImageToPdf onAssign={handleImageToPdfAssign} hideSplit />
           </div>
         </div>
       )}

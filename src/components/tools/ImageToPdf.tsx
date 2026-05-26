@@ -44,9 +44,10 @@ const convertToPngBytes = (dataUrl: string): Promise<Uint8Array> => {
 
 interface ImageToPdfProps {
   onAssign?: (pdfs: ConversionResult[]) => void;
+  hideSplit?: boolean;
 }
 
-export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
+export default function ImageToPdf({ onAssign, hideSplit }: ImageToPdfProps) {
   const { setStatus } = useStatus();
   const [toolMode, setToolMode] = useState<'merge' | 'split'>('merge');
   const [images, setImages] = useState<{ id: string, name: string, url: string, file: File }[]>([]);
@@ -415,8 +416,10 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-widest text-midnight-ink/40">Actions</label>
                 <div className="flex gap-3">
-                  <SegmentedBtn active={mode === 'single'} onClick={() => setMode('single')} label="Merge into One PDF" />
-                  <SegmentedBtn active={mode === 'separate'} onClick={() => setMode('separate')} label="Separate PDFs" />
+                  <SegmentedBtn active={true} onClick={() => setMode('single')} label="Merge into One PDF" />
+                  {!hideSplit && (
+                    <SegmentedBtn active={mode === 'separate'} onClick={() => setMode('separate')} label="Separate PDFs" />
+                  )}
                 </div>
               </div>
             </div>
@@ -716,12 +719,14 @@ export default function ImageToPdf({ onAssign }: ImageToPdfProps) {
       >
         <div className="p-1 bg-white industrial-shadow shrink-0" style={{ borderRadius: '12px' }}>
           <div className="flex gap-1">
-            <SegmentedBtn active={toolMode === 'merge'} onClick={() => { reset(); setToolMode('merge'); }} label="Merge PDF" />
-            <SegmentedBtn active={toolMode === 'split'} onClick={() => { reset(); setToolMode('split'); }} label="Split PDF" />
+            <SegmentedBtn active={true} onClick={() => { reset(); }} label="Merge PDF" />
+            {!hideSplit && (
+              <SegmentedBtn active={toolMode === 'split'} onClick={() => { reset(); setToolMode('split'); }} label="Split PDF" />
+            )}
           </div>
         </div>
 
-        {toolMode === 'merge' ? renderMergeUi() : renderSplitUi()}
+        {toolMode === 'merge' || hideSplit ? renderMergeUi() : renderSplitUi()}
       </div>
 
       <AnimatePresence>
