@@ -35,7 +35,7 @@ export function useReservations() {
     try {
       const { data, error } = await supabase
         .from('reservations')
-        .insert([{ id: generateReservationId(), ...reservation }])
+        .insert([{ id: crypto.randomUUID(), ...reservation }])
         .select();
 
       if (error) throw error;

@@ -158,7 +158,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       const { error: insertError } = await supabase
         .from('clients')
         .insert([{
-          id: generateClientId(),
+          id: crypto.randomUUID(),
           name: reservation.clientName,
           national_id: reservation.clientId,
           license_number: reservation.clientLicense,

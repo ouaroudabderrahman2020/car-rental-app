@@ -242,7 +242,7 @@ export default function ClientDashboard() {
       } else {
         const { data, error } = await supabase
           .from('clients')
-          .insert([{ id: generateClientId(), ...payload, created_at: new Date().toISOString() }])
+           .insert([{ id: crypto.randomUUID(), ...payload, created_at: new Date().toISOString() }])
           .select()
           .single();
         if (error) throw error;

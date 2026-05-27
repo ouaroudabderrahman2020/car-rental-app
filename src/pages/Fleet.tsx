@@ -116,7 +116,7 @@ export default function Fleet() {
 
     try {
       const payload = {
-        id: generateCarId(),
+        id: crypto.randomUUID(),
         brand: formData.brand,
         model: formData.model,
         plate: formData.plate,
