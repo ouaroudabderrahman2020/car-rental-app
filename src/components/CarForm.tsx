@@ -316,7 +316,12 @@ const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
         onChange={handleFileChange}
       />
       {hasFile ? (
-        <div className="w-full h-full relative group">
+        <div className="w-full h-full relative group border-2 border-emerald-400 bg-emerald-50/20">
+          <div className="absolute top-0 right-0 m-1 z-10">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-bold uppercase tracking-wider rounded-[4px] shadow-sm">
+              <Check className="w-2" /> Uploaded
+            </span>
+          </div>
           <img
             src={getDriveImageUrl(fileSrc)}
             alt={value?.file_name || label}
@@ -350,7 +355,7 @@ const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
           </div>
         </div>
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-3 hover:bg-slate-50 transition-colors">
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-3 border-2 border-dashed border-slate-300 hover:bg-slate-50 transition-colors">
           <Upload className="w-8 h-8 text-slate-300" />
           <span className="text-[13px] font-semibold text-slate-500 text-center leading-tight">{label}</span>
           <span className="text-[10px] text-slate-400 text-center">Drag & Drop or Click</span>
