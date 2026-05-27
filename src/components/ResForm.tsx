@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { fileToBase64 } from '../lib/utils';
 import { gasService, getFileIdFromUrl, getDriveImageUrl } from '../lib/gas';
 import { useReservations } from '../hooks/useReservations';
+import { generateClientId } from '../utils/idGenerator';
 import BaseModal from './BaseModal';
 import ItemSection from './ItemSection';
 
@@ -157,6 +158,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
       const { error: insertError } = await supabase
         .from('clients')
         .insert([{
+          id: generateClientId(),
           name: reservation.clientName,
           national_id: reservation.clientId,
           license_number: reservation.clientLicense,

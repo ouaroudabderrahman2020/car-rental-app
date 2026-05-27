@@ -14,6 +14,7 @@ import Section2 from '../components/Section2';
 /* removed FormSection import */
 import { useStatus } from '../contexts/StatusContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { generateClientId } from '../utils/idGenerator';
 
 const PAGE_SIZE = 25;
 
@@ -241,7 +242,7 @@ export default function ClientDashboard() {
       } else {
         const { data, error } = await supabase
           .from('clients')
-          .insert([{ ...payload, created_at: new Date().toISOString() }])
+          .insert([{ id: generateClientId(), ...payload, created_at: new Date().toISOString() }])
           .select()
           .single();
         if (error) throw error;

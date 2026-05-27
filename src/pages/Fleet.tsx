@@ -12,6 +12,7 @@ import { getDriveImageUrl, getFileIdFromUrl, gasService } from '../lib/gas';
 import { useStatus } from '../contexts/StatusContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { FormattedCar, CarDocument } from '../types';
+import { generateCarId } from '../utils/idGenerator';
 
 export default function Fleet() {
   const { t, i18n } = useTranslation();
@@ -115,6 +116,7 @@ export default function Fleet() {
 
     try {
       const payload = {
+        id: generateCarId(),
         brand: formData.brand,
         model: formData.model,
         plate: formData.plate,

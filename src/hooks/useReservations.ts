@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { Reservation } from '../types';
+import { generateReservationId } from '../utils/idGenerator';
 
 export function useReservations() {
   const [loading, setLoading] = useState(false);
@@ -34,7 +35,7 @@ export function useReservations() {
     try {
       const { data, error } = await supabase
         .from('reservations')
-        .insert([reservation])
+        .insert([{ id: generateReservationId(), ...reservation }])
         .select();
 
       if (error) throw error;
