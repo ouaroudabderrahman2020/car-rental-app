@@ -288,14 +288,15 @@ export default function Archive() {
                       </thead>
                       <tbody className="font-sans text-ink">
                         {loading ? (
-                          <tr>
-                            <td colSpan={5} className="py-12">
-                              <div className="flex flex-col items-center justify-center space-y-4">
-                                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                                <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.loading')}</p>
-                              </div>
-                            </td>
-                          </tr>
+                          Array.from({ length: 6 }).map((_, i) => (
+                            <tr key={i} className="border-b border-slate-100/50">
+                              {Array.from({ length: 5 }).map((__, j) => (
+                                <td key={j} className="py-6 px-6">
+                                  <div className="h-4 bg-slate-200 rounded w-full" />
+                                </td>
+                              ))}
+                            </tr>
+                          ))
                         ) : filteredData.length === 0 ? (
                           <tr>
                             <td colSpan={5} className="empty-table-cell">

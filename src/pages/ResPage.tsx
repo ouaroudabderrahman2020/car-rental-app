@@ -1,4 +1,4 @@
-import { Plus, Loader2, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect, ReactNode, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
@@ -307,14 +307,15 @@ export default function Reservations() {
                   </thead>
                   <tbody className="font-sans text-midnight leading-[1.6]">
                     {loading ? (
-                      <tr>
-                        <td colSpan={7} className="py-12">
-                          <div className="flex flex-col items-center justify-center space-y-4">
-                            <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                            <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.loading')}</p>
-                          </div>
-                        </td>
-                      </tr>
+                      Array.from({ length: 6 }).map((_, i) => (
+                        <tr key={i} className="border-b border-border-tint">
+                          {Array.from({ length: 7 }).map((__, j) => (
+                            <td key={j} className="py-3 px-4">
+                              <div className="h-4 bg-slate-200 rounded w-full" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
                     ) : filteredActive.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="empty-table-cell">

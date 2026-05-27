@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, Activity, FileText, Loader2, Check, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Shield, AlertTriangle, Scale, Plus, Star, DollarSign, FileText, Loader2, Check, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Client, Reservation } from '../types';
@@ -326,14 +326,15 @@ export default function ClientDashboard() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {isLoading ? (
-                        <tr>
-                          <td colSpan={6} className="py-20 text-center">
-                            <div className="flex flex-col items-center gap-4">
-                              <Activity className="w-8 h-8 text-primary animate-pulse" />
-                              <span className="font-bold text-ink/40 uppercase tracking-widest text-fluid-sm">{t('common.loading')}</span>
-                            </div>
-                          </td>
-                        </tr>
+                        Array.from({ length: 6 }).map((_, i) => (
+                          <tr key={i} className="border-b border-slate-100">
+                            {Array.from({ length: 6 }).map((__, j) => (
+                              <td key={j} className="py-3 px-4">
+                                <div className="h-4 bg-slate-200 rounded w-full" />
+                              </td>
+                            ))}
+                          </tr>
+                        ))
                       ) : (
                         <>
                           {filteredClients.length === 0 && (
