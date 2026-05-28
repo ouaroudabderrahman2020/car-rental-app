@@ -395,13 +395,16 @@ export default function Reservations() {
                             <span className="cursor-pointer hover:underline" onClick={() => row.client_id && fetchClientData(row.client_id)}>{row.client}</span>
                           </td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.car')}>
-                            <span className="cursor-pointer hover:underline" onClick={() => row.car_id && fetchCarData(row.car_id)}>{row.carName}</span>
+                            <div className="flex flex-col items-center">
+                              <span className="cursor-pointer hover:underline" onClick={() => row.car_id && fetchCarData(row.car_id)}>{row.carName}</span>
+                              <span className="font-mono tracking-tighter">{row.carPlate}</span>
+                            </div>
                           </td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.startDate')}>{row.pickup}</td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.endDate')}>{row.return}</td>
-                          <td className="py-2.5 px-4 text-center border-e border-border-tint" data-label="State">
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label="State">
                             <div className={`h-7 flex items-center justify-center rounded-[12px] ${row.statusColor} px-3`}>
-                              <span className="text-[10px] font-black uppercase tracking-widest">{row.state}</span>
+                              <span className="font-black uppercase tracking-widest">{row.state}</span>
                             </div>
                           </td>
                           <td className="py-2.5 px-4 text-center standard-row-text font-mono tracking-tighter font-black" data-label={t('reservations.totalAmount')}>{row.price}</td>

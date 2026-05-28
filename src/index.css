@@ -127,7 +127,7 @@
   }
 
   .standard-row-text {
-    @apply font-sans text-fluid-base font-semibold text-midnight;
+    @apply font-sans text-sm font-semibold text-midnight;
   }
 
   .no-scrollbar::-webkit-scrollbar {
