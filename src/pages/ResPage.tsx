@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import BaseModal from '../components/BaseModal';
 import ReservationDetailsView from '../components/ResDetails';
-import ClientDetails from '../components/clientdetails';
+import ClientDetails from '../components/ClientDetails';
 import Cardetails from '../components/CarDetails';
 import ResForm, { ReservationFormData } from '../components/ResForm';
 import { PageHeader } from '../components/PageHeader';
