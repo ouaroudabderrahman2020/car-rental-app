@@ -1,14 +1,16 @@
-import { RefreshCw, Loader2, Download } from 'lucide-react';
+import { RefreshCw, Loader2, Download, Edit } from 'lucide-react';
 import { useState, useEffect, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import BaseModal from '../components/BaseModal';
 import ResForm, { ReservationFormData } from '../components/ResForm';
+import ReservationDetailsView from '../components/ResDetails';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 import { supabase } from '../lib/supabase';
 import { useStatus } from '../contexts/StatusContext';
 import { gasService } from '../lib/gas';
+import { FormattedReservation } from '../types';
 
 const defaultFormData: ReservationFormData = {
   clientSearchQuery: '',
@@ -28,6 +30,8 @@ export default function Archive() {
   const { t, i18n } = useTranslation();
   const { setStatus } = useStatus();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsReservation, setDetailsReservation] = useState<FormattedReservation | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveData, setArchiveData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +42,53 @@ export default function Archive() {
   const [editReservationId, setEditReservationId] = useState<string | null>(null);
   const [saveActions, setSaveActions] = useState<ReactNode>(null);
   const [isResSaving, setIsResSaving] = useState(false);
+
+  const mapArchiveToDetails = (res: any): FormattedReservation => {
+    const now = new Date();
+    const start = new Date(res.start_date);
+    const endDate = new Date(res.end_date);
+    const extEnd = res.extended_return_date ? new Date(res.extended_return_date) : null;
+    const end = (extEnd && !isNaN(extEnd.getTime())) ? extEnd : endDate;
+
+    let stateLabel = res.status === 'Completed' ? 'Completed' : 'Cancelled';
+    let statusColor = res.status === 'Completed' ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white';
+
+    if (res.start_date && (res.end_date || res.extended_return_date)) {
+      if (now < start) {
+        stateLabel = 'Reserved';
+        statusColor = 'bg-sky-400 text-white';
+      } else if (now > end) {
+        stateLabel = 'Overdue';
+        statusColor = 'bg-red-600 text-white';
+      } else {
+        stateLabel = 'Active';
+        statusColor = 'bg-primary text-white';
+      }
+    }
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const fmtDate = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+
+    return {
+      ...res,
+      id_short: res.id.slice(0, 8).toUpperCase(),
+      client: res.customer_name,
+      carName: res.car ? `${res.car.brand} ${res.car.model}` : t('common.noData'),
+      carPlate: res.car?.plate || '—',
+      duration: res.start_date && res.end_date && !isNaN(start.getTime()) && !isNaN(endDate.getTime())
+        ? `${fmtDate(start)} - ${fmtDate(end)}`
+        : '—',
+      state: stateLabel,
+      statusColor,
+      price: `$${parseFloat(String(res.total_price || 0)).toFixed(2)}`,
+      vehicle_state_urls: (res.documents || [])
+        .filter((d: any) => d.doc_type === 'vehicle_state')
+        .map((d: any) => d.file_url),
+      paper_contract_urls: (res.documents || [])
+        .filter((d: any) => d.doc_type === 'paper_contract')
+        .map((d: any) => d.file_url),
+    };
+  };
 
   const mapArchiveToForm = (res: any): ReservationFormData => ({
     clientSearchQuery: res.customer_name || '',
@@ -154,8 +205,15 @@ export default function Archive() {
   };
 
   const handleOpenDetails = (res: any) => {
-    setResFormData(mapArchiveToForm(res));
-    setEditReservationId(res.id);
+    setDetailsReservation(mapArchiveToDetails(res));
+    setIsDetailsOpen(true);
+  };
+
+  const handleEditFromDetails = () => {
+    if (!detailsReservation) return;
+    setIsDetailsOpen(false);
+    setResFormData(mapArchiveToForm(detailsReservation));
+    setEditReservationId(detailsReservation.id);
     setResFormMode('edit');
     setIsModalOpen(true);
   };
@@ -249,6 +307,26 @@ export default function Archive() {
             onActionsReady={setSaveActions}
             onSavingChange={setIsResSaving}
           />
+        </BaseModal>
+
+        <BaseModal
+          isOpen={isDetailsOpen}
+          onClose={() => {
+            setIsDetailsOpen(false);
+            setDetailsReservation(null);
+          }}
+          title="Reservation Details"
+          actions={
+            <button
+              onClick={handleEditFromDetails}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Edit</span>
+            </button>
+          }
+        >
+          {detailsReservation && <ReservationDetailsView reservation={detailsReservation} />}
         </BaseModal>
 
         <div className="pt-6 pb-12">
