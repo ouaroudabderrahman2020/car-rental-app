@@ -313,15 +313,15 @@ export default function ClientDashboard() {
             <div className="w-full flex flex-col gap-8">
               <div className="bg-white border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-start border-collapse responsive-table">
+                  <table className="w-full text-center border-collapse responsive-table [&_th]:border-r [&_th:last-child]:border-r-0 [&_td]:border-r [&_td:last-child]:border-r-0 [&_th]:border-slate-500 [&_td]:border-slate-200">
                     <thead>
                       <tr className="bg-slate-800 text-white text-[10px] md:text-xs font-black uppercase tracking-[0.2em] border-b border-slate-800">
-                        <th className="py-3 px-6 text-start">{t('crm.table.customer', 'Customer')}</th>
-                        <th className="py-3 px-4 text-start">{t('crm.table.nationalId', 'ID')}</th>
-                        <th className="py-3 px-4 text-start">{t('crm.table.license', 'License')}</th>
+                        <th className="py-3 px-6 text-center">{t('crm.table.customer', 'Customer')}</th>
+                        <th className="py-3 px-4 text-center">{t('crm.table.nationalId', 'ID')}</th>
+                        <th className="py-3 px-4 text-center">{t('crm.table.license', 'License')}</th>
                         <th className="py-3 px-4 text-center">{t('crm.table.reservations', 'Res.')}</th>
-                        <th className="py-3 px-4 text-start">{t('crm.table.lastRental', 'Last/Active Rental')}</th>
-                        <th className="py-3 px-6 text-end">{t('crm.table.ranking', 'Ranking')}</th>
+                        <th className="py-3 px-4 text-center">{t('crm.table.lastRental', 'Last/Active Rental')}</th>
+                        <th className="py-3 px-6 text-center">{t('crm.table.ranking', 'Ranking')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -351,9 +351,9 @@ export default function ClientDashboard() {
                               className="group hover:bg-slate-50 cursor-pointer transition-colors"
                             >
                               {/* Customer Info */}
-                              <td className="py-2.5 px-6" data-label={t('crm.table.customer')}>
-                                <div className="flex items-center gap-3">
-                                  <div className="text-start">
+                              <td className="py-2.5 px-6 text-center" data-label={t('crm.table.customer')}>
+                                <div className="flex items-center justify-center gap-3">
+                                  <div className="text-center">
                                     <div className={`font-black uppercase tracking-tight text-sm ${client.is_blacklisted ? 'text-red-600' : 'text-slate-900 group-hover:text-blue-600'}`}>
                                       {client.name}
                                     </div>
@@ -362,11 +362,11 @@ export default function ClientDashboard() {
                               </td>
 
                               {/* ID */}
-                              <td className="py-2.5 px-4 text-start" data-label={t('crm.table.nationalId', 'ID')}>
+                              <td className="py-2.5 px-4 text-center" data-label={t('crm.table.nationalId', 'ID')}>
                                 <span className="text-sm font-bold text-slate-800">{client.national_id || client.id_card_number || '---'}</span>
                               </td>
                               {/* License */}
-                              <td className="py-2.5 px-4 text-start" data-label={t('crm.table.license', 'License')}>
+                              <td className="py-2.5 px-4 text-center" data-label={t('crm.table.license', 'License')}>
                                 <span className="text-sm font-bold text-slate-800">{client.license_number || '---'}</span>
                               </td>
 
@@ -376,7 +376,7 @@ export default function ClientDashboard() {
                               </td>
 
                               {/* Active/Last Rental */}
-                              <td className="py-2.5 px-4 text-start" data-label={t('crm.table.lastRental')}>
+                              <td className="py-2.5 px-4 text-center" data-label={t('crm.table.lastRental')}>
                                 {client.displayRental ? (
                                   <div className="flex flex-col">
                                     <div className="flex items-center gap-1.5">
@@ -397,8 +397,8 @@ export default function ClientDashboard() {
                               </td>
 
                               {/* Ranking */}
-                              <td className="py-2.5 px-6 text-end" data-label={t('crm.table.ranking')}>
-                                <div className="flex justify-end gap-0.5">
+                              <td className="py-2.5 px-6 text-center" data-label={t('crm.table.ranking')}>
+                                <div className="flex justify-center gap-0.5">
                                   {[1, 2, 3, 4, 5].map((star) => (
                                     <Star 
                                       key={star}
