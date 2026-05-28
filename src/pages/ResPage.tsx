@@ -390,7 +390,7 @@ export default function Reservations() {
                             className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text cursor-pointer hover:text-primary transition-colors font-mono tracking-tighter" 
                             data-label={t('reservations.reservationId')}
                           >
-                            {row.id_short}
+                            {row.id}
                           </td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label="Client">
                             <div className="flex flex-col items-center">
