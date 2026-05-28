@@ -87,7 +87,7 @@ export default function Archive() {
             plate,
             odometer,
             daily_rate
-          ),
+          )
         `)
         .in('status', ['Completed', 'Cancelled'])
         .order('end_date', { ascending: false });
@@ -181,9 +181,9 @@ export default function Archive() {
   const filteredData = archiveData.filter(res => {
     const searchStr = searchQuery.toLowerCase();
     const matchesSearch = 
-      res.customer_name.toLowerCase().includes(searchStr) ||
-      (res.car?.brand + ' ' + res.car?.model).toLowerCase().includes(searchStr) ||
-      res.id.toLowerCase().includes(searchStr) ||
+      (res.customer_name || '').toLowerCase().includes(searchStr) ||
+      ((res.car?.brand || '') + ' ' + (res.car?.model || '')).toLowerCase().includes(searchStr) ||
+      (res.id || '').toLowerCase().includes(searchStr) ||
       (res.car?.plate || '').toLowerCase().includes(searchStr);
     return matchesSearch;
   });
@@ -279,11 +279,11 @@ export default function Archive() {
                     <table className="w-full text-left border-collapse responsive-table">
                       <thead>
                         <tr className="bg-slate-800 text-white font-sans text-xs uppercase tracking-[0.1em] border-b border-slate-800">
-                          <th className="py-5 px-6 font-black text-center">{t('archive.table.id')}</th>
-                          <th className="py-5 px-6 font-black text-center">{t('archive.table.client')}</th>
-                          <th className="py-5 px-6 font-black text-center">{t('archive.table.car')}</th>
-                          <th className="py-5 px-6 font-black text-center">{t('archive.table.duration')}</th>
-                          <th className="py-5 px-6 font-black text-center">{t('archive.table.total')}</th>
+                          <th className="py-3 px-6 font-black text-center">{t('archive.table.id')}</th>
+                          <th className="py-3 px-6 font-black text-center">{t('archive.table.client')}</th>
+                          <th className="py-3 px-6 font-black text-center">{t('archive.table.car')}</th>
+                          <th className="py-3 px-6 font-black text-center">{t('archive.table.duration')}</th>
+                          <th className="py-3 px-6 font-black text-center">{t('archive.table.total')}</th>
                         </tr>
                       </thead>
                       <tbody className="font-sans text-ink">
@@ -291,7 +291,7 @@ export default function Archive() {
                           Array.from({ length: 6 }).map((_, i) => (
                             <tr key={i} className="border-b border-slate-100/50">
                               {Array.from({ length: 5 }).map((__, j) => (
-                                <td key={j} className="py-6 px-6">
+                                <td key={j} className="py-2 px-6">
                                   <div className="h-4 bg-slate-200 rounded w-full" />
                                 </td>
                               ))}
@@ -306,8 +306,8 @@ export default function Archive() {
                         ) : (
                           filteredData.map((row) => (
                             <tr key={row.id} className="border-b border-slate-100/50 hover:bg-white transition-all">
-                              <td onClick={() => handleOpenDetails(row)} className="py-6 px-6 font-bold text-ink border-e border-slate-100 text-center cursor-pointer hover:text-primary transition-colors font-mono tracking-tighter" data-label={t('archive.table.id')}>{row.id.slice(0, 8).toUpperCase()}</td>
-                              <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.client')}>
+                              <td onClick={() => handleOpenDetails(row)} className="py-2 px-6 font-bold text-ink border-e border-slate-100 text-center cursor-pointer hover:text-primary transition-colors font-mono tracking-tighter" data-label={t('archive.table.id')}>{row.id.slice(0, 8).toUpperCase()}</td>
+                              <td className="py-2 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.client')}>
                                 <div className="flex flex-col items-center">
                                   <div className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleOpenDetails(row)}>{row.customer_name}</div>
                                   <div className={`text-[11px] font-bold uppercase tracking-tighter text-ink/40`}>
@@ -315,13 +315,13 @@ export default function Archive() {
                                   </div>
                                 </div>
                               </td>
-                              <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.car')}>
+                              <td className="py-2 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.car')}>
                                 <div className="flex flex-col items-center">
                                   <div className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleOpenDetails(row)}>{row.car ? `${row.car.brand} ${row.car.model}` : t('common.noData')}</div>
                                   <div className="text-xs text-ink font-mono tracking-tighter">{row.car?.plate || '—'}</div>
                                 </div>
                               </td>
-                              <td className="py-6 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.duration')}>
+                              <td className="py-3 px-6 border-e border-slate-100 text-center" data-label={t('archive.table.duration')}>
                                 <div className="flex flex-col items-center">
                                   <div className="font-semibold text-accent-blue font-mono tracking-tighter text-xs">
                                     {new Date(row.start_date).toLocaleDateString(i18n.language)} - {new Date(row.end_date).toLocaleDateString(i18n.language)}
@@ -331,7 +331,7 @@ export default function Archive() {
                                   </div>
                                 </div>
                               </td>
-                              <td className="py-6 px-6 text-center font-bold text-ink font-mono tracking-tighter" data-label={t('archive.table.total')}>${parseFloat(row.total_price || 0).toFixed(2)}</td>
+                              <td className="py-2 px-6 text-center font-bold text-ink font-mono tracking-tighter" data-label={t('archive.table.total')}>${parseFloat(row.total_price || 0).toFixed(2)}</td>
                             </tr>
                           ))
                         )}
