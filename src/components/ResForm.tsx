@@ -108,6 +108,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     vehicle_state: [],
     paper_contract: [],
   });
+  const [deletedDocUrls, setDeletedDocUrls] = useState<string[]>([]);
   const { createReservation, updateReservation } = useReservations();
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -222,6 +223,13 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     setDocFiles(prev => ({ ...prev, [key]: newFiles }));
   };
 
+  const handleDeleteExistingDoc = (url: string) => {
+    setDeletedDocUrls(prev => [...prev, url]);
+  };
+
+  const visibleVehicleStateUrls = (reservation?.vehicleStateUrls || []).filter(url => !deletedDocUrls.includes(url));
+  const visiblePaperContractUrls = (reservation?.paperContractUrls || []).filter(url => !deletedDocUrls.includes(url));
+
   const validate = (): boolean => {
     const newErrors: { [key: string]: string } = {};
     if (!reservation?.clientName?.trim()) newErrors.clientName = 'required';
@@ -314,8 +322,12 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         const newDocRows: any[] = [];
         const staleFileIds: string[] = [];
 
-        // On edit: collect stale GDrive file IDs for doc_types that have new uploads
+        // On edit: collect stale GDrive file IDs for deleted docs or replaced doc types
         if (mode === 'edit') {
+          for (const url of deletedDocUrls) {
+            const id = getFileIdFromUrl(url);
+            if (id) staleFileIds.push(id);
+          }
           if (docFiles.vehicle_state.length > 0) {
             (reservation?.vehicleStateUrls || []).forEach(url => {
               const id = getFileIdFromUrl(url);
@@ -374,12 +386,12 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           docEntries = newDocRows.map(({ reservation_id, ...rest }) => ({ ...rest }));
         } else {
           if (docFiles.vehicle_state.length === 0) {
-            for (const url of (reservation?.vehicleStateUrls || [])) {
+            for (const url of visibleVehicleStateUrls) {
               docEntries.push({ doc_type: 'vehicle_state', file_url: url });
             }
           }
           if (docFiles.paper_contract.length === 0) {
-            for (const url of (reservation?.paperContractUrls || [])) {
+            for (const url of visiblePaperContractUrls) {
               docEntries.push({ doc_type: 'paper_contract', file_url: url });
             }
           }
@@ -936,13 +948,20 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           label: t('reservations.form.vehicleState', 'Vehicle State (Before/After)'),
           input: (
             <div className="flex flex-col gap-2">
-              {reservation?.vehicleStateUrls && reservation.vehicleStateUrls.length > 0 && (
+              {visibleVehicleStateUrls.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-1">
-                  {reservation.vehicleStateUrls.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-[12px] px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors">
-                      <ExternalLink className="w-3 h-3 shrink-0" />
-                      {t('reservations.form.vehicleState', 'Vehicle State (Before/After)')}{reservation.vehicleStateUrls!.length > 1 ? ` ${i + 1}` : ''}
-                    </a>
+                  {visibleVehicleStateUrls.map((url, i) => (
+                    <div key={i} className="inline-flex items-center gap-1 bg-blue-100 border border-blue-200 rounded-[12px] overflow-hidden">
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-700 px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors">
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                        {t('reservations.form.vehicleState', 'Vehicle State (Before/After)')}{visibleVehicleStateUrls.length > 1 ? ` ${i + 1}` : ''}
+                      </a>
+                      {mode === 'edit' && (
+                        <button onClick={() => handleDeleteExistingDoc(url)} className="p-1.5 hover:bg-red-100 text-blue-400 hover:text-red-600 transition-colors">
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -981,13 +1000,20 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           label: t('reservations.form.paperContract', 'Paper Contract PDF'),
           input: (
             <div className="flex flex-col gap-2">
-              {reservation?.paperContractUrls && reservation.paperContractUrls.length > 0 && (
+              {visiblePaperContractUrls.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-1">
-                  {reservation.paperContractUrls.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-200 rounded-[12px] px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors">
-                      <ExternalLink className="w-3 h-3 shrink-0" />
-                      {t('reservations.form.paperContract', 'Paper Contract PDF')}{reservation.paperContractUrls!.length > 1 ? ` ${i + 1}` : ''}
-                    </a>
+                  {visiblePaperContractUrls.map((url, i) => (
+                    <div key={i} className="inline-flex items-center gap-1 bg-blue-100 border border-blue-200 rounded-[12px] overflow-hidden">
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-700 px-3 py-1.5 inline-flex items-center gap-2 hover:bg-blue-200 transition-colors">
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                        {t('reservations.form.paperContract', 'Paper Contract PDF')}{visiblePaperContractUrls.length > 1 ? ` ${i + 1}` : ''}
+                      </a>
+                      {mode === 'edit' && (
+                        <button onClick={() => handleDeleteExistingDoc(url)} className="p-1.5 hover:bg-red-100 text-blue-400 hover:text-red-600 transition-colors">
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
