@@ -67,9 +67,15 @@ const DocField = ({ docType, label, value, onChange }: {
           <div className="flex items-center justify-between px-3 h-10 bg-blue-50 border border-blue-200 rounded-[12px]">
             <div className="flex items-center gap-2 min-w-0">
               <FileText className="w-4 h-4 text-blue-600 shrink-0" />
-              <span className="text-[10px] font-bold text-blue-900 truncate">
-                {value.file_name || label}
-              </span>
+              {value.file_url ? (
+                <a href={value.file_url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-blue-900 truncate hover:underline">
+                  {value.file_name || label}
+                </a>
+              ) : (
+                <span className="text-[10px] font-bold text-blue-900 truncate">
+                  {value.file_name || label}
+                </span>
+              )}
             </div>
             <button
               type="button"
