@@ -44,7 +44,6 @@ export interface ReservationFormData {
   reservationStatus?: string;
   vehicleStateUrls?: string[];
   paperContractUrls?: string[];
-  _originalFolderName?: string;
 }
 
 interface ResFormProps {
@@ -310,18 +309,9 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
 
       const resData = result.data?.[0];
       if (resData?.id) {
-        const resFolderName = `${resData.id} ${clientId} ${carPlate}`.trim();
-
-        // On edit: rename GDrive folder if client ID or car plate changed
-        if (mode === 'edit') {
-          const oldFolderName = reservation?._originalFolderName || `${editId} ${clientId} ${carPlate}`.trim();
-          if (oldFolderName !== resFolderName) {
-            await gasService.renameReservationFolder(oldFolderName, resFolderName).catch(() => {});
-          }
-        }
+        const resFolderName = resData.id;
 
         const newDocRows: any[] = [];
-        const uploadTasks: Promise<any>[] = [];
         const staleFileIds: string[] = [];
 
         // On edit: collect stale GDrive file IDs for doc_types that have new uploads
@@ -340,31 +330,37 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           }
         }
 
+        // Batch all file uploads into a single GAS call to avoid race conditions
+        const allFiles: { base64: string; fileName: string; contentType: string; docType: string; originalName: string }[] = [];
         Object.entries(docFiles).forEach(([key, fileList]) => {
           (fileList as any[]).forEach((fileObj: any) => {
-            const fileName = `${key}_${fileObj.name}`;
-            uploadTasks.push(
-              gasService.uploadReservationFile({
-                base64: fileObj.base64Data,
-                fileName,
-                contentType: fileObj.contentType,
-                reservationFolderName: resFolderName,
-              }).then(result => {
-                if (result?.status === 'success' && result?.fileUrl) {
-                  newDocRows.push({
-                    reservation_id: resData.id,
-                    doc_type: key,
-                    file_url: result.fileUrl,
-                    file_name: fileObj.name,
-                    mime_type: fileObj.contentType,
-                  });
-                }
-              })
-            );
+            allFiles.push({
+              base64: fileObj.base64Data,
+              fileName: `${key}_${fileObj.name}`,
+              contentType: fileObj.contentType,
+              docType: key,
+              originalName: fileObj.name,
+            });
           });
         });
 
-        await Promise.allSettled(uploadTasks);
+        if (allFiles.length > 0) {
+          const uploadResult = await gasService.uploadReservationFiles(
+            allFiles.map(({ docType, originalName, ...f }) => f),
+            resFolderName
+          );
+          if (uploadResult?.status === 'success' && uploadResult?.files) {
+            uploadResult.files.forEach((f: any, i: number) => {
+              newDocRows.push({
+                reservation_id: resData.id,
+                doc_type: allFiles[i].docType,
+                file_url: f.fileUrl,
+                file_name: allFiles[i].originalName,
+                mime_type: allFiles[i].contentType,
+              });
+            });
+          }
+        }
 
         // Delete stale GDrive files (old files replaced by new uploads)
         if (staleFileIds.length > 0) {
@@ -416,7 +412,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     if (!confirmed) return;
     setIsSaving(true);
     try {
-      const folderName = `${editId} ${reservation?.clientId || ''} ${reservation?.licensePlate || ''}`.trim();
+      const folderName = editId;
       await gasService.deleteReservationFolder(folderName);
 
       const { error } = await supabase.from('reservations').delete().eq('id', editId);

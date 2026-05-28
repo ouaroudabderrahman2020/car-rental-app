@@ -92,7 +92,8 @@ export default function Reservations() {
       const { count } = await supabase
         .from('reservations')
         .select('*', { count: 'exact', head: true })
-        .not('status', 'in', '("Completed","Cancelled")');
+        .neq('status', 'Completed')
+        .neq('status', 'Cancelled');
       setTotalCount(count || 0);
 
       const { data, error } = await supabase
@@ -106,9 +107,10 @@ export default function Reservations() {
             daily_rate,
             odometer,
             essentials
-          ),
+          )
         `)
-        .not('status', 'in', '("Completed","Cancelled")')
+        .neq('status', 'Completed')
+        .neq('status', 'Cancelled')
         .order('created_at', { ascending: false })
         .range(from, to);
 

@@ -106,6 +106,10 @@ export const gasService = {
     });
   },
 
+  async uploadReservationFiles(files: { base64: string; fileName: string; contentType: string }[], reservationFolderName: string) {
+    return callGasAction('uploadReservationFiles', { files, reservationFolderName });
+  },
+
   async renameReservationFolder(oldName: string, newName: string) {
     return callGasAction('renameReservationFolder', { oldName, newName });
   },
