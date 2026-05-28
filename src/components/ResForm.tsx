@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check, Archive, Trash2, ExternalLink } from 'lucide-react';
+import { Search, FileText, Upload, User, CreditCard, Monitor, X, ChevronDown, CheckCircle, Sparkles, XCircle, Loader2, AlertCircle, Plus, RotateCcw, Car as CarIcon, ChevronRight, Check, Archive, Trash2, ExternalLink, Copy } from 'lucide-react';
 import { useNotification } from '../contexts/NotificationContext';
 import { supabase } from '../lib/supabase';
 
@@ -119,6 +119,9 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     label: 'measuring...',
     color: 'bg-slate-200 text-slate-700',
   });
+  const [carNotFoundError, setCarNotFoundError] = useState('');
+  const [pickupDatePastError, setPickupDatePastError] = useState('');
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -438,6 +441,72 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
     }
   };
 
+  const handleDuplicateAsNew = async () => {
+    setCarNotFoundError('');
+    setPickupDatePastError('');
+
+    const carId = reservation?.selectedCarId;
+    const pickup = reservation?.pickupDate;
+
+    if (carId) {
+      const { data: carData } = await supabase
+        .from('cars')
+        .select('id')
+        .eq('id', carId)
+        .neq('status', 'Decommissioned')
+        .single();
+      if (!carData) {
+        setCarNotFoundError('Selected car no longer exists in fleet');
+        return;
+      }
+    }
+
+    if (pickup) {
+      const pickupDate = new Date(pickup);
+      const now = new Date();
+      if (pickupDate < now) {
+        setPickupDatePastError('Pick-up date must be in present or future');
+        return;
+      }
+    }
+
+    setIsDuplicating(true);
+    try {
+      const baseData: any = {
+        car_id: reservation?.selectedCarId || undefined,
+        client_id: selectedCustomer?.id || null,
+        customer_name: reservation?.clientName || '',
+        customer_national_id: reservation?.clientId || null,
+        customer_license: reservation?.clientLicense || null,
+        start_date: reservation?.pickupDate ? new Date(reservation.pickupDate).toISOString() : undefined,
+        end_date: reservation?.returnDate ? new Date(reservation.returnDate).toISOString() : undefined,
+        extended_return_date: reservation?.extendedReturnDate ? new Date(reservation.extendedReturnDate).toISOString() : null,
+        status: 'Confirmed',
+        total_price: totalPrice,
+        balance_due: balanceDue,
+        prepayment: reservation?.prepaymentType === 'fully_paid' ? totalPrice : (reservation?.prepayment || 0),
+        deposit_type: reservation?.depositType || null,
+        deposit_amount: reservation?.depositAmount || 0,
+        odometer_out: reservation?.odometerOut ? parseInt(reservation.odometerOut, 10) : undefined,
+        odometer_in: reservation?.odometerIn ? parseInt(reservation.odometerIn, 10) : undefined,
+        fuel_level_out: reservation?.fuelOut ? parseInt(reservation.fuelOut, 10) : undefined,
+        fuel_level_in: reservation?.fuelIn ? parseInt(reservation.fuelIn, 10) : undefined,
+        cleaned_before: reservation?.cleanedBefore || null,
+        included_items: reservation?.includedItems || [],
+        notes: reservation?.notes || null,
+      };
+
+      const result = await createReservation(baseData);
+      if (result.error) throw new Error(result.error);
+
+      onSaved?.();
+    } catch (err: any) {
+      showToast(err.message || 'Error creating duplicate', 'error');
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
   const handleSaveRef = useRef(handleSave);
   handleSaveRef.current = handleSave;
 
@@ -461,14 +530,24 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
               {isSaving ? 'Deleting...' : 'Delete'}
             </button>
             {reservation?.reservationStatus === 'Completed' ? (
-              <button
-                onClick={() => handleSaveRef.current('Confirmed')}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-amber-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
-              >
-                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
-                {isSaving ? 'Saving...' : 'Re-activate'}
-              </button>
+              <>
+                <button
+                  onClick={() => handleSaveRef.current('Confirmed')}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-amber-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                  {isSaving ? 'Saving...' : 'Re-activate'}
+                </button>
+                <button
+                  onClick={handleDuplicateAsNew}
+                  disabled={isDuplicating}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-purple-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+                >
+                  {isDuplicating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
+                  {isDuplicating ? 'Creating...' : 'Duplicate'}
+                </button>
+              </>
             ) : (
               <button
                 onClick={() => handleSaveRef.current('Completed')}
@@ -500,7 +579,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         </button>
       </div>
     );
-  }, [isSaving, saveError, onActionsReady, mode, reservation?.reservationStatus]);
+  }, [isSaving, saveError, onActionsReady, mode, reservation?.reservationStatus, isDuplicating]);
 
   useEffect(() => {
     onSavingChange?.(isSaving);
@@ -806,24 +885,36 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
           name: 'selectedCarId', label: t('reservations.form.carSelection', 'Car Selection'),
           required: true,
           input: (
-            <button
-              type="button"
-              onClick={() => setIsCarSelectorOpen(true)}
-              className={`w-full h-9 bg-white border border-slate-200 rounded-[12px] px-3 flex items-center justify-between text-sm group hover:bg-slate-50 transition-all ${errors.selectedCarId ? 'border-red-500 ring-2 ring-red-100' : ''}`}
-            >
-              <div className="flex items-center gap-2 truncate">
-                <CarIcon className="w-4 h-4 text-slate-400 group-hover:scale-110 transition-transform shrink-0" />
-                <span className="truncate text-slate-900 font-medium">
-                  {reservation?.selectedCarId && reservation?.licensePlate
-                    ? `${reservation.licensePlate} - ${reservation.carBrand || ''} ${reservation.carModel || ''}`
-                    : t('reservations.form.selectCar', 'Select Car')}
-                </span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-            </button>
+            <div className="flex flex-col gap-1 w-full">
+              <button
+                type="button"
+                onClick={() => { setCarNotFoundError(''); setIsCarSelectorOpen(true); }}
+                className={`w-full h-9 bg-white border border-slate-200 rounded-[12px] px-3 flex items-center justify-between text-sm group hover:bg-slate-50 transition-all ${errors.selectedCarId ? 'border-red-500 ring-2 ring-red-100' : ''}`}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <CarIcon className="w-4 h-4 text-slate-400 group-hover:scale-110 transition-transform shrink-0" />
+                  <span className="truncate text-slate-900 font-medium">
+                    {reservation?.selectedCarId && reservation?.licensePlate
+                      ? `${reservation.licensePlate} - ${reservation.carBrand || ''} ${reservation.carModel || ''}`
+                      : t('reservations.form.selectCar', 'Select Car')}
+                  </span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+              </button>
+              {carNotFoundError && <span className="text-[10px] font-semibold text-red-500">{carNotFoundError}</span>}
+            </div>
           ),
         },
-        { name: 'pickupDate', label: t('reservations.form.pickupDate', 'Pick-up Date & Time'), required: true, input: <InputField type="datetime-local" value={reservation?.pickupDate || ''} onChange={(e: any) => set('pickupDate', e.target.value)} className={errors.pickupDate ? 'border-red-500 ring-2 ring-red-100' : ''} /> },
+        {
+          name: 'pickupDate', label: t('reservations.form.pickupDate', 'Pick-up Date & Time'),
+          required: true,
+          input: (
+            <div className="flex flex-col gap-1 w-full">
+              <InputField type="datetime-local" value={reservation?.pickupDate || ''} onChange={(e: any) => { setPickupDatePastError(''); set('pickupDate', e.target.value); }} className={errors.pickupDate ? 'border-red-500 ring-2 ring-red-100' : ''} />
+              {pickupDatePastError && <span className="text-[10px] font-semibold text-red-500">{pickupDatePastError}</span>}
+            </div>
+          ),
+        },
         {
           name: 'returnDate', label: t('reservations.form.returnDate', 'Return Date & Time'),
           required: true,
@@ -1179,6 +1270,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
                 <div
                   key={car.id}
                   onClick={() => {
+                    setCarNotFoundError('');
                     onChange({
                       ...(reservation || {}),
                       selectedCarId: car.id,
