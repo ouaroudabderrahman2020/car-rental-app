@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import BaseModal from '../components/BaseModal';
 import ReservationDetailsView from '../components/ResDetails';
+import ClientDetails from '../components/clientdetails';
+import Cardetails from '../components/CarDetails';
 import ResForm, { ReservationFormData } from '../components/ResForm';
 import { PageHeader } from '../components/PageHeader';
 import Section2 from '../components/Section2';
 import { supabase } from '../lib/supabase';
-import { FormattedReservation } from '../types';
+import { FormattedReservation, Client, Car } from '../types';
 import { RESERVATION_STATUSES } from '../constants';
 
 const PAGE_SIZE = 25;
@@ -47,6 +49,12 @@ export default function Reservations() {
   const [isResSaving, setIsResSaving] = useState(false);
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isCarModalOpen, setIsCarModalOpen] = useState(false);
+  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+  const [clientLoading, setClientLoading] = useState(false);
+  const [carLoading, setCarLoading] = useState(false);
 
   const mapReservationToForm = (res: FormattedReservation): ReservationFormData => ({
     clientSearchQuery: res.customer_name || '',
@@ -168,6 +176,34 @@ export default function Reservations() {
       setLoading(false);
     }
   }, [t]);
+
+  const fetchClientData = async (clientId: string) => {
+    setClientLoading(true);
+    try {
+      const { data, error } = await supabase.from('clients').select('*').eq('id', clientId).single();
+      if (error) throw error;
+      setSelectedClient(data);
+      setIsClientModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching client:', error);
+    } finally {
+      setClientLoading(false);
+    }
+  };
+
+  const fetchCarData = async (carId: string) => {
+    setCarLoading(true);
+    try {
+      const { data, error } = await supabase.from('cars').select('*').eq('id', carId).single();
+      if (error) throw error;
+      setSelectedCar(data);
+      setIsCarModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching car:', error);
+    } finally {
+      setCarLoading(false);
+    }
+  };
 
   const filteredActive = activeReservations.filter(res => {
     const matchesSearch = res.client.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -291,6 +327,27 @@ export default function Reservations() {
           {detailsReservation && <ReservationDetailsView reservation={detailsReservation} />}
         </BaseModal>
 
+        <BaseModal
+          isOpen={isClientModalOpen}
+          onClose={() => {
+            setIsClientModalOpen(false);
+            setSelectedClient(null);
+          }}
+          title="Client Details"
+        >
+          {selectedClient && <ClientDetails client={selectedClient} />}
+        </BaseModal>
+        <BaseModal
+          isOpen={isCarModalOpen}
+          onClose={() => {
+            setIsCarModalOpen(false);
+            setSelectedCar(null);
+          }}
+          title="Car Details"
+        >
+          {selectedCar && <Cardetails car={selectedCar} />}
+        </BaseModal>
+
         <div className="max-w-[1440px] mx-auto pt-6 pb-12">
           <Section2>
             <div className="w-full flex flex-col gap-6">
@@ -299,7 +356,7 @@ export default function Reservations() {
                   <thead>
                     <tr className="bg-slate-800 text-white font-sans text-[10px] md:text-xs uppercase tracking-widest border-b border-slate-800">
                       <th className="py-3 px-4 font-black text-center">{t('reservations.reservationId')}</th>
-                      <th className="py-3 px-4 font-black text-center">{t('reservations.customerName')}</th>
+                      <th className="py-3 px-4 font-black text-center">{t('reservations.customerName', 'Client')}</th>
                       <th className="py-3 px-4 font-black text-center">{t('reservations.car')}</th>
                       <th className="py-3 px-4 font-black text-center">{t('reservations.startDate')}</th>
                       <th className="py-3 px-4 font-black text-center">{t('reservations.endDate')}</th>
@@ -334,8 +391,12 @@ export default function Reservations() {
                           >
                             {row.id_short}
                           </td>
-                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.customerName')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenDetails(row)}>{row.client}</span></td>
-                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.car')}><span className="cursor-pointer hover:underline" onClick={() => handleOpenDetails(row)}>{row.carName}</span></td>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.customerName', 'Client')}>
+                            <span className="cursor-pointer hover:underline" onClick={() => row.client_id && fetchClientData(row.client_id)}>{row.client}</span>
+                          </td>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.car')}>
+                            <span className="cursor-pointer hover:underline" onClick={() => row.car_id && fetchCarData(row.car_id)}>{row.carName}</span>
+                          </td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.startDate')}>{row.pickup}</td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.endDate')}>{row.return}</td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint" data-label="State">
