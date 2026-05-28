@@ -147,24 +147,26 @@ export default function Reservations() {
             }
           }
 
+          const pad = (n: number) => n.toString().padStart(2, '0');
+          const fmtDate = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+
           return {
-            ...r,
-            id_short: r.id.slice(0, 8).toUpperCase(),
-            client: r.customer_name,
-            carName: r.car ? `${r.car.brand} ${r.car.model}` : t('common.noData'),
-            carPlate: r.car?.plate || '—',
-            pickup: new Date(r.start_date).toLocaleDateString(),
-            return: new Date(r.end_date).toLocaleDateString(),
-            state: stateLabel,
-            statusColor,
-            price: `$${parseFloat(String(r.total_price || 0)).toFixed(2)}`,
-            vehicle_state_urls: (r.documents || [])
-              .filter((d: any) => d.doc_type === 'vehicle_state')
-              .map((d: any) => d.file_url),
-            paper_contract_urls: (r.documents || [])
-              .filter((d: any) => d.doc_type === 'paper_contract')
-              .map((d: any) => d.file_url),
-          };
+              ...r,
+              id_short: r.id.slice(0, 8).toUpperCase(),
+              client: r.customer_name,
+              carName: r.car ? `${r.car.brand} ${r.car.model}` : t('common.noData'),
+              carPlate: r.car?.plate || '—',
+              duration: `${fmtDate(start)} - ${fmtDate(end)}`,
+              state: stateLabel,
+              statusColor,
+              price: `$${parseFloat(String(r.total_price || 0)).toFixed(2)}`,
+              vehicle_state_urls: (r.documents || [])
+                .filter((d: any) => d.doc_type === 'vehicle_state')
+                .map((d: any) => d.file_url),
+              paper_contract_urls: (r.documents || [])
+                .filter((d: any) => d.doc_type === 'paper_contract')
+                .map((d: any) => d.file_url),
+            };
         });
 
         setActiveReservations(active);
@@ -356,10 +358,9 @@ export default function Reservations() {
                   <thead>
                     <tr className="bg-slate-800 text-white font-sans text-[10px] md:text-xs uppercase tracking-widest border-b border-slate-800">
                       <th className="py-3 px-4 font-black text-center">{t('reservations.reservationId')}</th>
-                      <th className="py-3 px-4 font-black text-center">{t('reservations.customerName', 'Client')}</th>
+                      <th className="py-3 px-4 font-black text-center">Client</th>
                       <th className="py-3 px-4 font-black text-center">{t('reservations.car')}</th>
-                      <th className="py-3 px-4 font-black text-center">{t('reservations.startDate')}</th>
-                      <th className="py-3 px-4 font-black text-center">{t('reservations.endDate')}</th>
+                      <th className="py-3 px-4 font-black text-center">Duration</th>
                       <th className="py-3 px-4 font-black text-center">State</th>
                       <th className="py-3 px-4 text-center font-black">{t('reservations.totalAmount')}</th>
                     </tr>
@@ -368,7 +369,7 @@ export default function Reservations() {
                     {loading ? (
                       Array.from({ length: 6 }).map((_, i) => (
                         <tr key={i} className="border-b border-border-tint">
-                          {Array.from({ length: 7 }).map((__, j) => (
+                          {Array.from({ length: 6 }).map((__, j) => (
                             <td key={j} className="py-3 px-4">
                               <div className="h-4 bg-slate-200 rounded w-full" />
                             </td>
@@ -377,7 +378,7 @@ export default function Reservations() {
                       ))
                     ) : filteredActive.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="empty-table-cell">
+                        <td colSpan={6} className="empty-table-cell">
                           {t('common.noData')}
                         </td>
                       </tr>
@@ -391,8 +392,11 @@ export default function Reservations() {
                           >
                             {row.id_short}
                           </td>
-                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.customerName', 'Client')}>
-                            <span className="cursor-pointer hover:underline" onClick={() => row.client_id && fetchClientData(row.client_id)}>{row.client}</span>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label="Client">
+                            <div className="flex flex-col items-center">
+                              <span className="cursor-pointer hover:underline" onClick={() => row.client_id && fetchClientData(row.client_id)}>{row.client}</span>
+                              <span className="font-mono text-sm text-slate-800 font-semibold">{row.customer_national_id}</span>
+                            </div>
                           </td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('reservations.car')}>
                             <div className="flex flex-col items-center">
@@ -400,8 +404,7 @@ export default function Reservations() {
                               <span className="font-mono tracking-tighter">{row.carPlate}</span>
                             </div>
                           </td>
-                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.startDate')}>{row.pickup}</td>
-                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('reservations.endDate')}>{row.return}</td>
+                          <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label="Duration">{row.duration}</td>
                           <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label="State">
                             <div className={`h-7 flex items-center justify-center rounded-[12px] ${row.statusColor} px-3`}>
                               <span className="font-black uppercase tracking-widest">{row.state}</span>

@@ -102,8 +102,7 @@ export interface FormattedReservation extends Reservation {
   client: string;
   carName: string;
   carPlate: string;
-  pickup: string;
-  return: string;
+  duration: string;
   state: string;
   price: string;
   statusColor?: string;
