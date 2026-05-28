@@ -460,14 +460,25 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
               {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
               {isSaving ? 'Deleting...' : 'Delete'}
             </button>
-            <button
-              onClick={() => handleSaveRef.current('Completed')}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-emerald-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
-            >
-              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-              {isSaving ? 'Saving...' : 'Complete'}
-            </button>
+            {reservation?.reservationStatus === 'Completed' ? (
+              <button
+                onClick={() => handleSaveRef.current('Confirmed')}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-amber-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                {isSaving ? 'Saving...' : 'Re-activate'}
+              </button>
+            ) : (
+              <button
+                onClick={() => handleSaveRef.current('Completed')}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-emerald-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                {isSaving ? 'Saving...' : 'Complete'}
+              </button>
+            )}
           </>
         ) : (
           <button
@@ -489,7 +500,7 @@ export default function ResForm({ reservation, onChange, onSaved, mode = 'add', 
         </button>
       </div>
     );
-  }, [isSaving, saveError, onActionsReady, mode]);
+  }, [isSaving, saveError, onActionsReady, mode, reservation?.reservationStatus]);
 
   useEffect(() => {
     onSavingChange?.(isSaving);
