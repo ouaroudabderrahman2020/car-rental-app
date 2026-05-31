@@ -281,17 +281,34 @@ export default function Layout({ children, title }: LayoutProps) {
       </main>
 
       {/* Global Status Bar (Footer) */}
-      <footer className="fixed bottom-0 w-full bg-white/90 backdrop-blur-md text-slate-900 py-2 border-t border-black/5 z-[9999] shadow-[0_-1px_0_0_rgba(0,0,0,0.05)]">
-        <div className="max-w-[1440px] mx-auto px-4 md:px-margin flex items-center justify-between text-[10px] font-bold uppercase tracking-widest leading-none">
+      <footer className={`fixed bottom-0 w-full z-[9999] border-t transition-all duration-500 ${
+        type === 'processing'
+          ? 'bg-emerald-50 border-l-4 border-l-emerald-400 border-t-emerald-200'
+          : 'bg-white/90 backdrop-blur-md border-black/5 shadow-[0_-1px_0_0_rgba(0,0,0,0.05)]'
+      }`}>
+        <div className="max-w-[1440px] mx-auto px-4 md:px-margin flex items-center justify-between text-[10px] font-bold uppercase tracking-widest leading-none py-2">
           <div className="flex items-center gap-2">
             {type === 'processing' ? (
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+                <span className="text-emerald-700">{status || t('common.processing', 'Processing...')}</span>
+              </>
+            ) : type === 'success' ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-slate-500">{status || t('common.actionCompleted', 'Completed')}</span>
+              </>
+            ) : type === 'error' ? (
+              <>
+                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                <span className="text-red-600">{status || t('common.error', 'Error')}</span>
+              </>
             ) : (
-              <div className="w-1.5 h-1.5 rounded-full bg-[#31A984]" />
+              <>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#31A984]" />
+                <span className="text-slate-500">{status || 'System Online'}</span>
+              </>
             )}
-            <span className={type === 'processing' ? 'animate-pulse text-primary tracking-tighter' : 'text-slate-500'}>
-              {status || 'System Online'}
-            </span>
           </div>
 
           <div className="hidden md:block text-slate-400 font-medium tracking-normal opacity-60">

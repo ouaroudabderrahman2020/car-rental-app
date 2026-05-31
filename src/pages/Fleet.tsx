@@ -111,123 +111,124 @@ export default function Fleet() {
   const handleSave = async () => {
     if (!carFormRef.current?.validate()) return;
 
+    const capturedFormData = { ...formData };
+    const capturedMode = modalMode;
+    const capturedSelectedCar = selectedCar;
+
+    setIsModalOpen(false);
     setIsSaving(true);
     setStatus(t('common.processing'), 'processing', 0);
 
-    try {
-      const payload = {
-        id: generateCarId(),
-        brand: formData.brand,
-        model: formData.model,
-        plate: formData.plate,
-        color: formData.color || null,
-        fuel_type: formData.fuel_type || null,
-        transmission: formData.transmission || null,
-        odometer: formData.odometer || 0,
-        daily_rate: formData.daily_rate || 0,
-        status: formData.status || 'Available',
-        gps_sim: formData.gps_sim || null,
-        seats: formData.seats || 5,
-        notes: formData.notes || null,
-        registration_expiry: formData.registration_expiry || null,
-        insurance_expiry: formData.insurance_expiry || null,
-        vignette_expiry: formData.vignette_expiry || null,
-        first_use_date: formData.first_use_date || null,
-        essentials: formData.essentials || [],
-        intervals: formData.intervals || [],
-      };
+    (async () => {
+      try {
+        const payload = {
+          id: generateCarId(),
+          brand: capturedFormData.brand,
+          model: capturedFormData.model,
+          plate: capturedFormData.plate,
+          color: capturedFormData.color || null,
+          fuel_type: capturedFormData.fuel_type || null,
+          transmission: capturedFormData.transmission || null,
+          odometer: capturedFormData.odometer || 0,
+          daily_rate: capturedFormData.daily_rate || 0,
+          status: capturedFormData.status || 'Available',
+          gps_sim: capturedFormData.gps_sim || null,
+          seats: capturedFormData.seats || 5,
+          notes: capturedFormData.notes || null,
+          registration_expiry: capturedFormData.registration_expiry || null,
+          insurance_expiry: capturedFormData.insurance_expiry || null,
+          vignette_expiry: capturedFormData.vignette_expiry || null,
+          first_use_date: capturedFormData.first_use_date || null,
+          essentials: capturedFormData.essentials || [],
+          intervals: capturedFormData.intervals || [],
+        };
 
-      let savedCar: any;
+        let savedCar: any;
 
-      if (modalMode === 'edit' && selectedCar?.id) {
-        const { data, error } = await supabase
-          .from('cars')
-          .update({ ...payload, updated_at: new Date().toISOString() })
-          .eq('id', selectedCar.id)
-          .select()
-          .single();
-        if (error) throw error;
-        savedCar = data;
-      } else {
-        const { data, error } = await supabase
-          .from('cars')
-          .insert([payload])
-          .select()
-          .single();
-        if (error) throw error;
-        savedCar = data;
-      }
-
-      // Upload pending docs to Google Drive via GAS and save to car.documents JSONB
-      const carId = savedCar.id;
-      const carFolderName = `${formData.brand} ${formData.model} ${formData.plate}`;
-      const rawDocs = formData.documents || [];
-      const oldDocs = modalMode === 'edit' && selectedCar?.documents ? selectedCar.documents : [];
-
-      // Build a map of old docs by doc_type for quick lookup
-      const oldByType: Record<string, any> = {};
-      const staleFileIds: string[] = [];
-      for (const doc of oldDocs) {
-        oldByType[doc.doc_type] = doc;
-      }
-
-      // Determine which old files need to be deleted from GDrive
-      for (const oldDoc of oldDocs) {
-        const stillExists = rawDocs.some((d: any) => d.doc_type === oldDoc.doc_type);
-        if (!stillExists) {
-          const id = getFileIdFromUrl(oldDoc.file_url);
-          if (id) staleFileIds.push(id);
+        if (capturedMode === 'edit' && capturedSelectedCar?.id) {
+          const { data, error } = await supabase
+            .from('cars')
+            .update({ ...payload, updated_at: new Date().toISOString() })
+            .eq('id', capturedSelectedCar.id)
+            .select()
+            .single();
+          if (error) throw error;
+          savedCar = data;
+        } else {
+          const { data, error } = await supabase
+            .from('cars')
+            .insert([payload])
+            .select()
+            .single();
+          if (error) throw error;
+          savedCar = data;
         }
-      }
 
-      // Upload and build new docs
-      const newDocs: any[] = [];
-      for (const doc of rawDocs) {
-        const docType = doc.doc_type;
-        let fileUrl = (doc as any).file_url;
+        const carId = savedCar.id;
+        const carFolderName = `${capturedFormData.brand} ${capturedFormData.model} ${capturedFormData.plate}`;
+        const rawDocs = capturedFormData.documents || [];
+        const oldDocs = capturedMode === 'edit' && capturedSelectedCar?.documents ? capturedSelectedCar.documents : [];
 
-        if ((doc as any).file_data) {
-          const oldDoc = oldByType[docType];
-          const oldFileId = oldDoc ? getFileIdFromUrl(oldDoc.file_url) : undefined;
+        const oldByType: Record<string, any> = {};
+        const staleFileIds: string[] = [];
+        for (const doc of oldDocs) {
+          oldByType[doc.doc_type] = doc;
+        }
 
-          const ext = (doc as any).mime_type?.includes('pdf') ? 'pdf' : 'png';
-          const result = await gasService.uploadCarFile({
-            base64: (doc as any).file_data,
-            fileName: `${docType}_${Date.now()}.${ext}`,
-            contentType: (doc as any).mime_type || 'image/png',
-            carFolderName,
-            oldFileId,
-          });
-          if (result?.status === 'success' && result?.fileUrl) {
-            fileUrl = result.fileUrl;
+        for (const oldDoc of oldDocs) {
+          const stillExists = rawDocs.some((d: any) => d.doc_type === oldDoc.doc_type);
+          if (!stillExists) {
+            const id = getFileIdFromUrl(oldDoc.file_url);
+            if (id) staleFileIds.push(id);
           }
         }
 
-        if (fileUrl) {
-          newDocs.push({ doc_type: docType, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
+        const newDocs: any[] = [];
+        for (const doc of rawDocs) {
+          const docType = doc.doc_type;
+          let fileUrl = (doc as any).file_url;
+
+          if ((doc as any).file_data) {
+            const oldDoc = oldByType[docType];
+            const oldFileId = oldDoc ? getFileIdFromUrl(oldDoc.file_url) : undefined;
+
+            const ext = (doc as any).mime_type?.includes('pdf') ? 'pdf' : 'png';
+            const result = await gasService.uploadCarFile({
+              base64: (doc as any).file_data,
+              fileName: `${docType}_${Date.now()}.${ext}`,
+              contentType: (doc as any).mime_type || 'image/png',
+              carFolderName,
+              oldFileId,
+            });
+            if (result?.status === 'success' && result?.fileUrl) {
+              fileUrl = result.fileUrl;
+            }
+          }
+
+          if (fileUrl) {
+            newDocs.push({ doc_type: docType, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
+          }
         }
+
+        if (staleFileIds.length > 0) {
+          await gasService.deleteCarFiles(staleFileIds);
+        }
+
+        await supabase.from('cars').update({ documents: newDocs }).eq('id', carId);
+        savedCar.documents = newDocs;
+
+        setStatus(t('common.actionCompleted'), 'success');
+        fetchFleet(page);
+      } catch (error: any) {
+        console.error('Save error:', error);
+        setStatus(`${t('common.error')}: ${error.message || ''}`, 'error');
+      } finally {
+        setIsSaving(false);
       }
+    })();
 
-      // Delete truly removed files (not replaced — those were handled by oldFileId above)
-      if (staleFileIds.length > 0) {
-        await gasService.deleteCarFiles(staleFileIds);
-      }
-
-      // Save documents to the car's documents JSONB column
-      await supabase.from('cars').update({ documents: newDocs }).eq('id', carId);
-      savedCar.documents = newDocs;
-
-      setStatus(t('common.actionCompleted'), 'success');
-      setIsModalOpen(false);
-      setSelectedCar(null);
-      setFormData({});
-      fetchFleet(page);
-    } catch (error: any) {
-      console.error('Save error:', error);
-      setStatus(`${t('common.error')}: ${error.message || ''}`, 'error');
-    } finally {
-      setIsSaving(false);
-    }
+    setSelectedCar(null);
+    setFormData({});
   };
 
   const handleDelete = async () => {
@@ -329,7 +330,6 @@ export default function Fleet() {
             setSelectedCar(null);
             setFormData({});
           }}
-          closeDisabled={isSaving}
           title={
             <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
               {modalMode === 'add' ? t('carForm.title', 'Add Vehicle') : t('carDetails.title', 'Edit Vehicle')}
