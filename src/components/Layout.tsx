@@ -154,7 +154,7 @@ export default function Layout({ children, title }: LayoutProps) {
 
       {/* Header: Brand Bar - Integrated & Borderless-ish */}
       <header className="z-[60] w-full flex flex-col items-center bg-white border-b border-slate-100 relative">
-        <div className="w-full max-w-[1440px] px-4 md:px-margin flex items-center justify-between h-14">
+        <div className="w-full px-4 md:px-margin flex items-center justify-between h-14">
           <div className="flex items-center gap-4 md:gap-8">
             {/* Mobile Menu Button - Moved to start */}
             {!isMenuOpen && (
