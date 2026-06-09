@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -47,14 +48,22 @@
   --spacing-section-gap-sm: 1.5rem; /* 24px - gap-6 / space-y-6 */
 }
 
-/* RTL Font Scaling: Same size as English (no scaling) */
+/* RTL Font Scaling: Arabic = English + 0.25rem, heavier weight */
 [dir="rtl"] {
-  --text-fluid-base: clamp(1rem, 0.95rem + 0.25vw, 1.25rem);
-  --text-fluid-sm: clamp(0.875rem, 0.85rem + 0.125vw, 1rem);
-  --text-fluid-h1: clamp(1.5rem, 4vw, 2.5rem);
-  --text-fluid-h2: clamp(1.25rem, 3.5vw, 2rem);
-  --text-fluid-h3: clamp(1.125rem, 3vw, 1.75rem);
+  --font-sans: "Cairo", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --text-fluid-base: calc(clamp(1rem, 0.95rem + 0.25vw, 1.25rem) + 0.25rem);
+  --text-fluid-sm: calc(clamp(0.875rem, 0.85rem + 0.125vw, 1rem) + 0.25rem);
+  --text-fluid-h1: calc(clamp(1.5rem, 4vw, 2.5rem) + 0.25rem);
+  --text-fluid-h2: calc(clamp(1.25rem, 3.5vw, 2rem) + 0.25rem);
+  --text-fluid-h3: calc(clamp(1.125rem, 3vw, 1.75rem) + 0.25rem);
+  font-weight: 600;
+  line-height: 1.8;
   letter-spacing: normal;
+}
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3 {
+  font-weight: 900;
 }
 
 @layer base {
