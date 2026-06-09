@@ -20,7 +20,7 @@ export default function BaseModal({ isOpen, onClose, title, children, actions, c
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col relative max-h-[calc(100vh-64px)] overflow-y-auto black-scrollbar bg-clip-padding"
+        className="bg-white w-full max-w-full rounded-2xl shadow-2xl flex flex-col relative max-h-[calc(100vh-64px)] overflow-y-auto black-scrollbar bg-clip-padding"
       >
         <div className="sticky top-0 z-50 px-6 py-2 sm:px-8 bg-blue-50 flex items-center shrink-0 border-b border-blue-200 bg-clip-padding">
           <div className="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-widest">{title}</div>
