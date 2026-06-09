@@ -271,7 +271,7 @@ export default function Layout({ children, title }: LayoutProps) {
 
       <main className="flex-1 w-full overflow-x-hidden px-4 md:px-margin">
         {title && (
-          <div className="max-w-[1440px] mx-auto pt-6 v-title-gap">
+          <div className="w-full pt-6 v-title-gap">
             <h1 className="text-fluid-h1 font-black text-ink uppercase tracking-tight break-words m-0">
               {title}
             </h1>
@@ -286,7 +286,7 @@ export default function Layout({ children, title }: LayoutProps) {
           ? 'bg-emerald-50 border-l-4 border-l-emerald-400 border-t-emerald-200'
           : 'bg-white/90 backdrop-blur-md border-black/5 shadow-[0_-1px_0_0_rgba(0,0,0,0.05)]'
       }`}>
-        <div className="max-w-[1440px] mx-auto px-4 md:px-margin flex items-center justify-between text-[10px] font-bold uppercase tracking-widest leading-none py-2">
+        <div className="w-full px-4 md:px-margin flex items-center justify-between text-[10px] font-bold uppercase tracking-widest leading-none py-2">
           <div className="flex items-center gap-2">
             {type === 'processing' ? (
               <>

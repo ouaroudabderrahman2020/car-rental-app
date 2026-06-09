@@ -330,7 +330,7 @@ export default function Archive() {
         </BaseModal>
 
         <div className="pt-6 pb-12">
-          <div className="max-w-[1440px] mx-auto">
+          <div className="w-full">
             <Section2>
               <div className="w-full flex flex-col gap-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">

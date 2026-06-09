@@ -308,7 +308,7 @@ export default function ClientDashboard() {
           className="p-6 md:p-10"
         />
         {/* Main Content */}
-        <div className="max-w-[1440px] mx-auto pt-6 pb-12">
+        <div className="w-full pt-6 pb-12">
           <Section2>
             <div className="w-full flex flex-col gap-8">
               <div className="bg-white border border-slate-200 shadow-sm overflow-hidden">

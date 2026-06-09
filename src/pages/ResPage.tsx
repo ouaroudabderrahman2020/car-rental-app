@@ -350,7 +350,7 @@ export default function Reservations() {
           {selectedCar && <Cardetails car={selectedCar} />}
         </BaseModal>
 
-        <div className="max-w-[1440px] mx-auto pt-6 pb-12">
+        <div className="w-full pt-6 pb-12">
           <Section2>
             <div className="w-full flex flex-col gap-6">
               <div className="bg-white border border-slate-200 shadow-sm overflow-hidden min-h-[200px]">

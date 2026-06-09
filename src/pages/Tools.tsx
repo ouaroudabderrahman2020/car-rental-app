@@ -46,7 +46,7 @@ export default function Tools() {
         />
         <main className="w-full">
           <div className="pt-6 pb-12 px-4">
-            <div className="max-w-[1440px] mx-auto">
+            <div className="w-full">
               <Section2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto py-8">
                   {tools.map((tool) => (

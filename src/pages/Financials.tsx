@@ -131,7 +131,7 @@ export default function Financials() {
         />
         <main className="w-full">
           <div className="pt-6 pb-12">
-            <div className="max-w-[1440px] mx-auto">
+            <div className="w-full">
               {loading ? (
               <div className="flex flex-col items-center justify-center py-20 space-y-4">
                 <Loader2 className="w-12 h-12 text-primary animate-spin" />

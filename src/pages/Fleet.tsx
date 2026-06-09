@@ -389,7 +389,7 @@ export default function Fleet() {
 
       {/* Fleet Grid */}
       <div className="pt-6 pb-12">
-        <div className="max-w-[1440px] mx-auto">
+        <div className="w-full">
           <Section2>
             <div className="w-full flex flex-col gap-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
