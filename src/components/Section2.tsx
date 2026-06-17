@@ -1,0 +1,58 @@
+import React, { ReactNode } from 'react';
+
+interface Section2Props {
+  /** The section header text */
+  title?: string;
+  /** Content to be rendered inside the section */
+  children: ReactNode;
+  /** Optional extra Tailwind classes for the outer container */
+  className?: string;
+}
+
+/**
+ * Section2 Component
+ * - Premium "Display" typography: Sharp, Black, and Thick.
+ * - Crispy border with high-visibility depth.
+ */
+export const Section2: React.FC<Section2Props> = ({ 
+  title, 
+  children, 
+  className = "" 
+}) => {
+  return (
+    <section 
+      className={`
+        relative 
+        w-full
+        
+        /* Background: White base with a very subtle slate tint at the bottom */
+        bg-white
+        bg-gradient-to-br from-white to-slate-50/40
+        
+        /* Depth: Multi-layered elevation shadows */
+        shadow-[0_2px_4px_rgba(0,0,0,0.02),0_10px_15px_-3px_rgba(0,0,0,0.03)]
+        
+        rounded-xl
+        p-4 md:p-10
+        transition-all 
+        duration-300
+        hover:shadow-xl hover:shadow-slate-200/50
+        ${className}
+      `}
+    >
+      {/* "Display" Title Style: Sharp, Black, and Smooth */}
+      {title && (
+        <h2 className="text-fluid-h2 font-black tracking-tighter text-black antialiased mb-6 leading-none uppercase">
+          {title}
+        </h2>
+      )}
+
+      {/* Content Area */}
+      <div className="flex flex-col gap-4 text-slate-800 text-fluid-sm md:text-fluid-base leading-relaxed relative z-10">
+        {children}
+      </div>
+    </section>
+  );
+};
+
+export default Section2;

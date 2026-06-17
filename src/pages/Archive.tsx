@@ -1,0 +1,416 @@
+import { RefreshCw, Loader2, Download, Edit } from 'lucide-react';
+import { useState, useEffect, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import Layout from '../components/Layout';
+import BaseModal from '../components/BaseModal';
+import ResForm, { ReservationFormData } from '../components/ResForm';
+import ReservationDetailsView from '../components/ResDetails';
+import { PageHeader } from '../components/PageHeader';
+import Section2 from '../components/Section2';
+import { supabase } from '../lib/supabase';
+import { useStatus } from '../contexts/StatusContext';
+import { gasService } from '../lib/gas';
+import { FormattedReservation } from '../types';
+
+const defaultFormData: ReservationFormData = {
+  clientSearchQuery: '',
+  clientName: '', clientId: '', clientLicense: '',
+  pickupDate: '', returnDate: '', extendedReturnDate: '',
+  dailyRate: 0, prepayment: 0, prepaymentType: 'fully_paid',
+  depositType: '', depositAmount: 0,
+  odometerOut: '', odometerIn: '', fuelOut: '', fuelIn: '',
+  cleanedBefore: '', includedItems: [], notes: '',
+  carBrand: '', carModel: '', licensePlate: '',
+  totalPrice: 0, balanceDue: 0, duration: '',
+  reservationStateLabel: '', reservationStateColor: '',
+  selectedCarId: null, reservationStatus: '',
+};
+
+export default function Archive() {
+  const { t, i18n } = useTranslation();
+  const { setStatus } = useStatus();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsReservation, setDetailsReservation] = useState<FormattedReservation | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [archiveData, setArchiveData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [resFormData, setResFormData] = useState<ReservationFormData>(defaultFormData);
+  const [resFormMode, setResFormMode] = useState<'add' | 'edit'>('add');
+  const [editReservationId, setEditReservationId] = useState<string | null>(null);
+  const [saveActions, setSaveActions] = useState<ReactNode>(null);
+  const [isResSaving, setIsResSaving] = useState(false);
+
+  const mapArchiveToDetails = (res: any): FormattedReservation => {
+    const now = new Date();
+    const start = new Date(res.start_date);
+    const endDate = new Date(res.end_date);
+    const extEnd = res.extended_return_date ? new Date(res.extended_return_date) : null;
+    const end = (extEnd && !isNaN(extEnd.getTime())) ? extEnd : endDate;
+
+    let stateLabel = res.status === 'Completed' ? 'Completed' : 'Cancelled';
+    let statusColor = res.status === 'Completed' ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white';
+
+    if (res.start_date && (res.end_date || res.extended_return_date)) {
+      if (now < start) {
+        stateLabel = 'Reserved';
+        statusColor = 'bg-sky-400 text-white';
+      } else if (now > end) {
+        stateLabel = 'Overdue';
+        statusColor = 'bg-red-600 text-white';
+      } else {
+        stateLabel = 'Active';
+        statusColor = 'bg-primary text-white';
+      }
+    }
+
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const fmtDate = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+
+    return {
+      ...res,
+      id_short: res.id.slice(0, 8).toUpperCase(),
+      client: res.customer_name,
+      carName: res.car ? `${res.car.brand} ${res.car.model}` : t('common.noData'),
+      carPlate: res.car?.plate || '—',
+      duration: res.start_date && res.end_date && !isNaN(start.getTime()) && !isNaN(endDate.getTime())
+        ? `${fmtDate(start)} - ${fmtDate(end)}`
+        : '—',
+      state: stateLabel,
+      statusColor,
+      price: `$${parseFloat(String(res.total_price || 0)).toFixed(2)}`,
+      vehicle_state_urls: (res.documents || [])
+        .filter((d: any) => d.doc_type === 'vehicle_state')
+        .map((d: any) => d.file_url),
+      paper_contract_urls: (res.documents || [])
+        .filter((d: any) => d.doc_type === 'paper_contract')
+        .map((d: any) => d.file_url),
+    };
+  };
+
+  const mapArchiveToForm = (res: any): ReservationFormData => ({
+    clientSearchQuery: res.customer_name || '',
+    clientName: res.customer_name || '',
+    clientId: res.customer_national_id || '',
+    clientLicense: res.customer_license || '',
+    pickupDate: res.start_date?.slice(0, 16) || '',
+    returnDate: res.end_date?.slice(0, 16) || '',
+    extendedReturnDate: res.extended_return_date?.slice(0, 16) || '',
+    dailyRate: res.car?.daily_rate || 0,
+    prepayment: res.prepayment || 0,
+    prepaymentType: res.prepayment && res.total_price && res.prepayment >= res.total_price ? 'fully_paid' : 'partial',
+    depositType: res.deposit_type || '',
+    depositAmount: res.deposit_amount || 0,
+    odometerOut: res.odometer_out?.toString() || '',
+    odometerIn: res.odometer_in?.toString() || '',
+    fuelOut: res.fuel_level_out?.toString() || '',
+    fuelIn: res.fuel_level_in?.toString() || '',
+    cleanedBefore: res.cleaned_before || '',
+    includedItems: res.included_items || [],
+    notes: res.notes || '',
+    carBrand: res.car?.brand || '',
+    carModel: res.car?.model || '',
+    licensePlate: res.car?.plate || '',
+    totalPrice: res.total_price || 0,
+    balanceDue: (res.total_price || 0) - (res.prepayment || 0),
+    duration: '',
+    reservationStateLabel: '',
+    reservationStateColor: '',
+    selectedCarId: res.car_id || null,
+    reservationStatus: res.status,
+    vehicleStateUrls: (res.documents || []).filter((d: any) => d.doc_type === 'vehicle_state').map((d: any) => d.file_url),
+    paperContractUrls: (res.documents || []).filter((d: any) => d.doc_type === 'paper_contract').map((d: any) => d.file_url),
+    _originalFolderName: `${res.id} ${res.customer_national_id || ''} ${res.car?.plate || ''}`.trim(),
+  });
+
+  const fetchArchive = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('reservations')
+        .select(`
+          *,
+          car:cars (
+            brand,
+            model,
+            plate,
+            odometer,
+            daily_rate
+          )
+        `)
+        .in('status', ['Completed', 'Cancelled'])
+        .order('end_date', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        setArchiveData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching archive:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchArchive();
+  }, []);
+
+  const handleSync = () => {
+    setIsSyncing(true);
+    setStatus(t('archive.syncing'), 'processing', 0);
+    fetchArchive().finally(() => {
+      setIsSyncing(false);
+      setStatus(t('common.success'), 'success');
+    });
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    setStatus(t('common.loading', 'EXPORTING...'), 'processing', 0);
+    
+    // Convert to headers + rows
+    const headers = [
+      t('reservations.reservationId'),
+      t('reservations.customerName'),
+      t('reservations.car'),
+      t('fleet.form.plate'),
+      t('reservations.startDate'),
+      t('reservations.endDate'),
+      t('common.status'),
+      t('reservations.totalAmount')
+    ];
+    
+    const rows = filteredData.map(res => [
+      res.id.slice(0,8),
+      res.customer_name,
+      res.car?.brand ? `${res.car.brand} ${res.car.model}` : t('common.unknown'),
+      res.car?.plate || t('common.unknown'),
+      new Date(res.start_date).toLocaleDateString(i18n.language),
+      new Date(res.end_date).toLocaleDateString(i18n.language),
+      t(`reservations.${res.status.toLowerCase().replace(' ', '_')}`, res.status),
+      res.total_price
+    ]);
+
+    const { status } = await gasService.exportData('Archive', rows);
+    if (status !== 'success') {
+      setStatus(t('common.exportError'), 'error');
+    } else {
+      setStatus(t('common.exportSuccess'), 'success');
+    }
+    setIsExporting(false);
+  };
+
+  const handleOpenDetails = (res: any) => {
+    setDetailsReservation(mapArchiveToDetails(res));
+    setIsDetailsOpen(true);
+  };
+
+  const handleEditFromDetails = () => {
+    if (!detailsReservation) return;
+    setIsDetailsOpen(false);
+    setResFormData(mapArchiveToForm(detailsReservation));
+    setEditReservationId(detailsReservation.id);
+    setResFormMode('edit');
+    setIsModalOpen(true);
+  };
+
+  const handleRebook = (res: any) => {
+    setResFormData({
+      ...defaultFormData,
+      clientName: res.customer_name || '',
+      carBrand: res.car?.brand || '',
+      carModel: res.car?.model || '',
+      licensePlate: res.car?.plate || '',
+      dailyRate: res.daily_rate || res.car?.daily_rate || 0,
+      depositType: res.deposit_type || '',
+      depositAmount: res.deposit_amount || 0,
+      notes: res.notes || '',
+      selectedCarId: res.car_id || null,
+    });
+    setEditReservationId(null);
+    setResFormMode('add');
+    setIsModalOpen(true);
+  };
+
+  const filteredData = archiveData.filter(res => {
+    const searchStr = searchQuery.toLowerCase();
+    const matchesSearch = 
+      (res.customer_name || '').toLowerCase().includes(searchStr) ||
+      ((res.car?.brand || '') + ' ' + (res.car?.model || '')).toLowerCase().includes(searchStr) ||
+      (res.id || '').toLowerCase().includes(searchStr) ||
+      (res.car?.plate || '').toLowerCase().includes(searchStr);
+    return matchesSearch;
+  });
+
+  const totalRevenue = archiveData.reduce((acc, curr) => acc + (parseFloat(curr.total_price) || 0), 0);
+
+  return (
+    <Layout>
+      <div className="w-full bg-white min-h-full pb-10">
+        <PageHeader 
+          title={t('archive.title')}
+          actions={
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={handleSync}
+                disabled={isSyncing}
+                className="header-btn disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? t('archive.syncing') : t('archive.refresh')}</span>
+              </button>
+              <button 
+                onClick={handleExport}
+                disabled={isExporting}
+                className="header-btn disabled:opacity-50"
+              >
+                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {isExporting ? t('common.loading', 'EXPORTING...') : t('common.export', 'EXPORT TO SHEETS')}
+              </button>
+            </div>
+          }
+          className="p-6 md:p-10"
+        />
+        <BaseModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setResFormData(defaultFormData);
+            setEditReservationId(null);
+            fetchArchive();
+          }}
+          title={
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-[0.2em]">
+                {resFormMode === 'edit' ? t('editReservation.title', 'Edit Reservation') : t('reservations.form.title', 'New Reservation')}
+              </h2>
+            </div>
+          }
+          actions={saveActions}
+          closeDisabled={isResSaving}
+        >
+          <ResForm
+            reservation={resFormData}
+            onChange={(data) => setResFormData(prev => ({ ...prev, ...data }))}
+            onSaved={() => {
+              setIsModalOpen(false);
+              setResFormData(defaultFormData);
+              setEditReservationId(null);
+              fetchArchive();
+            }}
+            mode={resFormMode}
+            editId={editReservationId}
+            onActionsReady={setSaveActions}
+            onSavingChange={setIsResSaving}
+          />
+        </BaseModal>
+
+        <BaseModal
+          isOpen={isDetailsOpen}
+          onClose={() => {
+            setIsDetailsOpen(false);
+            setDetailsReservation(null);
+          }}
+          title="Reservation Details"
+          actions={
+            <button
+              onClick={handleEditFromDetails}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Edit</span>
+            </button>
+          }
+        >
+          {detailsReservation && <ReservationDetailsView reservation={detailsReservation} />}
+        </BaseModal>
+
+        <div className="pt-6 pb-12">
+          <div className="w-full">
+            <Section2>
+              <div className="w-full flex flex-col gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+                  <div className="bg-white border border-slate-200 shadow-sm p-8 flex flex-col gap-2">
+                    <p className="font-sans text-xs text-ink/60 uppercase tracking-widest font-bold">{t('archive.revenueLabel')}</p>
+                    <h3 className="text-2xl font-bold text-ink">${totalRevenue.toFixed(2)}</h3>
+                    <p className="text-xs font-bold text-primary uppercase tracking-widest mt-1">{t('archive.revenueSub')}</p>
+                  </div>
+                  <div className="bg-white border border-slate-200 shadow-sm p-8 flex flex-col gap-2">
+                    <p className="font-sans text-xs text-ink/60 uppercase tracking-widest font-bold">{t('archive.entriesLabel')}</p>
+                    <h3 className="text-2xl font-bold text-ink">{archiveData.length}</h3>
+                    <p className="text-xs font-bold text-ink/40 uppercase tracking-widest mt-1">{t('archive.entriesSub')}</p>
+                  </div>
+                </div>
+              </div>
+            </Section2>
+          </div>
+        </div>
+
+            <div className="py-10">
+              <Section2>
+                <div className="w-full flex flex-col gap-6">
+                  <div className="bg-white border border-slate-200 shadow-sm overflow-hidden min-h-[200px]">
+                    <table className="w-full text-left border-collapse responsive-table">
+                      <thead>
+                        <tr className="bg-slate-800 text-white font-sans text-[10px] md:text-xs uppercase tracking-widest border-b border-slate-800">
+                          <th className="py-3 px-4 font-black text-center">{t('archive.table.id')}</th>
+                          <th className="py-3 px-4 font-black text-center">{t('archive.table.client')}</th>
+                          <th className="py-3 px-4 font-black text-center">{t('archive.table.car')}</th>
+                          <th className="py-3 px-4 font-black text-center">{t('archive.table.duration')}</th>
+                          <th className="py-3 px-4 text-center font-black">{t('archive.table.total')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="font-sans text-midnight leading-[1.6]">
+                        {loading ? (
+                          Array.from({ length: 6 }).map((_, i) => (
+                            <tr key={i} className="border-b border-border-tint">
+                              {Array.from({ length: 5 }).map((__, j) => (
+                                <td key={j} className="py-3 px-4">
+                                  <div className="h-4 bg-slate-200 rounded w-full" />
+                                </td>
+                              ))}
+                            </tr>
+                          ))
+                        ) : filteredData.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="empty-table-cell">
+                              {t('common.noData')}
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredData.map((row) => (
+                            <tr key={row.id} className="border-b hover:bg-white transition-all border-border-tint">
+                              <td onClick={() => handleOpenDetails(row)} className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text cursor-pointer hover:text-primary transition-colors font-mono tracking-tighter" data-label={t('archive.table.id')}>{row.id.toUpperCase()}</td>
+                              <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('archive.table.client')}>
+                                <div className="flex flex-col items-center">
+                                  <span className="cursor-pointer hover:text-primary transition-colors" onClick={() => handleOpenDetails(row)}>{row.customer_name}</span>
+                                  <span className="font-mono text-sm text-slate-800 font-semibold">{row.customer_national_id}</span>
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text" data-label={t('archive.table.car')}>
+                                <div className="flex flex-col items-center">
+                                  <span className="cursor-pointer hover:text-primary transition-colors" onClick={() => handleOpenDetails(row)}>{row.car ? `${row.car.brand} ${row.car.model}` : t('common.noData')}</span>
+                                  <span className="font-mono tracking-tighter">{row.car?.plate || '—'}</span>
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-4 text-center border-e border-border-tint standard-row-text font-mono tracking-tighter" data-label={t('archive.table.duration')}>
+                                {new Date(row.start_date).toLocaleDateString(i18n.language)} - {new Date(row.end_date).toLocaleDateString(i18n.language)}
+                              </td>
+                              <td className="py-2.5 px-4 text-center standard-row-text font-mono tracking-tighter font-black" data-label={t('archive.table.total')}>${parseFloat(row.total_price || 0).toFixed(2)}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </Section2>
+            </div>
+      </div>
+    </Layout>
+  );
+}

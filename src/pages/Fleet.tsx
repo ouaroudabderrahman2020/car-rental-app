@@ -1,0 +1,508 @@
+import { Plus, Car as CarIcon, Loader2, Edit, Check, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import Layout from '../components/Layout';
+import CarForm, { CarFormHandle } from '../components/CarForm';
+import BaseModal from '../components/BaseModal';
+import Cardetails from '../components/CarDetails';
+import { PageHeader } from '../components/PageHeader';
+import Section2 from '../components/Section2';
+import { supabase } from '../lib/supabase';
+import { getDriveImageUrl, getFileIdFromUrl, gasService } from '../lib/gas';
+import { useStatus } from '../contexts/StatusContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { FormattedCar, CarDocument } from '../types';
+import { generateCarId } from '../utils/idGenerator';
+
+export default function Fleet() {
+  const { t, i18n } = useTranslation();
+  const { setStatus } = useStatus();
+  const { confirm: customConfirm } = useNotification();
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCar, setSelectedCar] = useState<FormattedCar | null>(null);
+  const [formData, setFormData] = useState<Partial<FormattedCar>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const carFormRef = useRef<CarFormHandle>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsCar, setDetailsCar] = useState<FormattedCar | null>(null);
+  const [fleetData, setFleetData] = useState<FormattedCar[]>(() => {
+    const cached = localStorage.getItem('fleet_cache');
+    return cached ? JSON.parse(cached) : [];
+  });
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 24;
+
+  const handleFormChange = useCallback((partial: Partial<FormattedCar>) => {
+    setFormData(prev => ({ ...prev, ...partial }));
+  }, []);
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'USD' }).format(val);
+  };
+
+  const fetchFleet = async (pageNum = 0) => {
+    setLoading(true);
+    try {
+      const from = pageNum * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { count } = await supabase
+        .from('cars')
+        .select('*', { count: 'exact', head: true });
+      setTotalCount(count || 0);
+
+      const { data, error } = await supabase
+        .from('cars')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedData: FormattedCar[] = data.map(car => {
+          const docs = (car.documents || []) as any[];
+          const imageDoc = docs.find((d: any) => d.doc_type === 'image');
+          const transformedImage = imageDoc?.file_url ? getDriveImageUrl(imageDoc.file_url) : null;
+          return {
+            ...car,
+            documents: docs,
+            name: `${car.brand} ${car.model}`,
+            rate: `$${car.daily_rate} / ${t('common.day', 'day')}`,
+            statusColor: car.status === 'Available' ? 'bg-primary' : 
+                         car.status === 'In Maintenance' ? 'bg-workshop-amber' : 
+                         car.status === 'Rented' ? 'bg-indigo-600' : 'bg-slate-500',
+            needsMaintenance: car.status === 'In Maintenance' || car.status === 'Workshop',
+            image: transformedImage
+          };
+        });
+        setFleetData(formattedData);
+        setPage(pageNum);
+        localStorage.setItem('fleet_cache', JSON.stringify(formattedData));
+      }
+    } catch (error) {
+      console.error('Error fetching fleet:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFleet(0);
+  }, []);
+
+  const handleOpenDetails = (car: FormattedCar) => {
+    setDetailsCar(car);
+    setIsDetailsOpen(true);
+  };
+
+  const handleAddCar = () => {
+    setSelectedCar(null);
+    setFormData({});
+    setModalMode('add');
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!carFormRef.current?.validate()) return;
+
+    const capturedFormData = { ...formData };
+    const capturedMode = modalMode;
+    const capturedSelectedCar = selectedCar;
+
+    setIsModalOpen(false);
+    setIsSaving(true);
+    setStatus(t('common.processing'), 'processing', 0);
+
+    (async () => {
+      try {
+        const payload = {
+          id: generateCarId(),
+          brand: capturedFormData.brand,
+          model: capturedFormData.model,
+          plate: capturedFormData.plate,
+          color: capturedFormData.color || null,
+          fuel_type: capturedFormData.fuel_type || null,
+          transmission: capturedFormData.transmission || null,
+          odometer: capturedFormData.odometer || 0,
+          daily_rate: capturedFormData.daily_rate || 0,
+          status: capturedFormData.status || 'Available',
+          gps_sim: capturedFormData.gps_sim || null,
+          seats: capturedFormData.seats || 5,
+          notes: capturedFormData.notes || null,
+          registration_expiry: capturedFormData.registration_expiry || null,
+          insurance_expiry: capturedFormData.insurance_expiry || null,
+          vignette_expiry: capturedFormData.vignette_expiry || null,
+          first_use_date: capturedFormData.first_use_date || null,
+          essentials: capturedFormData.essentials || [],
+          intervals: capturedFormData.intervals || [],
+        };
+
+        let savedCar: any;
+
+        if (capturedMode === 'edit' && capturedSelectedCar?.id) {
+          const { data, error } = await supabase
+            .from('cars')
+            .update({ ...payload, updated_at: new Date().toISOString() })
+            .eq('id', capturedSelectedCar.id)
+            .select()
+            .single();
+          if (error) throw error;
+          savedCar = data;
+        } else {
+          const { data, error } = await supabase
+            .from('cars')
+            .insert([payload])
+            .select()
+            .single();
+          if (error) throw error;
+          savedCar = data;
+        }
+
+        const carId = savedCar.id;
+        const carFolderName = `${capturedFormData.brand} ${capturedFormData.model} ${capturedFormData.plate}`;
+        const rawDocs = capturedFormData.documents || [];
+        const oldDocs = capturedMode === 'edit' && capturedSelectedCar?.documents ? capturedSelectedCar.documents : [];
+
+        const oldByType: Record<string, any> = {};
+        const staleFileIds: string[] = [];
+        for (const doc of oldDocs) {
+          oldByType[doc.doc_type] = doc;
+        }
+
+        for (const oldDoc of oldDocs) {
+          const stillExists = rawDocs.some((d: any) => d.doc_type === oldDoc.doc_type);
+          if (!stillExists) {
+            const id = getFileIdFromUrl(oldDoc.file_url);
+            if (id) staleFileIds.push(id);
+          }
+        }
+
+        const newDocs: any[] = [];
+        for (const doc of rawDocs) {
+          const docType = doc.doc_type;
+          let fileUrl = (doc as any).file_url;
+
+          if ((doc as any).file_data) {
+            const oldDoc = oldByType[docType];
+            const oldFileId = oldDoc ? getFileIdFromUrl(oldDoc.file_url) : undefined;
+
+            const ext = (doc as any).mime_type?.includes('pdf') ? 'pdf' : 'png';
+            const result = await gasService.uploadCarFile({
+              base64: (doc as any).file_data,
+              fileName: `${docType}_${Date.now()}.${ext}`,
+              contentType: (doc as any).mime_type || 'image/png',
+              carFolderName,
+              oldFileId,
+            });
+            if (result?.status === 'success' && result?.fileUrl) {
+              fileUrl = result.fileUrl;
+            }
+          }
+
+          if (fileUrl) {
+            newDocs.push({ doc_type: docType, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
+          }
+        }
+
+        if (staleFileIds.length > 0) {
+          await gasService.deleteCarFiles(staleFileIds);
+        }
+
+        await supabase.from('cars').update({ documents: newDocs }).eq('id', carId);
+        savedCar.documents = newDocs;
+
+        setStatus(t('common.actionCompleted'), 'success');
+        fetchFleet(page);
+      } catch (error: any) {
+        console.error('Save error:', error);
+        setStatus(`${t('common.error')}: ${error.message || ''}`, 'error');
+      } finally {
+        setIsSaving(false);
+      }
+    })();
+
+    setSelectedCar(null);
+    setFormData({});
+  };
+
+  const handleDelete = async () => {
+    if (!selectedCar?.id) return;
+    const confirmed = await customConfirm({
+      title: t('common.confirmDelete', 'Delete Car'),
+      message: t('common.confirmDelete', 'Are you sure you want to delete this car?'),
+      confirmLabel: t('common.delete', 'Delete'),
+      cancelLabel: t('common.cancel', 'Cancel'),
+      type: 'danger'
+    });
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    try {
+      const carFolderName = `${selectedCar.brand} ${selectedCar.model} ${selectedCar.plate}`;
+      await gasService.deleteCarFolder(carFolderName);
+
+      const { error } = await supabase
+        .from('cars')
+        .delete()
+        .eq('id', selectedCar.id);
+      if (error) throw error;
+
+      setStatus(t('common.actionCompleted', 'Done'), 'success');
+      setIsModalOpen(false);
+      setSelectedCar(null);
+      setFormData({});
+      fetchFleet(page);
+    } catch (error: any) {
+      setStatus(`${t('common.error')}: ${error.message || ''}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleOptimisticUpdate = (car: any) => {
+    const docs = car.documents || [];
+    const imageDoc = docs.find((d: any) => d.doc_type === 'image');
+    const formatted: FormattedCar = {
+      ...car,
+      id: car.id || `temp-${Date.now()}`,
+      name: `${car.brand} ${car.model}`,
+      rate: `${formatCurrency(car.daily_rate)} ${t('common.perDay')}`,
+      statusColor: car.status === 'Available' ? 'bg-primary' : 
+                   car.status === 'In Maintenance' ? 'bg-workshop-amber' : 
+                   car.status === 'Rented' ? 'bg-indigo-600' : 'bg-slate-500',
+      needsMaintenance: car.status === 'In Maintenance' || car.status === 'Workshop',
+      image: imageDoc?.file_url ? getDriveImageUrl(imageDoc.file_url) : null
+    };
+
+    setFleetData(prev => {
+      const exists = prev.findIndex(c => c.id === formatted.id);
+      let next;
+      if (exists > -1) {
+        next = [...prev];
+        next[exists] = formatted;
+      } else {
+        next = [formatted, ...prev];
+      }
+      localStorage.setItem('fleet_cache', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const filteredFleet = useMemo(() => {
+    return fleetData.filter(car => {
+      const matchesSearch = car.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            car.plate.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || car.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [fleetData, searchQuery, statusFilter]);
+
+  return (
+    <Layout>
+      <div className="w-full bg-white min-h-full pb-10">
+        <PageHeader 
+          title={t('nav.fleet')} 
+          actions={
+            <button 
+              onClick={handleAddCar}
+              className="header-btn"
+            >
+              <Plus className="w-4 h-4" />
+              {t('fleet.addCar', 'ADD NEW CAR')}
+            </button>
+          }
+          className="p-6 md:p-10"
+        />
+        <BaseModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            if (modalMode === 'edit' && selectedCar) {
+              setDetailsCar(selectedCar);
+              setIsDetailsOpen(true);
+            }
+            setSelectedCar(null);
+            setFormData({});
+          }}
+          title={
+            <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-[0.2em]">
+              {modalMode === 'add' ? t('carForm.title', 'Add Vehicle') : t('carDetails.title', 'Edit Vehicle')}
+            </h2>
+          }
+          actions={
+            <>
+              {modalMode === 'edit' && (
+                <button
+                  disabled={isSaving}
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-red-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  {isSaving ? 'Deleting...' : 'Delete'}
+                </button>
+              )}
+              <button
+                disabled={isSaving}
+                onClick={handleSave}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                {isSaving ? t('carForm.processing', 'Processing...') : t('carForm.save', 'Save')}
+              </button>
+            </>
+          }
+        >
+          <CarForm ref={carFormRef} car={formData} onChange={handleFormChange} />
+        </BaseModal>
+        <BaseModal
+          isOpen={isDetailsOpen}
+          onClose={() => {
+            setIsDetailsOpen(false);
+            setDetailsCar(null);
+          }}
+          title={`${detailsCar?.brand || ''} ${detailsCar?.model || ''}`}
+          actions={
+            <button
+              onClick={() => {
+                if (!detailsCar) return;
+                setIsDetailsOpen(false);
+                setSelectedCar(detailsCar);
+                setFormData({ ...detailsCar });
+                setModalMode('edit');
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold text-[10px] uppercase tracking-widest rounded-[12px] border-2 border-black hover:bg-blue-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Edit</span>
+            </button>
+          }
+        >
+          {detailsCar && <Cardetails car={detailsCar} />}
+        </BaseModal>
+
+      {/* Fleet Grid */}
+      <div className="pt-6 pb-12">
+        <div className="w-full">
+          <Section2>
+            <div className="w-full flex flex-col gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {loading && fleetData.length === 0 ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="rounded-2xl border border-slate-200 flex flex-col overflow-hidden animate-pulse">
+                      <div className="aspect-video bg-slate-200" />
+                      <div className="p-5 flex flex-col gap-3">
+                        <div className="h-4 bg-slate-200 rounded w-3/4" />
+                        <div className="h-3 bg-slate-200 rounded w-1/3" />
+                        <div className="mt-2 pt-4 border-t border-slate-100">
+                          <div className="h-4 bg-slate-200 rounded w-1/2" />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : filteredFleet.length === 0 ? (
+                  <div className="col-span-full py-20 bg-white border border-slate-100 shadow-sm text-center">
+                    <p className="font-bold uppercase tracking-[0.2em] text-midnight/40">{t('common.noData', 'No vehicles found in fleet.')}</p>
+                  </div>
+                ) : (
+                  filteredFleet.map((car) => (
+                    <div 
+                      key={car.id} 
+                      onClick={() => handleOpenDetails(car)}
+                      className="car-card bg-white rounded-2xl shadow-sm border border-slate-100 group flex flex-col h-full cursor-pointer hover:shadow-md hover:border-slate-200 transition-all duration-300 overflow-hidden"
+                    >
+                      <div className="aspect-video overflow-hidden bg-slate-50 relative">
+                        {car.image ? (
+                          <>
+                            <img 
+                              alt={car.name} 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                              src={car.image}
+                              referrerPolicy="no-referrer"
+                              loading="lazy"
+                              onLoad={() => {
+                                console.log(`Image loaded successfully for ${car.name}`);
+                              }}
+                              onError={(e) => {
+                                console.error(`❌ Failed to load image for ${car.name} (${car.plate}):`, {
+                                  attempted_src: car.image,
+                                  original_doc: (car.documents || []).find((d: any) => d.doc_type === 'image')?.file_url,
+                                  error: 'Image failed to load from Google Drive. Possible causes: 1) File not publicly shared, 2) File deleted, 3) URL format issue'
+                                });
+                                // Hide the failed image
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                // Show fallback icon
+                                const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                            <div className="w-full h-full flex items-center justify-center bg-slate-50 hidden absolute inset-0">
+                              <CarIcon className="w-8 h-8 text-slate-200" />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                            <CarIcon className="w-8 h-8 text-slate-200" />
+                          </div>
+                        )}
+                        {car.needsMaintenance && (
+                          <div className="absolute top-3 left-3 px-2 py-1 bg-workshop-amber/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-tight rounded-lg shadow-sm z-10">
+                            {t('common.maintenance', 'SERVICE')}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-5 grow flex flex-col justify-center gap-3">
+                        <h3 className="font-bold text-sm text-slate-900 leading-tight truncate">
+                          {car.name}
+                        </h3>
+                        <div className="inline-block self-start px-2 py-0.5 bg-sky-100 border border-sky-300 rounded-lg text-[15px] font-black text-black tracking-[0.15em] font-mono antialiased">
+                          {car.plate}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-black text-black">
+                            ${car.daily_rate} / <span className="text-[10px] text-slate-400 font-bold">{t('common.day', 'DAY')}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    ))
+                  )}
+                </div>
+              {!loading && totalCount > PAGE_SIZE && (
+                <div className="flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-lg">
+                  <span className="text-xs text-slate-500">
+                    {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => fetchFleet(page - 1)}
+                      disabled={page === 0}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                    </button>
+                    <button
+                      onClick={() => fetchFleet(page + 1)}
+                      disabled={page >= Math.ceil(totalCount / PAGE_SIZE) - 1}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      Next <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Section2>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+}
