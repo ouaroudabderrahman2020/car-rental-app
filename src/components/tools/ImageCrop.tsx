@@ -8,13 +8,15 @@ interface ImageCropResult {
 
 interface ImageCropProps {
   onAssign?: (result: ImageCropResult) => void;
+  initialImageDataUrl?: string;
+  simplified?: boolean;
 }
 
 type CropMode = 'free' | '16:9';
 type DownloadFormat = 'jpeg' | 'png';
 type InteractionState = 'idle' | 'drawing' | 'adjust';
 
-export default function ImageCrop({ onAssign }: ImageCropProps) {
+export default function ImageCrop({ onAssign, initialImageDataUrl, simplified }: ImageCropProps) {
   const [image, setImage] = useState<{ url: string; file: File } | null>(null);
   const [mode, setMode] = useState<CropMode>('16:9');
   const [interaction, setInteraction] = useState<InteractionState>('idle');
@@ -46,6 +48,16 @@ export default function ImageCrop({ onAssign }: ImageCropProps) {
     origDist?: number;
     bbCenter?: { x: number; y: number };
   } | null>(null);
+
+  const initialLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (initialImageDataUrl && !initialLoadedRef.current) {
+      initialLoadedRef.current = true;
+      setInteraction('adjust');
+      setImage({ url: initialImageDataUrl, file: new File([], 'image.png', { type: 'image/png' }) });
+    }
+  }, [initialImageDataUrl]);
 
   const CANVAS_SIZE = 400;
 
@@ -476,66 +488,74 @@ export default function ImageCrop({ onAssign }: ImageCropProps) {
     reader.readAsDataURL(file);
   };
 
-  const performCrop = () => {
-    const img = imgElementRef.current;
-    if (!img) return;
+  const performCrop = (): Promise<ImageCropResult | null> => {
+    return new Promise((resolve) => {
+      const img = imgElementRef.current;
+      if (!img) { resolve(null); return; }
 
-    if (mode === 'free' && freePath.length > 3) {
-      const closedPath = [...freePath];
-      const tl = canvasToImage(
-        Math.min(...closedPath.map(p => p.x)),
-        Math.min(...closedPath.map(p => p.y))
-      );
-      const br = canvasToImage(
-        Math.max(...closedPath.map(p => p.x)),
-        Math.max(...closedPath.map(p => p.y))
-      );
-      const cropX = Math.max(0, Math.round(tl.x));
-      const cropY = Math.max(0, Math.round(tl.y));
-      const cropW = Math.min(img.width - cropX, Math.round(br.x - tl.x));
-      const cropH = Math.min(img.height - cropY, Math.round(br.y - tl.y));
-      if (cropW <= 0 || cropH <= 0) return;
+      if (mode === 'free' && freePath.length > 3) {
+        const closedPath = [...freePath];
+        const tl = canvasToImage(
+          Math.min(...closedPath.map(p => p.x)),
+          Math.min(...closedPath.map(p => p.y))
+        );
+        const br = canvasToImage(
+          Math.max(...closedPath.map(p => p.x)),
+          Math.max(...closedPath.map(p => p.y))
+        );
+        const cropX = Math.max(0, Math.round(tl.x));
+        const cropY = Math.max(0, Math.round(tl.y));
+        const cropW = Math.min(img.width - cropX, Math.round(br.x - tl.x));
+        const cropH = Math.min(img.height - cropY, Math.round(br.y - tl.y));
+        if (cropW <= 0 || cropH <= 0) { resolve(null); return; }
 
-      const resultCanvas = document.createElement('canvas');
-      resultCanvas.width = cropW;
-      resultCanvas.height = cropH;
-      const rctx = resultCanvas.getContext('2d')!;
-      rctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+        const resultCanvas = document.createElement('canvas');
+        resultCanvas.width = cropW;
+        resultCanvas.height = cropH;
+        const rctx = resultCanvas.getContext('2d')!;
+        rctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-      const pathImageCoords = closedPath.map(p => canvasToImage(p.x, p.y));
-      rctx.beginPath();
-      rctx.moveTo(pathImageCoords[0].x - cropX, pathImageCoords[0].y - cropY);
-      for (let i = 1; i < pathImageCoords.length; i++)
-        rctx.lineTo(pathImageCoords[i].x - cropX, pathImageCoords[i].y - cropY);
-      rctx.closePath();
-      rctx.globalCompositeOperation = 'destination-in';
-      rctx.fill();
-      rctx.globalCompositeOperation = 'source-over';
+        const pathImageCoords = closedPath.map(p => canvasToImage(p.x, p.y));
+        rctx.beginPath();
+        rctx.moveTo(pathImageCoords[0].x - cropX, pathImageCoords[0].y - cropY);
+        for (let i = 1; i < pathImageCoords.length; i++)
+          rctx.lineTo(pathImageCoords[i].x - cropX, pathImageCoords[i].y - cropY);
+        rctx.closePath();
+        rctx.globalCompositeOperation = 'destination-in';
+        rctx.fill();
+        rctx.globalCompositeOperation = 'source-over';
 
-      resultCanvas.toBlob((blob) => {
-        if (!blob) return;
-        setCropResult({ dataUrl: resultCanvas.toDataURL(), blob });
-      }, 'image/png');
-    } else if (mode === '16:9' && rect) {
-      const tl = canvasToImage(rect.x, rect.y);
-      const br = canvasToImage(rect.x + rect.w, rect.y + rect.h);
-      const cropX = Math.max(0, Math.round(tl.x));
-      const cropY = Math.max(0, Math.round(tl.y));
-      const cropW = Math.min(img.width - cropX, Math.round(br.x - tl.x));
-      const cropH = Math.min(img.height - cropY, Math.round(br.y - tl.y));
-      if (cropW <= 0 || cropH <= 0) return;
+        resultCanvas.toBlob((blob) => {
+          if (!blob) { resolve(null); return; }
+          const result = { dataUrl: resultCanvas.toDataURL(), blob };
+          setCropResult(result);
+          resolve(result);
+        }, 'image/png');
+      } else if (mode === '16:9' && rect) {
+        const tl = canvasToImage(rect.x, rect.y);
+        const br = canvasToImage(rect.x + rect.w, rect.y + rect.h);
+        const cropX = Math.max(0, Math.round(tl.x));
+        const cropY = Math.max(0, Math.round(tl.y));
+        const cropW = Math.min(img.width - cropX, Math.round(br.x - tl.x));
+        const cropH = Math.min(img.height - cropY, Math.round(br.y - tl.y));
+        if (cropW <= 0 || cropH <= 0) { resolve(null); return; }
 
-      const resultCanvas = document.createElement('canvas');
-      resultCanvas.width = cropW;
-      resultCanvas.height = cropH;
-      const rctx = resultCanvas.getContext('2d')!;
-      rctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+        const resultCanvas = document.createElement('canvas');
+        resultCanvas.width = cropW;
+        resultCanvas.height = cropH;
+        const rctx = resultCanvas.getContext('2d')!;
+        rctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-      resultCanvas.toBlob((blob) => {
-        if (!blob) return;
-        setCropResult({ dataUrl: resultCanvas.toDataURL(), blob });
-      }, 'image/png');
-    }
+        resultCanvas.toBlob((blob) => {
+          if (!blob) { resolve(null); return; }
+          const result = { dataUrl: resultCanvas.toDataURL(), blob };
+          setCropResult(result);
+          resolve(result);
+        }, 'image/png');
+      } else {
+        resolve(null);
+      }
+    });
   };
 
   const handleDownload = () => {
@@ -566,6 +586,17 @@ export default function ImageCrop({ onAssign }: ImageCropProps) {
     try { onAssign(cropResult); }
     catch (err) { console.error('Assign error:', err); }
     finally { setIsAssigning(false); }
+  };
+
+  const handleSet = async () => {
+    if (!isSelectionValid || !onAssign) return;
+    setIsAssigning(true);
+    const result = await performCrop();
+    if (result) {
+      try { onAssign(result); }
+      catch (err) { console.error('Assign error:', err); }
+    }
+    setIsAssigning(false);
   };
 
   const isSelectionValid = mode === 'free'
@@ -622,57 +653,70 @@ export default function ImageCrop({ onAssign }: ImageCropProps) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 shrink-0">
-              <div className="flex gap-2">
+            {simplified ? (
+              <div className="flex flex-col gap-2 shrink-0">
                 <button
-                  onClick={resetDrawing}
-                  className="flex-1 py-3 border-2 border-slate-300 font-black uppercase text-sm tracking-widest hover:bg-slate-50 transition-all industrial-shadow"
+                  onClick={handleSet}
+                  disabled={!isSelectionValid || isAssigning}
+                  className="w-full py-3 bg-emerald-600 text-white font-black uppercase tracking-widest text-sm industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale"
                   style={{ borderRadius: '12px' }}
                 >
-                  Reset
-                </button>
-                <button
-                  onClick={performCrop}
-                  disabled={!isSelectionValid}
-                  className="flex-[2] py-3 bg-midnight-ink text-white font-black uppercase tracking-widest text-sm industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale"
-                  style={{ borderRadius: '12px' }}
-                >
-                  <CropIcon className="w-4 h-4 inline-block mr-2 -mt-0.5" />
-                  Crop
+                  {isAssigning ? 'Setting...' : 'Set'}
                 </button>
               </div>
-
-              <div className="flex items-center gap-2 border-t-2 border-slate-200 pt-3">
-                <select
-                  value={downloadFormat}
-                  onChange={(e) => setDownloadFormat(e.target.value as DownloadFormat)}
-                  disabled={!cropResult}
-                  className="px-3 py-3 border-2 border-slate-300 font-black uppercase text-xs tracking-widest bg-white disabled:opacity-30 industrial-shadow"
-                  style={{ borderRadius: '12px' }}
-                >
-                  <option value="jpeg">JPG</option>
-                  <option value="png">PNG</option>
-                </select>
-                <button
-                  onClick={handleDownload}
-                  disabled={!cropResult}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white font-black uppercase tracking-widest text-sm industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale"
-                  style={{ borderRadius: '12px' }}
-                >
-                  <Download className="w-4 h-4" /> Download
-                </button>
-                {onAssign && (
+            ) : (
+              <div className="flex flex-col gap-2 shrink-0">
+                <div className="flex gap-2">
                   <button
-                    onClick={handleAssign}
-                    disabled={!cropResult || isAssigning}
-                    className="flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 text-white font-black uppercase tracking-widest text-sm industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale"
+                    onClick={resetDrawing}
+                    className="flex-1 py-3 border-2 border-slate-300 font-black uppercase text-sm tracking-widest hover:bg-slate-50 transition-all industrial-shadow"
                     style={{ borderRadius: '12px' }}
                   >
-                    <LinkIcon className="w-4 h-4" /> Assign
+                    Reset
                   </button>
-                )}
+                  <button
+                    onClick={performCrop}
+                    disabled={!isSelectionValid}
+                    className="flex-[2] py-3 bg-midnight-ink text-white font-black uppercase tracking-widest text-sm industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale"
+                    style={{ borderRadius: '12px' }}
+                  >
+                    <CropIcon className="w-4 h-4 inline-block mr-2 -mt-0.5" />
+                    Crop
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 border-t-2 border-slate-200 pt-3">
+                  <select
+                    value={downloadFormat}
+                    onChange={(e) => setDownloadFormat(e.target.value as DownloadFormat)}
+                    disabled={!cropResult}
+                    className="px-3 py-3 border-2 border-slate-300 font-black uppercase text-xs tracking-widest bg-white disabled:opacity-30 industrial-shadow"
+                    style={{ borderRadius: '12px' }}
+                  >
+                    <option value="jpeg">JPG</option>
+                    <option value="png">PNG</option>
+                  </select>
+                  <button
+                    onClick={handleDownload}
+                    disabled={!cropResult}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white font-black uppercase tracking-widest text-sm industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale"
+                    style={{ borderRadius: '12px' }}
+                  >
+                    <Download className="w-4 h-4" /> Download
+                  </button>
+                  {onAssign && (
+                    <button
+                      onClick={handleAssign}
+                      disabled={!cropResult || isAssigning}
+                      className="flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 text-white font-black uppercase tracking-widest text-sm industrial-shadow hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-30 disabled:grayscale"
+                      style={{ borderRadius: '12px' }}
+                    >
+                      <LinkIcon className="w-4 h-4" /> Assign
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

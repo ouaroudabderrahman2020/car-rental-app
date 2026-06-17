@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotification } from '../contexts/NotificationContext';
-import { Settings, FileText, Calendar, Gauge, Upload, Trash2, X, Check, Loader2, Crop } from 'lucide-react';
+import { Settings, FileText, Calendar, Gauge, Upload, Trash2, X } from 'lucide-react';
 import ImageToPdf from './tools/ImageToPdf';
 import ImageCrop from './tools/ImageCrop';
 import { PDFDocument } from 'pdf-lib';
@@ -219,7 +219,7 @@ const DocField = ({ docType, label, value, onChange, isPdf }: {
   );
 };
 
-const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
+const SimpleDocSlot = ({ docType, label, value, onChange, isPdf, emptyActions }: {
   docType: string;
   label: string;
   value?: { file_data?: string; file_name?: string; mime_type?: string; file_url?: string };
@@ -228,32 +228,13 @@ const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
   emptyActions?: React.ReactNode;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const fileDataRef = useRef<string | null>(null);
+  const hasFile = !!(value?.file_url || value?.file_data);
 
-  const fileSrc = previewUrl || value?.file_url || value?.file_data;
-  const hasFile = !!(previewUrl || value?.file_url || value?.file_data);
-
-  useEffect(() => {
-    if (value?.file_data && value.file_data !== fileDataRef.current) {
-      fileDataRef.current = value.file_data;
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      const [header, base64] = value.file_data.split(',');
-      if (!base64) return;
-      const mimeType = header?.match(/:(.*?);/)?.[1] || 'application/octet-stream';
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      setPreviewUrl(URL.createObjectURL(new Blob([bytes], { type: mimeType })));
-    }
-  }, [value?.file_data]);
-
-  const processFile = (file: File) => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(file));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      fileDataRef.current = reader.result as string;
       onChange({
         doc_type: docType,
         file_data: reader.result as string,
@@ -264,112 +245,55 @@ const GridDocCell = ({ docType, label, value, onChange, isPdf, emptyActions }: {
     reader.readAsDataURL(file);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    processFile(file);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
-    fileDataRef.current = null;
     onChange(null);
   };
 
-  const handleCellClick = () => {
-    if (hasFile) {
-      window.open(fileSrc, '_blank');
-    } else {
-      inputRef.current?.click();
-    }
-  };
-
-  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
-
   return (
-    <div
-      className="relative w-full h-full cursor-pointer"
-      onClick={handleCellClick}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-    >
+    <div className="w-full h-full flex flex-col justify-center p-2">
       <input
         type="file"
         ref={inputRef}
         accept={isPdf ? "application/pdf" : "image/*,application/pdf"}
         className="hidden"
-        onClick={(e) => e.stopPropagation()}
         onChange={handleFileChange}
       />
       {hasFile ? (
-        <div className="w-full h-full relative group border-2 border-emerald-400 bg-emerald-50/20">
-          <div className="absolute top-0 right-0 m-1 z-10">
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-bold uppercase tracking-wider rounded-[4px] shadow-sm">
-              <Check className="w-2" /> Uploaded
-            </span>
+        <div className="flex items-center justify-between gap-2 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-[8px]">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span className="text-[10px] font-semibold text-blue-900 truncate">{value?.file_name || label}</span>
           </div>
-          <img
-            src={getDriveImageUrl(fileSrc)}
-            alt={value?.file_name || label}
-            className="w-full h-full object-contain bg-slate-50"
-            onError={(e) => {
-              const target = e.currentTarget;
-              target.style.display = 'none';
-              const fallback = target.parentElement?.querySelector('.file-fallback');
-              if (fallback) fallback.classList.remove('hidden');
-            }}
-          />
-          <div className="hidden file-fallback absolute inset-0 flex flex-col items-center justify-center bg-slate-100 pointer-events-none">
-            <FileText className="w-10 h-10 text-slate-400" />
-            <span className="mt-1 text-[9px] font-bold text-slate-500 truncate px-2 max-w-full">{value?.file_name || label}</span>
-          </div>
-          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-1.5 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
-              className="text-[9px] font-bold uppercase tracking-wider px-2 py-1 bg-white/90 hover:bg-white text-slate-700 rounded-[6px]"
-            >
-              Change
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="p-1 hover:bg-red-100 rounded-full text-red-500 transition-colors shrink-0"
+          >
+            <X className="w-3 h-3" />
+          </button>
         </div>
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-3 border-2 border-dashed border-slate-300 hover:bg-slate-50 transition-colors">
-          <Upload className="w-8 h-8 text-slate-300" />
-          <span className="text-[13px] font-semibold text-slate-500 text-center leading-tight">{label}</span>
-          <span className="text-[10px] text-slate-400 text-center">Drag & Drop or Click</span>
-          {emptyActions && <div className="mt-1 flex flex-col gap-1 w-full px-2">{emptyActions}</div>}
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="h-8 px-3 bg-white border border-dashed border-slate-300 rounded-[8px] flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-wider hover:bg-slate-50 hover:border-blue-400 transition-all"
+          >
+            <Upload className="w-3 h-3" />
+            {label}
+          </button>
+          {emptyActions}
         </div>
       )}
     </div>
   );
 };
 
-const ImageSlot = ({ value, onChange, onOpenCrop }: {
+const ImageSlot = ({ value, onChange, onCropRequest }: {
   value?: { file_data?: string; file_name?: string; mime_type?: string; file_url?: string };
   onChange: (doc: { doc_type: string; file_data?: string; file_name?: string; mime_type?: string } | null) => void;
-  onOpenCrop: () => void;
+  onCropRequest: (file: File) => void;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -391,33 +315,17 @@ const ImageSlot = ({ value, onChange, onOpenCrop }: {
     }
   }, [value?.file_data]);
 
-  const processFile = (file: File) => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(file));
-    const reader = new FileReader();
-    reader.onload = () => {
-      fileDataRef.current = reader.result as string;
-      onChange({
-        doc_type: 'image',
-        file_data: reader.result as string,
-        file_name: file.name,
-        mime_type: file.type,
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    processFile(file);
+    onCropRequest(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
+    if (file) onCropRequest(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -466,13 +374,6 @@ const ImageSlot = ({ value, onChange, onOpenCrop }: {
             <span className="text-[11px] sm:text-[13px] font-semibold text-slate-500 text-center leading-tight">Vehicle Image</span>
             <span className="text-[9px] sm:text-[10px] text-slate-400 text-center">Drag & Drop or Click</span>
           </div>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onOpenCrop(); }}
-            className="flex items-center gap-1 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2.5 sm:px-3 py-1 sm:py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[6px] transition-all"
-          >
-            <Crop className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Crop Tool
-          </button>
         </div>
       )}
     </div>
@@ -486,6 +387,16 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
   const [selectedService, setSelectedService] = React.useState(serviceOptions[0].value);
   const [showImageToPdf, setShowImageToPdf] = useState(false);
   const [showCropTool, setShowCropTool] = useState(false);
+  const [cropImageData, setCropImageData] = useState<string | null>(null);
+
+  const handleCropRequest = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImageData(reader.result as string);
+      setShowCropTool(true);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleCropAssign = (result: { dataUrl: string; blob: Blob }) => {
     const reader = new FileReader();
@@ -496,6 +407,7 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
         mime_type: 'image/png',
       });
       setShowCropTool(false);
+      setCropImageData(null);
     };
     reader.readAsDataURL(result.blob);
   };
@@ -515,22 +427,19 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
     reader.readAsDataURL(pdf.blob);
   };
 
-  const [mergeAllSuccess, setMergeAllSuccess] = useState(false);
-  const [isMerging, setIsMerging] = useState(false);
+  const mergeDocsRef = useRef(false);
 
-  const handleMergeAll = async () => {
-    const docTypes = ['image', 'registration_card', 'insurance', 'vignette'];
-    const docs = docTypes
-      .map(t => getDoc(t))
-      .filter(d => d?.file_data) as { file_data: string; file_name?: string; mime_type?: string }[];
-
-    if (docs.length === 0) {
-      showToast('No documents to merge', 'error');
-      return;
-    }
-
-    setIsMerging(true);
+  const autoMergeDocs = async () => {
+    if (mergeDocsRef.current) return;
+    mergeDocsRef.current = true;
     try {
+      const docTypes = ['registration_card', 'insurance', 'vignette'];
+      const docs = (docTypes
+        .map(t => getDoc(t))
+        .filter(d => !!(d as any)?.file_data) as unknown as { file_data: string; file_name?: string; mime_type?: string }[]);
+
+      if (docs.length === 0) return;
+
       const pdfDoc = await PDFDocument.create();
 
       for (const doc of docs) {
@@ -567,15 +476,12 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
           file_name: 'merged_documents.pdf',
           mime_type: 'application/pdf',
         });
-        setMergeAllSuccess(true);
-        setIsMerging(false);
-        setTimeout(() => setMergeAllSuccess(false), 2000);
       };
       reader.readAsDataURL(blob);
     } catch (error) {
-      console.error('Merge failed', error);
-      showToast('Failed to merge documents', 'error');
-      setIsMerging(false);
+      console.error('Auto-merge failed', error);
+    } finally {
+      mergeDocsRef.current = false;
     }
   };
 
@@ -601,6 +507,10 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       if (idx >= 0) docs[idx] = entry;
       else docs.push(entry);
       set('documents', docs);
+    }
+    const triggerTypes = ['registration_card', 'insurance', 'vignette'];
+    if (triggerTypes.includes(type)) {
+      setTimeout(() => autoMergeDocs(), 0);
     }
   };
 
@@ -683,39 +593,28 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       title: `2 ${t('carForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.uploadImage', 'Vehicle Image'), hideLabel: true, input: <ImageSlot value={getDoc('image')} onChange={(v) => setDoc('image', v)} onOpenCrop={() => setShowCropTool(true)} /> },
+        { label: t('carForm.uploadImage', 'Vehicle Image'), hideLabel: true, input: <ImageSlot value={getDoc('image')} onChange={(v) => setDoc('image', v)} onCropRequest={handleCropRequest} /> },
         { label: '', hideLabel: true, input: (
           <div className="border border-slate-200 rounded-[12px] overflow-hidden">
             <div className="grid grid-cols-2">
-              <div className="aspect-[3/4] overflow-hidden border-r border-b border-slate-200">
-                <GridDocCell docType="registration_card" label={t('carForm.registrationCard', 'Registration Card')} value={getDoc('registration_card')} onChange={(v) => setDoc('registration_card', v)} />
+              <div className="border-r border-b border-slate-200">
+                <SimpleDocSlot docType="registration_card" label={t('carForm.registrationCard', 'Registration Card')} value={getDoc('registration_card')} onChange={(v) => setDoc('registration_card', v)} />
               </div>
-              <div className="aspect-[3/4] overflow-hidden border-b border-slate-200">
-                <GridDocCell docType="insurance" label={t('carForm.insurance', 'Insurance')} value={getDoc('insurance')} onChange={(v) => setDoc('insurance', v)} />
+              <div className="border-b border-slate-200">
+                <SimpleDocSlot docType="insurance" label={t('carForm.insurance', 'Insurance')} value={getDoc('insurance')} onChange={(v) => setDoc('insurance', v)} />
               </div>
-              <div className="aspect-[3/4] overflow-hidden border-r border-slate-200">
-                <GridDocCell docType="vignette" label={t('carForm.vignette', 'Vignette')} value={getDoc('vignette')} onChange={(v) => setDoc('vignette', v)} />
+              <div className="border-r border-slate-200">
+                <SimpleDocSlot docType="vignette" label={t('carForm.vignette', 'Vignette')} value={getDoc('vignette')} onChange={(v) => setDoc('vignette', v)} />
               </div>
-              <div className="aspect-[3/4] overflow-hidden">
-                <GridDocCell docType="documentation" label="full car docs" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf emptyActions={
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setShowImageToPdf(true); }}
-                      className="flex-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[6px] transition-all"
-                    >
-                      open tool
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isMerging}
-                      onClick={(e) => { e.stopPropagation(); handleMergeAll(); }}
-                      className={`flex-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-1 rounded-[6px] transition-all flex items-center justify-center gap-0.5 ${mergeAllSuccess ? 'bg-green-500 text-white' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'}`}
-                    >
-                      {isMerging ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : mergeAllSuccess ? <Check className="w-2.5 h-2.5" /> : null}
-                      merge all
-                    </button>
-                  </div>
+              <div>
+                <SimpleDocSlot docType="documentation" label="full car docs" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf emptyActions={
+                  <button
+                    type="button"
+                    onClick={() => setShowImageToPdf(true)}
+                    className="w-full text-[9px] font-bold uppercase tracking-wider px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[6px] transition-all"
+                  >
+                    open tool
+                  </button>
                 } />
               </div>
             </div>
@@ -819,12 +718,12 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
           <div className="relative w-[90vw] h-[90vh] bg-white rounded-xl shadow-2xl overflow-hidden">
             <button
               type="button"
-              onClick={() => setShowCropTool(false)}
+              onClick={() => { setShowCropTool(false); setCropImageData(null); }}
               className="absolute top-4 right-4 z-10 p-2 bg-white/80 hover:bg-white rounded-full shadow-sm transition-all"
             >
               <X className="w-5 h-5" />
             </button>
-            <ImageCrop onAssign={handleCropAssign} />
+            <ImageCrop onAssign={handleCropAssign} initialImageDataUrl={cropImageData || undefined} simplified />
           </div>
         </div>
       )}
