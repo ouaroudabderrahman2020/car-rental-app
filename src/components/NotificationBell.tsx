@@ -129,14 +129,12 @@ export default function NotificationBell() {
                 )}
               </div>
 
-              {alerts.length > 0 && (
-                <button
-                  onClick={() => { setOpen(false); navigate('/notifications'); }}
-                  className="w-full text-center px-4 py-2.5 border-t border-slate-100 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 transition-colors"
-                >
-                  See all
-                </button>
-              )}
+              <button
+                onClick={() => { setOpen(false); navigate('/notifications'); }}
+                className="w-full text-center px-4 py-2.5 border-t border-slate-100 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                See all
+              </button>
             </div>
           </motion.div>
         )}
