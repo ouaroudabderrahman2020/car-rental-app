@@ -8,7 +8,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { StatusProvider } from './contexts/StatusContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout';
+import { VerifiedTimeProvider } from './hooks/useVerifiedTime';
 import Login from './pages/Login';
 import Reservations from './pages/ResPage';
 import Archive from './pages/Archive';
@@ -24,6 +24,7 @@ export default function App() {
       <AuthProvider>
         <NotificationProvider>
           <StatusProvider>
+            <VerifiedTimeProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route element={<ProtectedRoute />}>
@@ -35,6 +36,7 @@ export default function App() {
                 <Route path="/tools" element={<Tools />} />
               </Route>
             </Routes>
+            </VerifiedTimeProvider>
           </StatusProvider>
         </NotificationProvider>
       </AuthProvider>

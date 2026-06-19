@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export type SyncStatus = 'syncing' | 'success' | 'error';
 
@@ -11,143 +12,175 @@ interface VerifiedTimeContextType {
 
 const VerifiedTimeContext = createContext<VerifiedTimeContextType | undefined>(undefined);
 
-export function VerifiedTimeProvider({ children }: { children: React.ReactNode }) {
-  const [offset, setOffset] = useState<number>(0);
-  const offsetRef = useRef<number>(0);
-  const [isSynced, setIsSynced] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>('syncing');
-  const [now, setNow] = useState(new Date());
-  
-  const driftWatchdogRef = useRef<number>(Date.now());
-  const isSyncingRef = useRef(false);
-  const hourlyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+const LS_KEY = 'clock_verified_timestamp';
+const CACHE_MAX_AGE = 86400000;
+const FETCH_TIMEOUT = 5000;
+const LAYER_DELAY = 500;
+const INTERVAL_SUCCESS = 3600000;
+const RETRY_BASE = 60000;
+const RETRY_MAX = 1800000;
+const TICK_INTERVAL = 1000;
+const WATCHDOG_INTERVAL = 2000;
+const DRIFT_THRESHOLD = 10000;
+const DRIFT_COOLDOWN = 300000;
+const ROUTE_COOLDOWN = 900000;
 
-  const fetchWithTimeout = async (url: string, timeout = 5000) => {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-    try {
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(id);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      return await response.json();
-    } catch (err) {
-      clearTimeout(id);
-      throw err;
-    }
-  };
+function loadCachedUtc(): number | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const { utcMs, cachedAt } = JSON.parse(raw);
+    if (Date.now() - cachedAt < CACHE_MAX_AGE) return utcMs;
+  } catch {}
+  return null;
+}
+
+function saveCachedUtc(utcMs: number) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ utcMs, cachedAt: Date.now() }));
+  } catch {}
+}
+
+async function fetchJSON(url: string, timeout = FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
+function parseTimeApiIo(data: Record<string, unknown>): number {
+  const d = data as any;
+  if (typeof d.gmtOffset !== 'number') throw new Error('timeapi.io: missing gmtOffset');
+  const local = Date.UTC(d.year, d.month - 1, d.day, d.hour, d.minute, d.seconds ?? 0, d.milliSeconds ?? 0);
+  return local - d.gmtOffset * 1000;
+}
+
+function parseWorldTimeApi(data: Record<string, unknown>): number {
+  const ms = Date.parse(data.datetime as string);
+  if (!isNaN(ms)) return ms;
+  throw new Error('worldtimeapi.org: cannot parse datetime');
+}
+
+export function VerifiedTimeProvider({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  const cachedRef = useRef(loadCachedUtc());
+  const cached = cachedRef.current;
+
+  const [now, setNow] = useState<Date>(() => new Date(cached ?? Date.now()));
+  const [isSynced, setIsSynced] = useState(!!cached);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(cached ? 'success' : 'syncing');
+
+  const verifiedUtcRef = useRef(cached ?? Date.now());
+  const syncTimeRef = useRef(Date.now());
+  const isSyncingRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const lastDriftSyncRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncStatusRef = useRef(syncStatus);
+  const prevPathRef = useRef(location.pathname);
+
+  useEffect(() => { syncStatusRef.current = syncStatus; }, [syncStatus]);
 
   const syncWithServer = useCallback(async () => {
     if (isSyncingRef.current) return;
     isSyncingRef.current = true;
     setSyncStatus('syncing');
 
-    const tryLayer1 = async () => {
-      const data = await fetchWithTimeout('https://www.timeapi.io/api/Time/current/zone?timeZone=Africa/Casablanca');
-      return new Date(data.dateTime).getTime();
-    };
+    const layers: (() => Promise<number>)[] = [
+      () => fetchJSON('https://www.timeapi.io/api/Time/current/zone?timeZone=Africa/Casablanca').then(parseTimeApiIo),
+      () => fetchJSON('https://worldtimeapi.org/api/timezone/Africa/Casablanca').then(parseWorldTimeApi),
+      () => fetchJSON('https://www.timeapi.io/api/Time/current/zone?timeZone=UTC').then(parseTimeApiIo),
+      () => fetchJSON('https://worldtimeapi.org/api/timezone/Etc/UTC').then(parseWorldTimeApi),
+      async () => Date.now(),
+    ];
 
-    const tryLayer2 = async () => {
-      // Use WorldTimeAPI as Layer 2
-      const data = await fetchWithTimeout('https://worldtimeapi.org/api/timezone/Africa/Casablanca');
-      return new Date(data.datetime).getTime();
-    };
-
-    const tryLayer3 = async () => {
-      // Use a more generic UTC endpoint as Layer 3
-      const data = await fetchWithTimeout('https://worldtimeapi.org/api/timezone/Etc/UTC');
-      return new Date(data.datetime).getTime();
-    };
-
-    const tryLayer4 = async () => {
-      // Another timezone from TimeAPI.io as Layer 4
-      const data = await fetchWithTimeout('https://www.timeapi.io/api/Time/current/zone?timeZone=UTC');
-      return new Date(data.dateTime).getTime();
-    };
-
-    const layers = [tryLayer1, tryLayer2, tryLayer3, tryLayer4];
-    let serverTimestamp: number | null = null;
     let success = false;
+    let serverUtcMs = Date.now();
 
     for (let i = 0; i < layers.length; i++) {
-       try {
-        console.log(`[ClockService] Attempting Layer ${i + 1}...`);
+      try {
         const t1 = Date.now();
-        serverTimestamp = await layers[i]();
+        serverUtcMs = await layers[i]();
         const t2 = Date.now();
-        const rtt = t2 - t1;
-        
-        const newOffset = (serverTimestamp + rtt / 2) - t2;
-        setOffset(newOffset);
-        offsetRef.current = newOffset;
-        setIsSynced(true);
+        const compensated = serverUtcMs + (t2 - t1) / 2;
+
+        verifiedUtcRef.current = compensated;
+        syncTimeRef.current = t2;
+        saveCachedUtc(compensated);
         setSyncStatus('success');
+        setIsSynced(true);
         success = true;
-        console.log(`[ClockService] Layer ${i + 1} Success. Offset: ${newOffset}ms`);
         break;
       } catch (err) {
-        console.warn(`[ClockService] Layer ${i + 1} Failed:`, err);
-        // Wait 500ms before next layer to be gentler
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.warn(`[Clock] Layer ${i + 1} failed:`, err);
+        if (i < layers.length - 1) {
+          await new Promise(r => setTimeout(r, LAYER_DELAY));
+        }
       }
     }
 
-    if (!success) {
-      setSyncStatus('error');
-      console.warn('[ClockService] All layers failed. Using system time. Retrying in 5 minutes...');
-      setIsSynced(false);
-      
-      if (hourlyTimeoutRef.current) clearTimeout(hourlyTimeoutRef.current);
-      hourlyTimeoutRef.current = setTimeout(() => {
-        isSyncingRef.current = false;
-        syncWithServer();
-      }, 300000); // Retry in 5 minutes after total failure
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    if (success) {
+      retryCountRef.current = 0;
+      timerRef.current = setTimeout(() => { isSyncingRef.current = false; syncWithServer(); }, INTERVAL_SUCCESS);
     } else {
-      if (hourlyTimeoutRef.current) clearTimeout(hourlyTimeoutRef.current);
-      hourlyTimeoutRef.current = setTimeout(() => {
-        isSyncingRef.current = false;
-        syncWithServer();
-      }, 3600000); // Re-sync every 1 hour on success
+      const delay = Math.min(RETRY_BASE * Math.pow(2, retryCountRef.current), RETRY_MAX);
+      retryCountRef.current++;
+      setSyncStatus('error');
+      timerRef.current = setTimeout(() => { isSyncingRef.current = false; syncWithServer(); }, delay);
     }
 
-    if (success) isSyncingRef.current = false;
+    isSyncingRef.current = false;
   }, []);
 
   useEffect(() => {
+    if (cached) {
+      const id = setTimeout(syncWithServer, 1000);
+      return () => clearTimeout(id);
+    }
     syncWithServer();
+  }, [cached, syncWithServer]);
 
-    const tickerInterval = setInterval(() => {
-      setNow(new Date(Date.now() + offsetRef.current));
-    }, 1000);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNow(new Date(verifiedUtcRef.current + (Date.now() - syncTimeRef.current)));
+    }, TICK_INTERVAL);
+    return () => clearInterval(id);
+  }, []);
 
-    const watchdogInterval = setInterval(() => {
-      const currentLocal = Date.now();
-      const diff = Math.abs(currentLocal - driftWatchdogRef.current - 2000);
-      
-      if (diff > 10000) {
-        console.warn(`[ClockService] Time drift detected (${diff}ms). Emergency re-sync...`);
+  useEffect(() => {
+    let last = Date.now();
+    const id = setInterval(() => {
+      const t = Date.now();
+      if (Math.abs(t - last - WATCHDOG_INTERVAL) > DRIFT_THRESHOLD && t - lastDriftSyncRef.current > DRIFT_COOLDOWN) {
+        lastDriftSyncRef.current = t;
         syncWithServer();
       }
-      driftWatchdogRef.current = currentLocal;
-    }, 2000);
-
-    return () => {
-      if (hourlyTimeoutRef.current) clearTimeout(hourlyTimeoutRef.current);
-      clearInterval(tickerInterval);
-      clearInterval(watchdogInterval);
-    };
+      last = t;
+    }, WATCHDOG_INTERVAL);
+    return () => clearInterval(id);
   }, [syncWithServer]);
 
-  // Update immediately when offset changes
   useEffect(() => {
-    setNow(new Date(Date.now() + offset));
-  }, [offset]);
+    if (location.pathname !== prevPathRef.current) {
+      prevPathRef.current = location.pathname;
+      const t = Date.now();
+      if (syncStatusRef.current === 'error' || t - syncTimeRef.current > ROUTE_COOLDOWN) {
+        syncWithServer();
+      }
+    }
+  }, [location.pathname, syncWithServer]);
 
-  const value = {
-    verifiedTime: now,
-    isSynced,
-    syncStatus,
-    syncNow: syncWithServer
-  };
+  const value = { verifiedTime: now, isSynced, syncStatus, syncNow: syncWithServer };
 
   return (
     <VerifiedTimeContext.Provider value={value}>
@@ -157,9 +190,7 @@ export function VerifiedTimeProvider({ children }: { children: React.ReactNode }
 }
 
 export function useVerifiedTime() {
-  const context = useContext(VerifiedTimeContext);
-  if (context === undefined) {
-    throw new Error('useVerifiedTime must be used within a VerifiedTimeProvider');
-  }
-  return context;
+  const ctx = useContext(VerifiedTimeContext);
+  if (!ctx) throw new Error('useVerifiedTime must be used within VerifiedTimeProvider');
+  return ctx;
 }

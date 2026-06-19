@@ -114,9 +114,11 @@ export default function Layout({ children, title }: LayoutProps) {
       t('common.days.fri', 'Fri'),
       t('common.days.sat', 'Sat')
     ];
-    const dayName = days[date.getDay()];
-    const dateStr = date.toLocaleDateString('en-GB');
-    const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const enDay = date.toLocaleDateString('en-GB', { timeZone: 'Africa/Casablanca', weekday: 'short' });
+    const dayMap: Record<string, number> = { 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 0 };
+    const dayName = days[dayMap[enDay] ?? date.getDay()];
+    const dateStr = date.toLocaleDateString('en-GB', { timeZone: 'Africa/Casablanca' });
+    const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Casablanca' });
     return `${dayName}, ${dateStr} ${timeStr}`;
   };
 
@@ -312,7 +314,7 @@ export default function Layout({ children, title }: LayoutProps) {
           </div>
 
           <div className="hidden md:block text-slate-400 font-medium tracking-normal opacity-60">
-            RentalCore System v1.0.4 — {verifiedTime.getFullYear()}
+            RentalCore System v1.0.4 — {verifiedTime.toLocaleDateString('en-US', { timeZone: 'Africa/Casablanca', year: 'numeric' })}
           </div>
         </div>
       </footer>
