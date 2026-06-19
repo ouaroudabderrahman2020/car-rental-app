@@ -130,6 +130,7 @@ export default function Layout({ children, title }: LayoutProps) {
     { name: t('nav.financials'), path: '/financials' },
     { name: t('nav.crm'), path: '/clients' },
     { name: t('nav.tools'), path: '/tools' },
+    { name: t('nav.violations', 'Violations'), path: '/violations' },
     { name: t('nav.notifications', 'Notifications'), path: '/notifications' },
   ];
 

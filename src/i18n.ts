@@ -12,7 +12,8 @@ const resources = {
         archive: "Archive",
         financials: "Financials",
         tools: "Tools",
-        crm: "Clients"
+        crm: "Clients",
+        violations: "Violations"
       },
       crm: {
         title: "Client CRM",
@@ -467,7 +468,8 @@ const resources = {
         archive: "Archive",
         financials: "Finances",
         tools: "Outils",
-        crm: "Clients"
+        crm: "Clients",
+        violations: "Infractions"
       },
       crm: {
         title: "CRM Clients",
@@ -887,7 +889,8 @@ const resources = {
         archive: "الأرشيف",
         financials: "المالية",
         tools: "الأدوات",
-        crm: "العملاء"
+        crm: "العملاء",
+        violations: "المخالفات"
       },
       crm: {
         title: "إدارة العملاء",

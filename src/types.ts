@@ -126,6 +126,19 @@ export interface CarAlert {
   serviceName?: string;
 }
 
+export interface Violation {
+  id: string;
+  car_id: string;
+  client_id: string;
+  violation_type: string;
+  violation_place: string;
+  violation_date: string;
+  created_at: string;
+  updated_at: string;
+  car?: Car;
+  client?: Client;
+}
+
 export interface ClientDocument {
   doc_type: 'id_card' | 'license' | 'master_contract';
   file_url: string;

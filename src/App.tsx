@@ -17,6 +17,7 @@ import Financials from './pages/Financials';
 import ClientDashboard from './pages/ClientPage';
 import Tools from './pages/Tools';
 import NotificationsPage from './pages/NotificationsPage';
+import ViolationsPage from './pages/ViolationsPage';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
                 <Route path="/financials" element={<Financials />} />
                 <Route path="/clients" element={<ClientDashboard />} />
                 <Route path="/tools" element={<Tools />} />
+                <Route path="/violations" element={<ViolationsPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
               </Route>
             </Routes>
