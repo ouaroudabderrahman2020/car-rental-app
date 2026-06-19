@@ -112,7 +112,7 @@ export interface FormattedReservation extends Reservation {
   hours?: string;
 }
 
-export type CarAlertType = 'registration_expiry' | 'insurance_expiry' | 'vignette_expiry' | 'first_use_date';
+export type CarAlertType = 'registration_expiry' | 'insurance_expiry' | 'vignette_expiry' | 'maintenance';
 
 export interface CarAlert {
   id: string;
@@ -123,6 +123,7 @@ export interface CarAlert {
   dueDate: string;
   daysRemaining: number;
   read: boolean;
+  serviceName?: string;
 }
 
 export interface ClientDocument {

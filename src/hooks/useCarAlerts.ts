@@ -8,19 +8,19 @@ const READ_LS_KEY = 'car_alerts_read';
 const ALERT_WINDOW_DAYS = 7;
 const REFETCH_COOLDOWN = 60000;
 
-const ALERT_LABELS: Record<CarAlertType, string> = {
+const ALERT_LABELS: Record<string, string> = {
   registration_expiry: 'Registration',
   insurance_expiry: 'Insurance',
   vignette_expiry: 'Vignette',
-  first_use_date: 'First Use',
+  maintenance: 'Maintenance',
 };
 
-const DATE_FIELDS: { key: CarAlertType; col: keyof CarRow }[] = [
-  { key: 'registration_expiry', col: 'registration_expiry' },
-  { key: 'insurance_expiry', col: 'insurance_expiry' },
-  { key: 'vignette_expiry', col: 'vignette_expiry' },
-  { key: 'first_use_date', col: 'first_use_date' },
-];
+interface MaintenanceInterval {
+  id: string;
+  type: string;
+  value: string;
+  lastCompleted: string | null;
+}
 
 interface CarRow {
   id: string;
@@ -30,7 +30,7 @@ interface CarRow {
   registration_expiry: string | null;
   insurance_expiry: string | null;
   vignette_expiry: string | null;
-  first_use_date: string | null;
+  intervals: MaintenanceInterval[] | null;
 }
 
 function loadReadSet(): Set<string> {
@@ -81,7 +81,7 @@ export function useCarAlerts() {
     try {
       const { data, error } = await supabase
         .from('cars')
-        .select('id, brand, model, plate, registration_expiry, insurance_expiry, vignette_expiry, first_use_date');
+        .select('id, brand, model, plate, registration_expiry, insurance_expiry, vignette_expiry, intervals');
 
       if (error) throw error;
       if (!data) {
@@ -95,8 +95,14 @@ export function useCarAlerts() {
 
       for (const car of data as CarRow[]) {
         const carName = `${car.brand} ${car.model}`;
-        for (const { key, col } of DATE_FIELDS) {
-          const val = car[col];
+
+        const expiryFields: { key: CarAlertType; val: string | null }[] = [
+          { key: 'registration_expiry', val: car.registration_expiry },
+          { key: 'insurance_expiry', val: car.insurance_expiry },
+          { key: 'vignette_expiry', val: car.vignette_expiry },
+        ];
+
+        for (const { key, val } of expiryFields) {
           if (!val) continue;
           const days = daysBetween(today, val);
           if (days > ALERT_WINDOW_DAYS) continue;
@@ -111,6 +117,31 @@ export function useCarAlerts() {
             daysRemaining: days,
             read: readSet.has(id),
           });
+        }
+
+        if (car.intervals) {
+          for (const interval of car.intervals) {
+            if (!interval.lastCompleted) continue;
+            const valueNum = parseInt(interval.value);
+            if (isNaN(valueNum) || valueNum <= 0) continue;
+            const daysToAdd = valueNum <= 12 ? valueNum * 30 : Math.min(valueNum, 730);
+            const nextDue = new Date(new Date(interval.lastCompleted + 'T00:00:00').getTime() + daysToAdd * 86400000);
+            const nextDueStr = nextDue.toISOString().slice(0, 10);
+            const days = daysBetween(today, nextDueStr);
+            if (days > ALERT_WINDOW_DAYS) continue;
+            const id = `${car.id}_maint_${interval.id.replace(/\s+/g, '_')}`;
+            result.push({
+              id,
+              carId: car.id,
+              carName,
+              carPlate: car.plate,
+              type: 'maintenance',
+              dueDate: nextDueStr,
+              daysRemaining: days,
+              read: readSet.has(id),
+              serviceName: interval.type,
+            });
+          }
         }
       }
 

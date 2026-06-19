@@ -3,7 +3,7 @@ import { Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useCarAlerts } from '../hooks/useCarAlerts';
-import { CarAlertType } from '../types';
+import { CarAlert } from '../types';
 
 const URGENCY_COLORS: Record<string, string> = {
   overdue: 'bg-red-500',
@@ -17,14 +17,14 @@ function getUrgency(days: number): 'overdue' | 'critical' | 'upcoming' {
   return 'upcoming';
 }
 
-function getAlertLabel(type: CarAlertType): string {
-  const labels: Record<CarAlertType, string> = {
+function getAlertLabel(alert: CarAlert): string {
+  if (alert.type === 'maintenance') return alert.serviceName || 'Maintenance';
+  const labels: Record<string, string> = {
     registration_expiry: 'Registration',
     insurance_expiry: 'Insurance',
     vignette_expiry: 'Vignette',
-    first_use_date: 'First Use',
   };
-  return labels[type];
+  return labels[alert.type] || alert.type;
 }
 
 function getDaysText(days: number): string {
@@ -102,7 +102,7 @@ export default function NotificationBell() {
                             {alert.carName}
                           </div>
                           <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider leading-tight mt-0.5">
-                            {getAlertLabel(alert.type)}
+                            {getAlertLabel(alert)}
                           </div>
                         </div>
                         <span className={`text-[10px] font-black whitespace-nowrap shrink-0 ${

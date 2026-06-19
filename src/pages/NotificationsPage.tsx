@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { PageHeader } from '../components/PageHeader';
 import { useCarAlerts } from '../hooks/useCarAlerts';
-import { CarAlertType } from '../types';
+import { CarAlert } from '../types';
 
 const URGENCY_STYLES = {
   overdue: { dot: 'bg-red-500', label: 'text-red-600', bg: 'bg-red-50' },
@@ -16,14 +16,14 @@ function getUrgency(days: number): 'overdue' | 'critical' | 'upcoming' {
   return 'upcoming';
 }
 
-function getAlertLabel(type: CarAlertType): string {
-  const labels: Record<CarAlertType, string> = {
+function getAlertLabel(alert: CarAlert): string {
+  if (alert.type === 'maintenance') return alert.serviceName || 'Maintenance';
+  const labels: Record<string, string> = {
     registration_expiry: 'Registration',
     insurance_expiry: 'Insurance',
     vignette_expiry: 'Vignette',
-    first_use_date: 'First Use',
   };
-  return labels[type];
+  return labels[alert.type] || alert.type;
 }
 
 function getDaysText(days: number): string {
@@ -112,7 +112,7 @@ export default function NotificationsPage() {
                         </div>
                       </div>
                       <div className="text-xs font-semibold text-slate-500">
-                        {getAlertLabel(alert.type)}
+                        {getAlertLabel(alert)}
                       </div>
                       <div className="text-xs text-slate-400">
                         {formatDate(alert.dueDate)}
