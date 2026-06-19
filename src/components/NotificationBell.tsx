@@ -94,14 +94,14 @@ export default function NotificationBell() {
                       <button
                         key={alert.id}
                         onClick={() => { markRead(alert.id); }}
-                        className={`w-full text-start flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-50 ${alert.read ? 'opacity-50' : ''}`}
+                        className="w-full text-start flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-50"
                       >
                         <span className={`w-2 h-2 rounded-full shrink-0 ${URGENCY_COLORS[urgency]}`} />
                         <div className="min-w-0 flex-1">
-                          <div className="text-[11px] font-bold text-slate-800 truncate leading-tight">
+                          <div className={`text-[11px] ${alert.read ? 'font-medium' : 'font-bold'} text-slate-800 truncate leading-tight`}>
                             {alert.carName}
                           </div>
-                          <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider leading-tight mt-0.5">
+                          <div className={`text-[9px] ${alert.read ? 'font-normal' : 'font-semibold'} text-slate-500 uppercase tracking-wider leading-tight mt-0.5`}>
                             {getAlertLabel(alert)}
                           </div>
                         </div>

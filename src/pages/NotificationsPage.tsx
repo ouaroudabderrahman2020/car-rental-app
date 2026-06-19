@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { PageHeader } from '../components/PageHeader';
 import { useCarAlerts } from '../hooks/useCarAlerts';
-import { CarAlert } from '../types';
+import { supabase } from '../lib/supabase';
+import BaseModal from '../components/BaseModal';
+import Cardetails from '../components/CarDetails';
+import { CarAlert, Car, FormattedCar } from '../types';
 
 const URGENCY_STYLES = {
   overdue: { dot: 'bg-red-500', label: 'text-red-600', bg: 'bg-red-50' },
@@ -41,6 +45,28 @@ function formatDate(dateStr: string): string {
 export default function NotificationsPage() {
   const { t } = useTranslation();
   const { alerts, loading, markRead, markAllRead, refresh } = useCarAlerts();
+  const [detailsCar, setDetailsCar] = useState<FormattedCar | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [carLoading, setCarLoading] = useState(false);
+
+  const fetchCarData = async (carId: string) => {
+    setCarLoading(true);
+    try {
+      const { data, error } = await supabase.from('cars').select('*').eq('id', carId).single();
+      if (error) throw error;
+      setDetailsCar(data as unknown as FormattedCar);
+      setDetailsOpen(true);
+    } catch (err) {
+      console.error('Error fetching car:', err);
+    } finally {
+      setCarLoading(false);
+    }
+  };
+
+  const handleClick = (alert: CarAlert) => {
+    markRead(alert.id);
+    fetchCarData(alert.carId);
+  };
 
   const overdue = alerts.filter(a => a.daysRemaining <= 0);
   const critical = alerts.filter(a => a.daysRemaining >= 1 && a.daysRemaining <= 3);
@@ -98,20 +124,20 @@ export default function NotificationsPage() {
                 {section.items.map(alert => (
                   <div
                     key={alert.id}
-                    onClick={() => markRead(alert.id)}
-                    className={`flex items-center gap-4 px-4 py-3 transition-colors hover:bg-slate-50 cursor-pointer ${alert.read ? 'opacity-50' : ''}`}
+                    onClick={() => handleClick(alert)}
+                    className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-slate-50 cursor-pointer"
                   >
                     <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${style.dot}`} />
                     <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-4 gap-1 sm:gap-4 items-start sm:items-center">
                       <div className="sm:col-span-2">
-                        <div className="text-sm font-bold text-slate-800 truncate">
+                        <div className={`text-sm ${alert.read ? 'font-normal' : 'font-bold'} text-slate-800 truncate`}>
                           {alert.carName}
                         </div>
                         <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                           {alert.carPlate}
                         </div>
                       </div>
-                      <div className="text-xs font-semibold text-slate-500">
+                      <div className={`text-xs ${alert.read ? 'font-normal' : 'font-semibold'} text-slate-500`}>
                         {getAlertLabel(alert)}
                       </div>
                       <div className="text-xs text-slate-400">
@@ -128,6 +154,20 @@ export default function NotificationsPage() {
           );
         })}
       </div>
+
+      <BaseModal
+        isOpen={detailsOpen}
+        onClose={() => { setDetailsOpen(false); setDetailsCar(null); }}
+        title={detailsCar ? `${detailsCar.brand} ${detailsCar.model}` : 'Car Details'}
+      >
+        {carLoading ? (
+          <div className="flex items-center justify-center py-12 text-sm text-slate-400 font-medium">
+            Loading car details...
+          </div>
+        ) : (
+          detailsCar && <Cardetails car={detailsCar} />
+        )}
+      </BaseModal>
     </Layout>
   );
 }
