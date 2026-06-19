@@ -5,6 +5,7 @@ import { useVerifiedTime } from '../hooks/useVerifiedTime';
 import { CarAlert, CarAlertType } from '../types';
 
 const READ_LS_KEY = 'car_alerts_read';
+const DISMISS_LS_KEY = 'car_alerts_dismissed';
 const ALERT_WINDOW_DAYS = 7;
 const REFETCH_COOLDOWN = 60000;
 
@@ -33,18 +34,18 @@ interface CarRow {
   intervals: MaintenanceInterval[] | null;
 }
 
-function loadReadSet(): Set<string> {
+function loadSet(key: string): Set<string> {
   try {
-    const raw = localStorage.getItem(READ_LS_KEY);
+    const raw = localStorage.getItem(key);
     return new Set(raw ? JSON.parse(raw) : []);
   } catch {
     return new Set();
   }
 }
 
-function saveReadSet(ids: Set<string>) {
+function saveSet(ids: Set<string>, key: string) {
   try {
-    localStorage.setItem(READ_LS_KEY, JSON.stringify([...ids]));
+    localStorage.setItem(key, JSON.stringify([...ids]));
   } catch {}
 }
 
@@ -70,7 +71,8 @@ export function useCarAlerts() {
   const [alerts, setAlerts] = useState<CarAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const lastFetchRef = useRef(0);
-  const readSetRef = useRef(loadReadSet());
+  const readSetRef = useRef(loadSet(READ_LS_KEY));
+  const dismissedSetRef = useRef(loadSet(DISMISS_LS_KEY));
 
   const compute = useCallback(async () => {
     const now = Date.now();
@@ -91,6 +93,7 @@ export function useCarAlerts() {
 
       const today = todayRef.current;
       const readSet = readSetRef.current;
+      const dismissedSet = dismissedSetRef.current;
       const result: CarAlert[] = [];
 
       for (const car of data as CarRow[]) {
@@ -107,6 +110,7 @@ export function useCarAlerts() {
           const days = daysBetween(today, val);
           if (days > ALERT_WINDOW_DAYS) continue;
           const id = `${car.id}_${key}`;
+          if (dismissedSet.has(id)) continue;
           result.push({
             id,
             carId: car.id,
@@ -130,6 +134,7 @@ export function useCarAlerts() {
             const days = daysBetween(today, nextDueStr);
             if (days > ALERT_WINDOW_DAYS) continue;
             const id = `${car.id}_maint_${interval.id.replace(/\s+/g, '_')}`;
+            if (dismissedSet.has(id)) continue;
             result.push({
               id,
               carId: car.id,
@@ -164,7 +169,7 @@ export function useCarAlerts() {
 
   const markRead = useCallback((id: string) => {
     readSetRef.current.add(id);
-    saveReadSet(readSetRef.current);
+    saveSet(readSetRef.current, READ_LS_KEY);
     setAlerts(prev => prev.map(a => a.id === id ? { ...a, read: true } : a));
   }, []);
 
@@ -172,11 +177,17 @@ export function useCarAlerts() {
     const ids = new Set<string>();
     for (const a of alerts) ids.add(a.id);
     for (const id of ids) readSetRef.current.add(id);
-    saveReadSet(readSetRef.current);
+    saveSet(readSetRef.current, READ_LS_KEY);
     setAlerts(prev => prev.map(a => ({ ...a, read: true })));
   }, [alerts]);
 
+  const dismissAlert = useCallback((id: string) => {
+    dismissedSetRef.current.add(id);
+    saveSet(dismissedSetRef.current, DISMISS_LS_KEY);
+    setAlerts(prev => prev.filter(a => a.id !== id));
+  }, []);
+
   const unreadCount = alerts.filter(a => !a.read).length;
 
-  return { alerts, unreadCount, loading, markRead, markAllRead, refresh: compute, labels: ALERT_LABELS };
+  return { alerts, unreadCount, loading, markRead, markAllRead, dismissAlert, refresh: compute, labels: ALERT_LABELS };
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { PageHeader } from '../components/PageHeader';
@@ -44,7 +45,7 @@ function formatDate(dateStr: string): string {
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
-  const { alerts, loading, markRead, markAllRead, refresh } = useCarAlerts();
+  const { alerts, loading, markRead, markAllRead, dismissAlert, refresh } = useCarAlerts();
   const [detailsCar, setDetailsCar] = useState<FormattedCar | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [carLoading, setCarLoading] = useState(false);
@@ -124,29 +125,40 @@ export default function NotificationsPage() {
                 {section.items.map(alert => (
                   <div
                     key={alert.id}
-                    onClick={() => handleClick(alert)}
-                    className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-slate-50 cursor-pointer"
+                    className="flex items-center group"
                   >
-                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${style.dot}`} />
-                    <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-4 gap-1 sm:gap-4 items-start sm:items-center">
-                      <div className="sm:col-span-2">
-                        <div className={`text-sm ${alert.read ? 'font-normal' : 'font-bold'} text-slate-800 truncate`}>
-                          {alert.carName}
+                    <div
+                      onClick={() => handleClick(alert)}
+                      className="flex-1 flex items-center gap-4 px-4 py-3 transition-colors hover:bg-slate-50 cursor-pointer"
+                    >
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${style.dot}`} />
+                      <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-4 gap-1 sm:gap-4 items-start sm:items-center">
+                        <div className="sm:col-span-2">
+                          <div className={`text-sm ${alert.read ? 'font-normal' : 'font-bold'} text-slate-800 truncate`}>
+                            {alert.carName}
+                          </div>
+                          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                            {alert.carPlate}
+                          </div>
                         </div>
-                        <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                          {alert.carPlate}
+                        <div className={`text-xs ${alert.read ? 'font-normal' : 'font-semibold'} text-slate-500`}>
+                          {getAlertLabel(alert)}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {formatDate(alert.dueDate)}
                         </div>
                       </div>
-                      <div className={`text-xs ${alert.read ? 'font-normal' : 'font-semibold'} text-slate-500`}>
-                        {getAlertLabel(alert)}
-                      </div>
-                      <div className="text-xs text-slate-400">
-                        {formatDate(alert.dueDate)}
-                      </div>
+                      <span className={`text-xs font-black whitespace-nowrap shrink-0 ${style.label}`}>
+                        {getDaysText(alert.daysRemaining)}
+                      </span>
                     </div>
-                    <span className={`text-xs font-black whitespace-nowrap shrink-0 ${style.label}`}>
-                      {getDaysText(alert.daysRemaining)}
-                    </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); dismissAlert(alert.id); }}
+                      className="shrink-0 p-1.5 mr-2 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500"
+                      title="Dismiss"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>

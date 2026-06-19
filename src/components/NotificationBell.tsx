@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useCarAlerts } from '../hooks/useCarAlerts';
@@ -38,7 +38,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { alerts, unreadCount, markRead } = useCarAlerts();
+  const { alerts, unreadCount, markRead, dismissAlert } = useCarAlerts();
 
   useEffect(() => {
     if (!open) return;
@@ -91,28 +91,39 @@ export default function NotificationBell() {
                   topAlerts.map(alert => {
                     const urgency = getUrgency(alert.daysRemaining);
                     return (
-                      <button
+                      <div
                         key={alert.id}
-                        onClick={() => { markRead(alert.id); }}
-                        className="w-full text-start flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-50"
+                        className="flex items-center gap-1 group"
                       >
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${URGENCY_COLORS[urgency]}`} />
-                        <div className="min-w-0 flex-1">
-                          <div className={`text-[11px] ${alert.read ? 'font-medium' : 'font-bold'} text-slate-800 truncate leading-tight`}>
-                            {alert.carName}
+                        <button
+                          onClick={() => { markRead(alert.id); }}
+                          className="flex-1 text-start flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-slate-50"
+                        >
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${URGENCY_COLORS[urgency]}`} />
+                          <div className="min-w-0 flex-1">
+                            <div className={`text-[11px] ${alert.read ? 'font-medium' : 'font-bold'} text-slate-800 truncate leading-tight`}>
+                              {alert.carName}
+                            </div>
+                            <div className={`text-[9px] ${alert.read ? 'font-normal' : 'font-semibold'} text-slate-500 uppercase tracking-wider leading-tight mt-0.5`}>
+                              {getAlertLabel(alert)}
+                            </div>
                           </div>
-                          <div className={`text-[9px] ${alert.read ? 'font-normal' : 'font-semibold'} text-slate-500 uppercase tracking-wider leading-tight mt-0.5`}>
-                            {getAlertLabel(alert)}
-                          </div>
-                        </div>
-                        <span className={`text-[10px] font-black whitespace-nowrap shrink-0 ${
-                          urgency === 'overdue' ? 'text-red-600' :
-                          urgency === 'critical' ? 'text-orange-600' :
-                          'text-yellow-700'
-                        }`}>
-                          {getDaysText(alert.daysRemaining)}
-                        </span>
-                      </button>
+                          <span className={`text-[10px] font-black whitespace-nowrap shrink-0 ${
+                            urgency === 'overdue' ? 'text-red-600' :
+                            urgency === 'critical' ? 'text-orange-600' :
+                            'text-yellow-700'
+                          }`}>
+                            {getDaysText(alert.daysRemaining)}
+                          </span>
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); dismissAlert(alert.id); }}
+                          className="shrink-0 p-1 mr-2 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500"
+                          title="Dismiss"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
                     );
                   })
                 )}
