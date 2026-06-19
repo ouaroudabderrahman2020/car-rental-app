@@ -210,9 +210,10 @@ export function getDriveImageUrl(url?: string) {
   if (url.startsWith('data:')) return url;
   
   const id = getFileIdFromUrl(url);
-  // Use lh3.googleusercontent.com which is Google's image serving CDN
-  // More reliable and browser-friendly than /uc?id= format
-  if (id) return `https://lh3.googleusercontent.com/d/${id}`;
+  if (id) {
+    // Try Google's thumbnail API (more reliable cross-origin than lh3)
+    return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+  }
   
   return url;
 }

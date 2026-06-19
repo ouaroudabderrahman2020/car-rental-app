@@ -121,8 +121,7 @@ export default function Fleet() {
 
     (async () => {
       try {
-        const payload = {
-          id: generateCarId(),
+        const payload: Record<string, any> = {
           brand: capturedFormData.brand,
           model: capturedFormData.model,
           plate: capturedFormData.plate,
@@ -142,6 +141,10 @@ export default function Fleet() {
           essentials: capturedFormData.essentials || [],
           intervals: capturedFormData.intervals || [],
         };
+
+        if (capturedMode !== 'edit') {
+          payload.id = generateCarId();
+        }
 
         let savedCar: any;
 
@@ -183,6 +186,7 @@ export default function Fleet() {
           }
         }
 
+        console.log('[Fleet Upload] rawDocs:', JSON.stringify(rawDocs.map((d: any) => ({ doc_type: d.doc_type, has_file_data: !!d.file_data, has_file_url: !!d.file_url }))));
         const newDocs: any[] = [];
         for (const doc of rawDocs) {
           const docType = doc.doc_type;
@@ -200,15 +204,22 @@ export default function Fleet() {
               carFolderName,
               oldFileId,
             });
-            if (result?.status === 'success' && result?.fileUrl) {
-              fileUrl = result.fileUrl;
-            }
+          if (result?.status === 'success') {
+            console.log('[Fleet Upload] GAS response:', JSON.stringify(result));
+            fileUrl = result.fileUrl || result.file_url || result.url || result.downloadUrl || result.webContentLink || result.webViewLink;
+            if (!fileUrl && result.id) fileUrl = `https://drive.google.com/uc?id=${result.id}`;
+          } else {
+            console.warn('[Fleet Upload] Upload failed for', docType, result);
+          }
           }
 
           if (fileUrl) {
             newDocs.push({ doc_type: docType, file_url: fileUrl, file_name: (doc as any).file_name, mime_type: (doc as any).mime_type });
+          } else {
+            console.warn('[Fleet Upload] Skipping doc', docType, '— no fileUrl after processing');
           }
         }
+        console.log('[Fleet Upload] newDocs to save:', JSON.stringify(newDocs));
 
         if (staleFileIds.length > 0) {
           await gasService.deleteCarFiles(staleFileIds);
