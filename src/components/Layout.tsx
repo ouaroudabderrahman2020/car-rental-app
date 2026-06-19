@@ -10,6 +10,7 @@ import { useVerifiedTime, SyncStatus } from '../hooks/useVerifiedTime';
 import { useStatus } from '../contexts/StatusContext';
 
 import { NavigationOverlay, MenuButton } from './Navigation';
+import NotificationBell from './NotificationBell';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -206,7 +207,9 @@ export default function Layout({ children, title }: LayoutProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 md:gap-4">
+            <NotificationBell />
+
+          <div className="flex items-center gap-2 md:gap-4">
               <div className="relative lang-switcher-container">
                 <button 
                   onClick={() => setLangDropdownOpen(!langDropdownOpen)}

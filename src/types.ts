@@ -112,6 +112,19 @@ export interface FormattedReservation extends Reservation {
   hours?: string;
 }
 
+export type CarAlertType = 'registration_expiry' | 'insurance_expiry' | 'vignette_expiry' | 'first_use_date';
+
+export interface CarAlert {
+  id: string;
+  carId: string;
+  carName: string;
+  carPlate: string;
+  type: CarAlertType;
+  dueDate: string;
+  daysRemaining: number;
+  read: boolean;
+}
+
 export interface ClientDocument {
   doc_type: 'id_card' | 'license' | 'master_contract';
   file_url: string;

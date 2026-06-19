@@ -16,6 +16,7 @@ import Fleet from './pages/Fleet';
 import Financials from './pages/Financials';
 import ClientDashboard from './pages/ClientPage';
 import Tools from './pages/Tools';
+import NotificationsPage from './pages/NotificationsPage';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
                 <Route path="/financials" element={<Financials />} />
                 <Route path="/clients" element={<ClientDashboard />} />
                 <Route path="/tools" element={<Tools />} />
+                <Route path="/notifications" element={<NotificationsPage />} />
               </Route>
             </Routes>
             </VerifiedTimeProvider>
