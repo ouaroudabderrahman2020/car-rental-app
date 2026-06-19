@@ -122,6 +122,28 @@ export const gasService = {
     return callGasAction('deleteReservationFolder', { reservationFolderName });
   },
 
+  async uploadViolationFile(fileData: { base64: string; fileName: string; contentType: string; violationFolderName: string; oldFileId?: string }) {
+    return callGasAction('uploadViolationFile', {
+      base64: fileData.base64,
+      fileName: fileData.fileName,
+      contentType: fileData.contentType,
+      violationFolderName: fileData.violationFolderName,
+      oldFileId: fileData.oldFileId,
+    });
+  },
+
+  async uploadViolationFiles(files: { base64: string; fileName: string; contentType: string }[], violationFolderName: string) {
+    return callGasAction('uploadViolationFiles', { files, violationFolderName });
+  },
+
+  async deleteViolationFiles(fileIds: string[]) {
+    return callGasAction('deleteViolationFiles', { fileIds });
+  },
+
+  async deleteViolationFolder(violationFolderName: string) {
+    return callGasAction('deleteViolationFolder', { violationFolderName });
+  },
+
   async deleteCarFiles(fileIds: string[]) {
     return callGasAction('deleteCarFiles', { fileIds });
   },

@@ -135,8 +135,18 @@ export interface Violation {
   violation_date: string;
   created_at: string;
   updated_at: string;
+  documents?: ViolationDocument[];
   car?: Car;
   client?: Client;
+}
+
+export interface ViolationDocument {
+  doc_type: 'violation_file';
+  file_url: string;
+  file_id: string;
+  file_name: string;
+  mime_type?: string;
+  file_size?: number;
 }
 
 export interface ClientDocument {
