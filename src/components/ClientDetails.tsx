@@ -1,3 +1,4 @@
+// ClientDetails component - displays client information in card layout
 import { useTranslation } from 'react-i18next';
 import { User, FileText, Calendar, Star, AlertCircle, ExternalLink } from 'lucide-react';
 import { Client } from '../types';
