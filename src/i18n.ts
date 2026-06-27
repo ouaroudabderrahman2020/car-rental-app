@@ -237,7 +237,7 @@ const resources = {
         vignetteExpir: "Vignette Expiration",
         techInspection: "Technical Inspection",
         taxRenewal: "Tax Renewal Date",
-        firstUse: "First Use Date",
+        firstUse: "Authorisation Expiration",
         notes: "Notes",
         otherDetails: "Other Details",
         basicInfo: "Basic Information",

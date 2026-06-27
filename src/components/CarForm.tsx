@@ -592,42 +592,36 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       title: `1 ${t('carDetailsView.basicInfo', 'Basic Info')}`,
       icon: <Settings className="w-4 h-4" />,
       fields: [
-        { name: 'brand', label: t('carDetailsView.fields.brand', 'Brand'), required: true, input: <InputField hasError={errors.brand} type="text" value={car?.brand || ''} onChange={(e: any) => set('brand', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { name: 'model', label: t('carDetailsView.fields.model', 'Model'), required: true, input: <InputField hasError={errors.model} type="text" value={car?.model || ''} onChange={(e: any) => set('model', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /> },
-        { name: 'plate', label: t('carDetailsView.fields.plate', 'Plate'), required: true, input: <InputField hasError={errors.plate} type="text" value={car?.plate || ''} onChange={(e: any) => set('plate', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} className="uppercase" /> },
+        { name: 'brand', label: t('carDetailsView.fields.brand', 'Brand'), required: true, input: <div className="max-w-[450px]"><InputField hasError={errors.brand} type="text" value={car?.brand || ''} onChange={(e: any) => set('brand', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /></div> },
+        { name: 'model', label: t('carDetailsView.fields.model', 'Model'), required: true, input: <div className="max-w-[450px]"><InputField hasError={errors.model} type="text" value={car?.model || ''} onChange={(e: any) => set('model', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} /></div> },
+        { name: 'plate', label: t('carDetailsView.fields.plate', 'Plate'), required: true, input: <div className="max-w-[450px]"><InputField hasError={errors.plate} type="text" value={car?.plate || ''} onChange={(e: any) => set('plate', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} className="uppercase" /></div> },
         {
           label: t('carDetailsView.fields.color', 'Color'),
-          input: (
-            <div className="flex flex-col gap-2">
-              <InputField type="text" value={car?.color || ''} onChange={(e: any) => set('color', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} />
-              <div className="flex flex-wrap gap-2">
-                {colors.map((c) => (
-                  <button key={c.name} type="button" onClick={() => set('color', c.name)} className={`w-8 h-8 rounded-full border transition-all ${c.border} ${(car?.color || '').toLowerCase() === c.name ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`} style={{ backgroundColor: c.hex }} title={t(`carForm.color${c.name.charAt(0).toUpperCase() + c.name.slice(1)}`, c.name)} />
-                ))}
-              </div>
+          input: <div className="max-w-[450px]"><div className="flex flex-col gap-2">
+            <InputField type="text" value={car?.color || ''} onChange={(e: any) => set('color', e.target.value)} placeholder={t('carForm.placeholder', 'Enter...')} />
+            <div className="flex flex-wrap gap-2">
+              {colors.map((c) => (
+                <button key={c.name} type="button" onClick={() => set('color', c.name)} className={`w-8 h-8 rounded-full border transition-all ${c.border} ${(car?.color || '').toLowerCase() === c.name ? 'ring-2 ring-offset-2 ring-blue-500 scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`} style={{ backgroundColor: c.hex }} title={t(`carForm.color${c.name.charAt(0).toUpperCase() + c.name.slice(1)}`, c.name)} />
+              ))}
             </div>
-          ),
+          </div></div>,
         },
         {
           name: 'daily_rate', label: t('carDetailsView.fields.dailyRate', 'Daily Rate'), required: true,
-          input: (
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-semibold text-slate-500">$</span>
-              <div className="flex-1"><InputField hasError={errors.daily_rate} type="number" value={car?.daily_rate || ''} onChange={(e: any) => set('daily_rate', parseFloat(e.target.value) || 0)} placeholder="0" /></div>
-              <span className="text-xs text-slate-500 whitespace-nowrap">{t('common.perDay')}</span>
-            </div>
-          ),
+          input: <div className="max-w-[450px]"><div className="flex items-center gap-1">
+            <span className="text-sm font-semibold text-slate-500">$</span>
+            <div className="flex-1"><InputField hasError={errors.daily_rate} type="number" value={car?.daily_rate || ''} onChange={(e: any) => set('daily_rate', parseFloat(e.target.value) || 0)} placeholder="0" /></div>
+            <span className="text-xs text-slate-500 whitespace-nowrap">{t('common.perDay')}</span>
+          </div></div>,
         },
         {
           label: t('carDetailsView.fields.odometer', 'Odometer'),
-          input: (
-            <div className="flex items-center gap-1">
-              <div className="flex-1"><InputField type="number" value={car?.odometer || ''} onChange={(e: any) => set('odometer', parseInt(e.target.value) || 0)} placeholder="0" /></div>
-              <span className="text-xs text-slate-500 whitespace-nowrap">{t('carForm.odometerUnit', 'km')}</span>
-            </div>
-          ),
+          input: <div className="max-w-[450px]"><div className="flex items-center gap-1">
+            <div className="flex-1"><InputField type="number" value={car?.odometer || ''} onChange={(e: any) => set('odometer', parseInt(e.target.value) || 0)} placeholder="0" /></div>
+            <span className="text-xs text-slate-500 whitespace-nowrap">{t('carForm.odometerUnit', 'km')}</span>
+          </div></div>,
         },
-        { label: t('carDetailsView.fields.status', 'Status'), input: <SelectField value={car?.status || ''} onChange={(e: any) => set('status', e.target.value)}>{['available', 'unavailable', 'in maintenance'].map((s) => (<option key={s} value={s}>{t(`common.${s === 'in maintenance' ? 'maintenance' : s}`, s)}</option>))}</SelectField> },
+        { label: t('carDetailsView.fields.status', 'Status'), input: <div className="max-w-[450px]"><SelectField value={car?.status || ''} onChange={(e: any) => set('status', e.target.value)}>{['available', 'unavailable', 'in maintenance'].map((s) => (<option key={s} value={s}>{t(`common.${s === 'in maintenance' ? 'maintenance' : s}`, s)}</option>))}</SelectField></div> },
       ],
     },
     {
@@ -672,7 +666,7 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       title: `3 ${t('carForm.otherDetails', 'Other Details')}`,
       icon: <Calendar className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.firstUse', 'First Use'), input: <InputField type="date" value={car?.first_use_date || ''} onChange={(e: any) => set('first_use_date', e.target.value)} /> },
+        { label: t('carForm.firstUse', 'Authorisation Expiration'), input: <InputField type="date" value={car?.first_use_date || ''} onChange={(e: any) => set('first_use_date', e.target.value)} /> },
         { label: t('carForm.registrationExpir', 'Registration Expir'), input: <InputField type="date" value={car?.registration_expiry || ''} onChange={(e: any) => set('registration_expiry', e.target.value)} /> },
         { label: t('carForm.insuranceExpir', 'Insurance Expir'), input: <InputField type="date" value={car?.insurance_expiry || ''} onChange={(e: any) => set('insurance_expiry', e.target.value)} /> },
         { label: t('carForm.vignetteExpir', 'Vignette Expir'), input: <InputField type="date" value={car?.vignette_expiry || ''} onChange={(e: any) => set('vignette_expiry', e.target.value)} /> },
@@ -712,7 +706,7 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
   ];
 
   const renderCard = (section: typeof sections[0]) => (
-    <div className="bg-blue-50 border border-slate-200 rounded-[12px] p-5 shadow-sm">
+    <div className="bg-blue-50 border border-slate-200 rounded-[12px] px-6 py-5 shadow-sm">
       {section.title && (
         <div className="flex items-center gap-2 text-xs font-semibold text-white pb-3 mb-4 border-b border-slate-200 bg-sky-600 -mx-5 -mt-5 px-5 pt-4 rounded-t-[12px]">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/25 text-white text-[10px] font-black leading-none shrink-0">{section.title.split(' ')[0]}</span>
