@@ -230,6 +230,8 @@ const SimpleDocSlot = ({ docType, label, value, onChange, isPdf, emptyActions }:
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileDataRef = useRef<string | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   const fileSrc = previewUrl || value?.file_url || value?.file_data;
   const hasFile = !!(previewUrl || value?.file_url || value?.file_data);
@@ -251,12 +253,13 @@ const SimpleDocSlot = ({ docType, label, value, onChange, isPdf, emptyActions }:
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = '';
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(URL.createObjectURL(file));
     const reader = new FileReader();
     reader.onload = () => {
       fileDataRef.current = reader.result as string;
-      onChange({
+      onChangeRef.current({
         doc_type: docType,
         file_data: reader.result as string,
         file_name: file.name,
