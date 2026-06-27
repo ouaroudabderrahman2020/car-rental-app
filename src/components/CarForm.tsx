@@ -293,36 +293,35 @@ const SimpleDocSlot = ({ docType, label, value, onChange, isPdf, emptyActions }:
         className="hidden"
         onChange={handleFileChange}
       />
-      {hasFile ? (
-        <div
-          className="flex items-center justify-between gap-2 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-[8px] cursor-pointer hover:bg-blue-100 transition-colors"
-          onClick={handleClick}
+      <div className="flex flex-col gap-1">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="h-8 px-3 bg-white border border-dashed border-slate-300 rounded-[8px] flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-wider hover:bg-slate-50 hover:border-blue-400 transition-all"
         >
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span className="text-[10px] font-semibold text-blue-900 truncate">{value?.file_name || label}</span>
+          <Upload className="w-3 h-3" />
+          {label}
+        </button>
+        {!hasFile && emptyActions}
+        {hasFile && (
+          <div
+            className="flex items-center justify-between gap-2 px-2 py-1.5 bg-blue-50 border border-blue-200 rounded-[8px] cursor-pointer hover:bg-blue-100 transition-colors"
+            onClick={handleClick}
+          >
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span className="text-[10px] font-semibold text-blue-900 truncate">{value?.file_name || label}</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="p-1 hover:bg-red-100 rounded-full text-red-500 transition-colors shrink-0"
+            >
+              <X className="w-3 h-3" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="p-1 hover:bg-red-100 rounded-full text-red-500 transition-colors shrink-0"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1">
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="h-8 px-3 bg-white border border-dashed border-slate-300 rounded-[8px] flex items-center justify-center gap-1.5 text-[9px] font-bold uppercase tracking-wider hover:bg-slate-50 hover:border-blue-400 transition-all"
-          >
-            <Upload className="w-3 h-3" />
-            {label}
-          </button>
-          {emptyActions}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -632,41 +631,35 @@ export default forwardRef<CarFormHandle, CarFormProps>(function CarForm({ car, o
       title: `2 ${t('carForm.documents', 'Documents')}`,
       icon: <FileText className="w-4 h-4" />,
       fields: [
-        { label: t('carForm.uploadImage', 'Vehicle Image'), hideLabel: true, input: <ImageSlot value={getDoc('image')} onChange={(v) => setDoc('image', v)} onCropRequest={handleCropRequest} /> },
         { label: '', hideLabel: true, input: (
-          <div className="border border-slate-200 rounded-[12px] overflow-hidden">
-            <div className="grid grid-cols-2">
-              <div className="border-r border-b border-slate-200">
-                <SimpleDocSlot docType="registration_card" label={t('carForm.registrationCard', 'Registration Card')} value={getDoc('registration_card')} onChange={(v) => setDoc('registration_card', v)} />
-              </div>
-              <div className="border-b border-slate-200">
-                <SimpleDocSlot docType="insurance" label={t('carForm.insurance', 'Insurance')} value={getDoc('insurance')} onChange={(v) => setDoc('insurance', v)} />
-              </div>
-              <div className="border-r border-slate-200">
-                <SimpleDocSlot docType="vignette" label={t('carForm.vignette', 'Vignette')} value={getDoc('vignette')} onChange={(v) => setDoc('vignette', v)} />
-              </div>
-              <div>
-                <SimpleDocSlot docType="documentation" label="full car docs" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf emptyActions={
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowImageToPdf(true)}
-                      className="flex-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[6px] transition-all"
-                    >
-                      open tool
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isMerging}
-                      onClick={handleMergeAll}
-                      className={`flex-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-1 rounded-[6px] transition-all flex items-center justify-center gap-0.5 ${mergeAllSuccess ? 'bg-green-500 text-white' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'}`}
-                    >
-                      {isMerging ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : mergeAllSuccess ? <Check className="w-2.5 h-2.5" /> : null}
-                      merge all
-                    </button>
-                  </div>
-                } />
-              </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="w-56 sm:w-72 md:w-80 shrink-0">
+              <ImageSlot value={getDoc('image')} onChange={(v) => setDoc('image', v)} onCropRequest={handleCropRequest} />
+            </div>
+            <div className="flex flex-col gap-2 flex-1">
+              <SimpleDocSlot docType="registration_card" label={t('carForm.registrationCard', 'Registration Card')} value={getDoc('registration_card')} onChange={(v) => setDoc('registration_card', v)} />
+              <SimpleDocSlot docType="insurance" label={t('carForm.insurance', 'Insurance')} value={getDoc('insurance')} onChange={(v) => setDoc('insurance', v)} />
+              <SimpleDocSlot docType="vignette" label={t('carForm.vignette', 'Vignette')} value={getDoc('vignette')} onChange={(v) => setDoc('vignette', v)} />
+              <SimpleDocSlot docType="documentation" label="full car docs" value={getDoc('documentation')} onChange={(v) => setDoc('documentation', v)} isPdf emptyActions={
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowImageToPdf(true)}
+                    className="flex-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-[6px] transition-all"
+                  >
+                    open tool
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isMerging}
+                    onClick={handleMergeAll}
+                    className={`flex-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-1 rounded-[6px] transition-all flex items-center justify-center gap-0.5 ${mergeAllSuccess ? 'bg-green-500 text-white' : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'}`}
+                  >
+                    {isMerging ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : mergeAllSuccess ? <Check className="w-2.5 h-2.5" /> : null}
+                    merge all
+                  </button>
+                </div>
+              } />
             </div>
           </div>
         ) },
